@@ -75,6 +75,34 @@
   .result-ok { background:var(--green); } .result-bad { background:var(--red); }
   .full { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
           justify-content:center; }
+
+  /* ---------- Quiz editor ---------- */
+  .panel { width:100%; max-width:760px; text-align:left; }
+  .panel h1 { text-align:center; }
+  .small { font-size:.9rem; }
+  .qzRow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--card);
+           padding:12px 16px; border-radius:12px; margin:10px 0; }
+  .qzRow .t { flex:1; min-width:160px; font-size:1.2rem; font-weight:700; }
+  button.mini { font-size:1rem; padding:8px 12px; margin:2px; border-radius:8px; }
+  button.danger { background:#5b1f2e; color:#fff; }
+  .btnRow { display:flex; flex-wrap:wrap; justify-content:center; }
+  .edTop { display:flex; justify-content:space-between; align-items:center; position:sticky; top:0;
+           background:var(--bg); padding:6px 0; z-index:5; }
+  .edInput, .qcard textarea, .arow input.qa { width:100%; max-width:none; text-align:start; font-size:1.15rem;
+           padding:12px; border-radius:10px; border:0; margin:6px 0; font-family:inherit; }
+  .qcard { background:var(--card); border-radius:14px; padding:14px; margin:14px 0; }
+  .qcard.err { outline:3px solid var(--red); }
+  .qhead { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+  .qhead select { font-size:1rem; padding:8px; border-radius:8px; border:0; }
+  .qans { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:6px 0; }
+  .arow { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; }
+  .arow .shape { font-size:1.3rem; color:#fff; }
+  .arow input.qa { margin:0; padding:10px; font-size:1rem; }
+  .arow input.qc { width:26px; height:26px; flex:none; margin:0; padding:0; accent-color:#fff; cursor:pointer; }
+  #edMsg { min-height:1.5em; color:#ffb3c0; font-weight:700; text-align:center; margin:8px 0; }
+  .quizPick { margin:8px 0 4px; font-size:1.2rem; }
+  .quizPick select { font-size:1.1rem; padding:10px; border-radius:10px; border:0; max-width:90vw; }
+  @media (max-width:560px) { .qans { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -84,6 +112,38 @@
   <h1>🎉 Party Quiz</h1>
   <button onclick="startHost()">📺 Host on TV</button>
   <button class="secondary" onclick="show('join')">📱 Join with phone</button>
+  <button class="secondary" onclick="openQuizList()">✏️ My quizzes</button>
+</div>
+
+<!-- ================= Quiz list ================= -->
+<div class="screen" id="quizzes">
+  <div class="panel">
+    <h1>✏️ My quizzes</h1>
+    <div id="quizList"></div>
+    <div class="btnRow">
+      <button onclick="newQuiz()">➕ New quiz</button>
+      <button class="secondary" onclick="document.getElementById('importFile').click()">📂 Import file</button>
+      <button class="secondary" onclick="show('home')">⬅ Back</button>
+    </div>
+    <input type="file" id="importFile" accept=".json,application/json" hidden onchange="importQuiz(this)">
+    <p class="muted small" style="text-align:center">Quizzes are saved in this browser. Create them on the device
+      you'll host from, or use Export / Import to move them to another device.</p>
+  </div>
+</div>
+
+<!-- ================= Quiz editor ================= -->
+<div class="screen" id="editor">
+  <div class="panel">
+    <div class="edTop">
+      <button class="secondary mini" onclick="closeEditor()">⬅ Back</button>
+      <button class="mini" onclick="saveQuiz()">💾 Save</button>
+    </div>
+    <input id="qzTitle" class="edInput" dir="auto" maxlength="60" placeholder="Quiz name">
+    <div id="qcards"></div>
+    <div class="btnRow"><button class="secondary" onclick="addQuestion()">➕ Add question</button></div>
+    <div id="edMsg"></div>
+    <div class="btnRow"><button onclick="saveQuiz()">💾 Save quiz</button></div>
+  </div>
 </div>
 
 <!-- ================= TV: lobby ================= -->
@@ -99,6 +159,7 @@
     </div>
     <div id="players"></div>
     <div class="muted" id="count">Waiting for players…</div>
+    <div class="quizPick"><span class="muted">Quiz:</span> <select id="quizSelect"></select></div>
     <button id="startBtn" onclick="startGame()" disabled>▶ Start game</button>
   </div>
 </div>
@@ -123,18 +184,21 @@
 
 <script>
 /* =========================================================
-   EDIT YOUR QUESTIONS HERE
+   Built-in demo quiz (always available, can't be deleted).
+   Your own quizzes are made in "✏️ My quizzes".
    correct = index of the right answer (0 = first)
    ========================================================= */
-const QUESTIONS = [
-  { q: "What is the capital of Australia?",      a: ["Sydney", "Canberra", "Melbourne", "Perth"], correct: 1 },
-  { q: "How many bits are in a byte?",            a: ["4", "8", "16", "32"],                       correct: 1 },
-  { q: "Which planet is called the Red Planet?",  a: ["Venus", "Jupiter", "Mars", "Saturn"],       correct: 2 },
+const DEMO_QUIZ = { id: 'demo', title: 'Demo quiz', questions: [
+  { q: "What is the capital of Australia?",      a: ["Sydney", "Canberra", "Melbourne", "Perth"], correct: 1, time: 20 },
+  { q: "How many bits are in a byte?",            a: ["4", "8", "16", "32"],                       correct: 1, time: 20 },
+  { q: "Which planet is called the Red Planet?",  a: ["Venus", "Jupiter", "Mars", "Saturn"],       correct: 2, time: 20 },
   { q: "What does CPU stand for?",                a: ["Central Processing Unit", "Computer Power Unit",
-                                                      "Core Process Utility", "Central Program Uploader"], correct: 0 },
-  { q: "At sea level, water boils at…",           a: ["90 °C", "100 °C", "110 °C", "120 °C"],     correct: 1 },
-];
-const DURATION = 20;          // seconds per question
+                                                      "Core Process Utility", "Central Program Uploader"], correct: 0, time: 20 },
+  { q: "At sea level, water boils at…",           a: ["90 °C", "100 °C", "110 °C", "120 °C"],     correct: 1, time: 20 },
+]};
+let QUESTIONS = [];           // filled from the chosen quiz when a game starts
+const DURATION = 20;          // default seconds per question
+let qDur = DURATION;
 const MAX_POINTS = 1000;      // fast correct answer ≈ 1000, slow correct ≈ 500
 
 const PREFIX = "partyquiz-demo-g7k2-";   // keeps our room IDs unique on the free PeerJS server
@@ -170,10 +234,12 @@ function startHost() {
     else document.getElementById('hostStatus').textContent = 'Error: ' + err.type;
   });
   peer.on('connection', handleConnection);
+  renderQuizSelect();
 
   // Space / Enter presses the main button on the TV
   document.addEventListener('keydown', e => {
     if (e.code !== 'Space' && e.code !== 'Enter') return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     const btn = document.querySelector('.screen.active button:not(:disabled)');
     if (btn) { e.preventDefault(); btn.click(); }
   });
@@ -244,6 +310,10 @@ function renderLobby() {
 
 /* ---------- game flow ---------- */
 function startGame() {
+  const id = document.getElementById('quizSelect').value;
+  const quiz = allQuizzes().find(z => z.id === id) || DEMO_QUIZ;
+  QUESTIONS = toPlayable(quiz);
+  lsSet(LAST_KEY, quiz.id);
   players.forEach((p, key) => { if (!p.connected) players.delete(key); });
   players.forEach(p => { p.score = 0; });
   qIndex = -1;
@@ -263,23 +333,24 @@ function nextQuestion() {
   players.forEach(p => { p.answer = null; p.lastPoints = 0; });
 
   const q = QUESTIONS[qIndex];
+  qDur = q.time || DURATION;
   document.getElementById('gameView').innerHTML = `
     <div class="qtop">
       <div class="muted">Question ${qIndex + 1} / ${QUESTIONS.length}</div>
-      <div class="timer" id="timer">${DURATION}</div>
+      <div class="timer" id="timer">${qDur}</div>
       <div class="muted" id="answered">0 answers</div>
     </div>
-    <div class="qtext">${esc(q.q)}</div>
+    <div class="qtext" dir="auto">${esc(q.q)}</div>
     <div class="answers">
       ${q.a.map((t, i) => `<div class="ans c${i}" id="ans${i}">
-        <span class="shape">${SHAPES[i]}</span><span>${esc(t)}</span></div>`).join('')}
+        <span class="shape">${SHAPES[i]}</span><span dir="auto">${esc(t)}</span></div>`).join('')}
     </div>`;
 
   qStart = performance.now();
   broadcast(questionMsg());
   clearInterval(timerId);
   timerId = setInterval(() => {
-    const left = Math.max(0, DURATION - (performance.now() - qStart) / 1000);
+    const left = Math.max(0, qDur - (performance.now() - qStart) / 1000);
     const el = document.getElementById('timer');
     if (el) el.textContent = Math.ceil(left);
     if (left <= 0) endQuestion();
@@ -314,7 +385,7 @@ function endQuestion() {
   // score
   players.forEach(p => {
     const right = p.answer === q.correct;
-    p.lastPoints = right ? Math.round(MAX_POINTS * (1 - 0.5 * Math.min(1, p.elapsed / DURATION))) : 0;
+    p.lastPoints = right ? Math.round(MAX_POINTS * (1 - 0.5 * Math.min(1, p.elapsed / qDur))) : 0;
     p.score += p.lastPoints;
   });
   const ranked = ranking();
@@ -418,9 +489,9 @@ function onHostMessage(msg, conn, fail) {
     case 'question': {
       const btns = msg.answers.map((t, i) =>
         `<button class="pbtn c${i}" onclick="answer(${i})">
-           <span class="shape">${SHAPES[i]}</span><span>${esc(t)}</span></button>`).join('');
+           <span class="shape">${SHAPES[i]}</span><span dir="auto">${esc(t)}</span></button>`).join('');
       pview(`<div class="pq">
-        <div class="pqtext"><div class="pqnum">Question ${msg.n} / ${msg.total}</div>${esc(msg.q)}</div>
+        <div class="pqtext"><div class="pqnum">Question ${msg.n} / ${msg.total}</div><div dir="auto">${esc(msg.q)}</div></div>
         <div class="pgrid">${btns}</div></div>`);
       break;
     }
@@ -444,6 +515,230 @@ function answer(i) {
   if (myConn && myConn.open) myConn.send({ type: 'answer', choice: i });
   pview('<h2>Answer sent ⏳</h2>');
 }
+
+/* =========================================================
+   QUIZ STORAGE + EDITOR
+   Saved in this browser's localStorage.
+   ========================================================= */
+const LS_KEY = 'partyquiz.quizzes';
+const LAST_KEY = 'partyquiz.lastQuiz';
+const TIMES = [10, 20, 30, 60];
+let editing = null;      // quiz being edited
+let dirty = false;
+
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+function loadQuizzes() { try { return JSON.parse(lsGet(LS_KEY)) || []; } catch (e) { return []; } }
+function storeQuizzes(list) {
+  if (!lsSet(LS_KEY, JSON.stringify(list))) { alert('Could not save in this browser (private mode?)'); return false; }
+  return true;
+}
+function allQuizzes() { return [DEMO_QUIZ, ...loadQuizzes()]; }
+function newId() { return 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function blankQuestion() { return { q: '', a: ['', '', '', ''], correct: -1, time: DURATION }; }
+
+// Editor format (always 4 answer slots) -> game format (only filled answers)
+function toPlayable(quiz) {
+  return quiz.questions.map(x => {
+    const a = [], idx = [];
+    x.a.forEach((t, j) => { if (String(t).trim()) { idx.push(j); a.push(String(t).trim()); } });
+    return { q: String(x.q).trim(), a, correct: idx.indexOf(x.correct), time: x.time || DURATION };
+  });
+}
+
+function renderQuizSelect() {
+  const sel = document.getElementById('quizSelect');
+  const last = lsGet(LAST_KEY);
+  sel.innerHTML = allQuizzes().map(z =>
+    `<option value="${esc(z.id)}" ${z.id === last ? 'selected' : ''}>${esc(z.title)} (${z.questions.length})</option>`).join('');
+}
+
+/* ---------- list ---------- */
+function openQuizList() { renderQuizList(); show('quizzes'); }
+
+function renderQuizList() {
+  const mine = loadQuizzes();
+  const row = (z, buttons) => `<div class="qzRow"><span class="t" dir="auto">${esc(z.title)}</span>
+      <span class="muted small">${z.questions.length} questions</span>${buttons}</div>`;
+  document.getElementById('quizList').innerHTML =
+    row(DEMO_QUIZ, `<button class="mini secondary" onclick="copyQuiz('demo')">📄 Copy & edit</button>`) +
+    (mine.length ? mine.map(z => row(z, `
+      <button class="mini" onclick="editQuiz('${z.id}')">✏️ Edit</button>
+      <button class="mini secondary" onclick="copyQuiz('${z.id}')">📄 Copy</button>
+      <button class="mini secondary" onclick="exportQuiz('${z.id}')">⬇ Export</button>
+      <button class="mini danger" onclick="deleteQuiz('${z.id}')">🗑</button>`)).join('')
+      : '<p class="muted" style="text-align:center">No quizzes of your own yet — tap “New quiz”.</p>');
+}
+
+function newQuiz() { openEditor({ id: newId(), title: '', questions: [blankQuestion()] }); }
+function editQuiz(id) {
+  const z = loadQuizzes().find(x => x.id === id);
+  if (z) openEditor(JSON.parse(JSON.stringify(z)));
+}
+function copyQuiz(id) {
+  const z = allQuizzes().find(x => x.id === id);
+  if (!z) return;
+  const c = JSON.parse(JSON.stringify(z));
+  c.id = newId(); c.title = z.title + ' (copy)';
+  openEditor(c);
+}
+function deleteQuiz(id) {
+  const z = loadQuizzes().find(x => x.id === id);
+  if (!z || !confirm(`Delete “${z.title}”?`)) return;
+  storeQuizzes(loadQuizzes().filter(x => x.id !== id));
+  renderQuizList();
+}
+function exportQuiz(id) {
+  const z = loadQuizzes().find(x => x.id === id);
+  if (!z) return;
+  const blob = new Blob([JSON.stringify({ title: z.title, questions: z.questions }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (z.title.replace(/[\\/:*?"<>|]+/g, '').trim() || 'quiz') + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function importQuiz(input) {
+  const file = input.files[0];
+  input.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const d = JSON.parse(reader.result);
+      if (!Array.isArray(d.questions)) throw new Error('no questions');
+      const quiz = {
+        id: newId(),
+        title: String(d.title || 'Imported quiz').slice(0, 60),
+        questions: d.questions.map(x => ({
+          q: String(x.q || ''),
+          a: [0, 1, 2, 3].map(j => String((x.a || [])[j] || '')),
+          correct: Number.isInteger(x.correct) ? x.correct : -1,
+          time: TIMES.includes(x.time) ? x.time : DURATION
+        }))
+      };
+      const list = loadQuizzes(); list.push(quiz);
+      if (storeQuizzes(list)) renderQuizList();
+    } catch (e) { alert('That file is not a quiz file.'); }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- editor ---------- */
+function openEditor(quiz) {
+  editing = quiz; dirty = false;
+  document.getElementById('qzTitle').value = quiz.title;
+  document.getElementById('edMsg').textContent = '';
+  renderCards();
+  show('editor');
+  window.scrollTo(0, 0);
+}
+
+function renderCards() {
+  const n = editing.questions.length;
+  document.getElementById('qcards').innerHTML = editing.questions.map((q, i) => `
+    <div class="qcard" id="qcard${i}">
+      <div class="qhead">
+        <b>Question ${i + 1}</b>
+        <span>
+          <select class="qt" title="Time to answer">
+            ${TIMES.map(t => `<option value="${t}" ${t === (q.time || DURATION) ? 'selected' : ''}>⏱ ${t}s</option>`).join('')}
+          </select>
+          <button class="mini secondary" onclick="moveQ(${i},-1)" ${i === 0 ? 'disabled' : ''} title="Move up">↑</button>
+          <button class="mini secondary" onclick="moveQ(${i},1)" ${i === n - 1 ? 'disabled' : ''} title="Move down">↓</button>
+          <button class="mini danger" onclick="delQ(${i})" title="Delete question">🗑</button>
+        </span>
+      </div>
+      <textarea class="qq" rows="2" dir="auto" maxlength="200" placeholder="Type the question">${esc(q.q)}</textarea>
+      <div class="qans">
+        ${[0, 1, 2, 3].map(j => `
+          <div class="arow c${j}">
+            <span class="shape">${SHAPES[j]}</span>
+            <input class="qa" dir="auto" maxlength="80" value="${esc(q.a[j] || '')}"
+                   placeholder="Answer ${j + 1}${j >= 2 ? ' (optional)' : ''}">
+            <input type="radio" class="qc" name="correct${i}" value="${j}" ${q.correct === j ? 'checked' : ''} title="This is the correct answer">
+          </div>`).join('')}
+      </div>
+      <div class="muted small">Tick the circle next to the correct answer.</div>
+    </div>`).join('');
+}
+
+// read what's typed on screen back into `editing`
+function collectEditor() {
+  editing.title = document.getElementById('qzTitle').value.trim();
+  editing.questions = [...document.querySelectorAll('.qcard')].map(card => {
+    const c = card.querySelector('.qc:checked');
+    return {
+      q: card.querySelector('.qq').value.trim(),
+      a: [...card.querySelectorAll('.qa')].map(inp => inp.value.trim()),
+      correct: c ? Number(c.value) : -1,
+      time: Number(card.querySelector('.qt').value)
+    };
+  });
+}
+
+function addQuestion() {
+  collectEditor();
+  editing.questions.push(blankQuestion());
+  dirty = true;
+  renderCards();
+  const last = document.getElementById('qcard' + (editing.questions.length - 1));
+  last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  last.querySelector('.qq').focus();
+}
+function delQ(i) {
+  collectEditor();
+  if (editing.questions[i].q && !confirm('Delete this question?')) return;
+  editing.questions.splice(i, 1);
+  dirty = true;
+  renderCards();
+}
+function moveQ(i, d) {
+  collectEditor();
+  const qs = editing.questions;
+  [qs[i], qs[i + d]] = [qs[i + d], qs[i]];
+  dirty = true;
+  renderCards();
+}
+
+function validateQuiz(z) {
+  if (!z.title) return { msg: 'Give your quiz a name' };
+  if (!z.questions.length) return { msg: 'Add at least one question' };
+  for (let i = 0; i < z.questions.length; i++) {
+    const x = z.questions[i];
+    if (!x.q) return { i, msg: `Question ${i + 1}: type the question` };
+    if (x.a.filter(Boolean).length < 2) return { i, msg: `Question ${i + 1}: needs at least 2 answers` };
+    if (x.correct < 0 || !x.a[x.correct]) return { i, msg: `Question ${i + 1}: tick the correct answer` };
+  }
+  return null;
+}
+
+function saveQuiz() {
+  collectEditor();
+  document.querySelectorAll('.qcard.err').forEach(c => c.classList.remove('err'));
+  const err = validateQuiz(editing);
+  const msg = document.getElementById('edMsg');
+  if (err) {
+    msg.textContent = '⚠ ' + err.msg;
+    const target = err.i !== undefined ? document.getElementById('qcard' + err.i) : document.getElementById('qzTitle');
+    if (err.i !== undefined) target.classList.add('err');
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  const list = loadQuizzes();
+  const at = list.findIndex(x => x.id === editing.id);
+  if (at >= 0) list[at] = editing; else list.push(editing);
+  if (!storeQuizzes(list)) return;
+  dirty = false;
+  openQuizList();
+}
+
+function closeEditor() {
+  if (dirty && !confirm('Leave without saving?')) return;
+  openQuizList();
+}
+document.getElementById('editor').addEventListener('input', () => { dirty = true; });
+document.getElementById('editor').addEventListener('change', () => { dirty = true; });
 
 /* QR code opens ?join=1234 → join screen with the code filled in */
 const preCode = new URLSearchParams(location.search).get('join');
