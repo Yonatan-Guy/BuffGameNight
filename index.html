@@ -61,8 +61,16 @@
           background:var(--card); font-weight:700; }
   #pview { flex:1; width:100%; display:flex; flex-direction:column; align-items:center;
            justify-content:center; padding:16px; }
-  .pgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%; height:calc(100vh - 80px); }
-  .pbtn { border:0; border-radius:14px; font-size:4rem; color:#fff; margin:0; padding:0; }
+  .pq { width:100%; height:calc(100vh - 80px); display:flex; flex-direction:column; gap:12px; }
+  .pqtext { background:#fff; color:#222; font-size:1.3rem; font-weight:700; padding:14px;
+            border-radius:12px; }
+  .pqnum { color:var(--muted); font-size:.95rem; }
+  .pgrid { flex:1; display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:12px; width:100%; }
+  .pbtn { border:0; border-radius:14px; color:#fff; margin:0; padding:10px; display:flex;
+          flex-direction:column; align-items:center; justify-content:center; gap:8px;
+          font-size:1.15rem; font-weight:700; line-height:1.25; word-break:break-word; }
+  .pbtn .shape { font-size:2rem; }
+  .pbtn:active { transform:scale(.96); }
   .big { font-size:4rem; margin:0; }
   .result-ok { background:var(--green); } .result-bad { background:var(--red); }
   .full { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
@@ -244,7 +252,8 @@ function startGame() {
 }
 
 function questionMsg() {
-  return { type: 'question', n: qIndex + 1, total: QUESTIONS.length, choices: QUESTIONS[qIndex].a.length };
+  const q = QUESTIONS[qIndex];
+  return { type: 'question', n: qIndex + 1, total: QUESTIONS.length, q: q.q, answers: q.a };
 }
 
 function nextQuestion() {
@@ -407,10 +416,12 @@ function onHostMessage(msg, conn, fail) {
       document.getElementById('pScore').textContent = msg.score; break;
 
     case 'question': {
-      let btns = '';
-      for (let i = 0; i < msg.choices; i++)
-        btns += `<button class="pbtn c${i}" onclick="answer(${i})">${SHAPES[i]}</button>`;
-      pview(`<div class="pgrid">${btns}</div>`);
+      const btns = msg.answers.map((t, i) =>
+        `<button class="pbtn c${i}" onclick="answer(${i})">
+           <span class="shape">${SHAPES[i]}</span><span>${esc(t)}</span></button>`).join('');
+      pview(`<div class="pq">
+        <div class="pqtext"><div class="pqnum">Question ${msg.n} / ${msg.total}</div>${esc(msg.q)}</div>
+        <div class="pgrid">${btns}</div></div>`);
       break;
     }
 
