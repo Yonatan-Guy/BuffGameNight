@@ -141,6 +141,19 @@
   .wa-sm .wa-date { font-size:.8rem; }
   .pqchat { max-height:48vh; overflow-y:auto; border-radius:12px; }
   @media (max-width:820px) { .chatLayout { grid-template-columns:1fr; } .wa-b { font-size:1.1rem; } }
+  .chip { display:inline-flex; align-items:center; gap:10px; }
+  .chip.off { opacity:.45; }
+  button.kick { font-size:.9rem; padding:4px 9px; margin:0; border-radius:20px; background:rgba(255,255,255,.12); color:var(--text); }
+  button.kick:hover, button.kick:focus-visible { background:var(--red); }
+  #playersBtn { position:fixed; right:calc(16px + env(safe-area-inset-right, 0px)); bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+                font-size:1rem; padding:12px 18px; margin:0; z-index:40; }
+  #playersPanel { position:fixed; right:calc(16px + env(safe-area-inset-right, 0px)); bottom:calc(76px + env(safe-area-inset-bottom, 0px));
+                  width:min(360px, calc(100vw - 32px)); max-height:60vh; overflow-y:auto; background:var(--card); border-radius:14px;
+                  padding:12px; z-index:40; box-shadow:0 10px 40px rgba(0,0,0,.5); text-align:start; }
+  .prow { display:flex; align-items:center; gap:10px; padding:8px 6px; border-bottom:1px solid rgba(255,255,255,.08); }
+  .prow .nm { flex:1; font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  .dot { width:10px; height:10px; border-radius:50%; background:#3ddc84; flex:none; }
+  .dot.off { background:#8a83b0; }
   .previewBar { position:fixed; left:16px; bottom:16px; display:flex; gap:8px; z-index:50; }
   .previewBar button { font-size:1rem; padding:12px 18px; margin:0; }
 </style>
@@ -153,6 +166,9 @@
   <button onclick="startHost()">📺 Host on TV</button>
   <button class="secondary" onclick="show('join')">📱 Join with phone</button>
   <button class="secondary" onclick="openQuizList()">✏️ My quizzes</button>
+  <div id="rejoinBox" hidden style="margin-top:18px">
+    <button id="rejoinBtn" onclick="rejoin()"></button>
+  </div>
 </div>
 
 <!-- ================= Quiz list ================= -->
@@ -207,6 +223,8 @@
 
 <!-- ================= TV: game (question / reveal / final) ================= -->
 <div class="screen" id="game"><div class="wide" id="gameView"></div></div>
+<button id="playersBtn" class="secondary back" hidden onclick="togglePlayers()">👥 Players</button>
+<div id="playersPanel" hidden></div>
 <div class="previewBar" id="previewBar" style="display:none">
   <button onclick="endQuestion()">👁 Reveal</button>
   <button class="secondary" onclick="location.reload()">✖ Exit preview</button>
@@ -308,7 +326,7 @@ function startHost() {
   document.addEventListener('keydown', e => {
     if (e.code !== 'Space' && e.code !== 'Enter') return;
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
-    const btn = document.querySelector('.screen.active button:not(:disabled):not(.back)');
+    const btn = document.querySelector('.screen.active button:not(:disabled):not(.back):not(.kick)');
     if (btn) { e.preventDefault(); btn.click(); }
   });
 }
@@ -319,13 +337,18 @@ function handleConnection(conn) {
       const name = String(msg.name || '').trim().slice(0, 16);
       const key = name.toLowerCase();
       if (!name) return;
+      const token = String(msg.token || '');
+      if (banned.has(key) || (token && bannedTokens.has(token))) { conn.send({ type: 'kicked' }); return; }
       const existing = players.get(key);
-      if (existing && existing.connected) { conn.send({ type: 'error', text: 'That name is taken' }); return; }
+      // same name on a different phone that is still online = taken
+      if (existing && existing.connected && existing.token !== token) { conn.send({ type: 'error', text: 'That name is taken' }); return; }
 
-      // New player, or a player reconnecting with the same name (keeps their score)
+      // New player, or the same phone coming back (keeps the score, replaces the old connection)
       const p = existing || { name, score: 0, answer: null, elapsed: 0, lastPoints: 0 };
-      p.conn = conn; p.connected = true; conn._key = key;
+      const old = p.conn;
+      p.conn = conn; p.connected = true; p.token = token; conn._key = key;
       players.set(key, p);
+      if (old && old !== conn) { try { old.close(); } catch (e) {} }
       conn.send({ type: 'welcome', name: p.name, score: p.score });
       syncPlayer(p);
       refreshHost();
@@ -341,6 +364,46 @@ function handleConnection(conn) {
     p.connected = false;
     if (phase === 'lobby') players.delete(conn._key);
     refreshHost();
+    maybeEndEarly();
+  });
+}
+
+/* ---------- host controls: remove players ---------- */
+const banned = new Set(), bannedTokens = new Set();
+function kick(key) {
+  const p = players.get(key);
+  if (!p || !confirm(`Remove ${p.name} from the room?`)) return;
+  banned.add(key); if (p.token) bannedTokens.add(p.token);
+  send(p, { type: 'kicked' });
+  const c = p.conn; setTimeout(() => { try { c && c.close(); } catch (e) {} }, 300);
+  players.delete(key);
+  refreshHost();
+  maybeEndEarly();
+}
+function maybeEndEarly() {
+  if (phase !== 'question') return;
+  const online = connectedPlayers();
+  if (online.length > 0 && online.every(x => x.answer !== null)) endQuestion();
+}
+function togglePlayers() {
+  const panel = document.getElementById('playersPanel');
+  panel.hidden = !panel.hidden;
+  renderPlayersPanel();
+}
+function renderPlayersPanel() {
+  const panel = document.getElementById('playersPanel');
+  if (panel.hidden) return;
+  panel.innerHTML = '';
+  if (!players.size) { panel.textContent = 'No players'; return; }
+  players.forEach((p, key) => {
+    const row = document.createElement('div'); row.className = 'prow';
+    const dot = document.createElement('span'); dot.className = 'dot' + (p.connected ? '' : ' off');
+    dot.title = p.connected ? 'Online' : 'Offline — can rejoin with the same name';
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = p.name;
+    const sc = document.createElement('span'); sc.className = 'muted'; sc.textContent = p.connected ? p.score : p.score + ' · offline';
+    const b = document.createElement('button'); b.className = 'kick'; b.textContent = '✖ Remove';
+    b.onclick = () => kick(key);
+    row.append(dot, nm, sc, b); panel.appendChild(row);
   });
 }
 
@@ -359,15 +422,19 @@ function connectedPlayers() { return [...players.values()].filter(p => p.connect
 function refreshHost() {
   if (phase === 'lobby') renderLobby();
   else if (phase === 'question') updateAnsweredCount();
+  renderPlayersPanel();
 }
 
 function renderLobby() {
   const box = document.getElementById('players');
   box.innerHTML = '';
-  players.forEach(p => {
+  players.forEach((p, key) => {
     const chip = document.createElement('div');
-    chip.className = 'chip';
-    chip.textContent = p.name;
+    chip.className = 'chip' + (p.connected ? '' : ' off');
+    const nm = document.createElement('span'); nm.textContent = p.name;
+    const b = document.createElement('button'); b.className = 'kick'; b.textContent = '✖';
+    b.setAttribute('aria-label', 'Remove ' + p.name); b.onclick = () => kick(key);
+    chip.append(nm, b);
     box.appendChild(chip);
   });
   const n = connectedPlayers().length;
@@ -386,6 +453,7 @@ function startGame() {
   players.forEach(p => { p.score = 0; });
   qIndex = -1;
   show('game');
+  document.getElementById('playersBtn').hidden = false;
   nextQuestion();
 }
 
@@ -459,8 +527,7 @@ function onAnswer(p, choice) {
   p.elapsed = (performance.now() - qStart) / 1000;   // measured on the TV, so phone clocks don't matter
   send(p, { type: 'wait', text: 'Answer sent ⏳' });
   updateAnsweredCount();
-  const online = connectedPlayers();
-  if (online.length > 0 && online.every(x => x.answer !== null)) endQuestion();
+  maybeEndEarly();
 }
 
 function updateAnsweredCount() {
@@ -536,7 +603,19 @@ function backToLobby() {
 /* =========================================================
    PLAYER (phone)
    ========================================================= */
-let myConn = null;
+let myConn = null, myPeer = null, session = null, kicked = false, retries = 0, retryTimer = null;
+const SESSION_KEY = 'partyquiz.session';
+const MAX_RETRIES = 15;          // about 30 seconds of automatic reconnecting
+
+// a random id for this phone, so the TV knows it's the same player coming back
+function deviceToken() {
+  let t = lsGet('partyquiz.device');
+  if (!t) { t = newId(); lsSet('partyquiz.device', t); }
+  return t;
+}
+function savedSession() {
+  try { const s = JSON.parse(lsGet(SESSION_KEY)); return s && Date.now() - s.at < 6 * 3600e3 ? s : null; } catch (e) { return null; }
+}
 
 function joinRoom() {
   const code = document.getElementById('codeInput').value.trim();
@@ -546,19 +625,60 @@ function joinRoom() {
   if (!name) { status.textContent = 'Enter your name'; return; }
   status.textContent = 'Connecting…';
   document.getElementById('joinBtn').disabled = true;
+  connectTo(code, name, true);
+}
 
+function connectTo(code, name, fromForm) {
+  clearTimeout(retryTimer);
+  if (myPeer) { try { myPeer.destroy(); } catch (e) {} }
   const peer = new Peer();
-  const fail = text => { status.textContent = text; document.getElementById('joinBtn').disabled = false; peer.destroy(); };
-
+  myPeer = peer;
+  const fail = (text, roomGone) => {
+    if (peer !== myPeer) return;
+    if (fromForm && !myConn) {
+      document.getElementById('status').textContent = text;
+      document.getElementById('joinBtn').disabled = false;
+      try { peer.destroy(); } catch (e) {}
+    } else lost(roomGone ? 'The room is closed' : text, roomGone);
+  };
   peer.on('open', () => {
     const conn = peer.connect(PREFIX + code, { reliable: true });
-    conn.on('open', () => conn.send({ type: 'join', name }));
-    conn.on('data', msg => onHostMessage(msg, conn, fail));
-    conn.on('close', () => { if (myConn === conn) pview(`<p class="big">📴</p><h2>Disconnected</h2>
-      <button onclick="location.reload()">Rejoin</button>`); });
+    conn.on('open', () => conn.send({ type: 'join', name, token: deviceToken() }));
+    conn.on('data', msg => onHostMessage(msg, conn, fail, code));
+    conn.on('close', () => { if (myConn === conn) lost(); });
   });
-  peer.on('error', err => fail(err.type === 'peer-unavailable' ? 'Room not found — check the code' : 'Error: ' + err.type));
+  peer.on('error', err => fail(err.type === 'peer-unavailable' ? 'Room not found — check the code' : 'Connection problem (' + err.type + ')',
+                               err.type === 'peer-unavailable'));
 }
+
+// connection dropped (phone slept, Wi-Fi blinked…): keep trying with the same name
+function lost(reason, stop) {
+  if (kicked || !session) return;
+  myConn = null;
+  if (stop || retries >= MAX_RETRIES) {
+    pview(`<p class="big">📴</p><h2>${esc(reason || 'Disconnected')}</h2>
+      <p class="muted">Your score is kept. Tap to come back.</p>
+      <button onclick="rejoin()">↩ Rejoin as ${esc(session.name)}</button>`);
+    return;
+  }
+  retries++;
+  pview(`<p class="big">🔄</p><h2>Reconnecting…</h2><p class="muted">Try ${retries} of ${MAX_RETRIES}</p>`);
+  retryTimer = setTimeout(() => connectTo(session.code, session.name, false), 2000);
+}
+function rejoin() {
+  session = session || savedSession();
+  if (!session) { show('join'); return; }
+  retries = 0; kicked = false;
+  show('player');
+  document.getElementById('pName').textContent = session.name;
+  pview('<h2>Connecting…</h2>');
+  connectTo(session.code, session.name, false);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && current === 'player' && session && !kicked && !(myConn && myConn.open)) {
+    retries = 0; connectTo(session.code, session.name, false);
+  }
+});
 
 function pview(html, cls = '') {
   const v = document.getElementById('pview');
@@ -566,13 +686,23 @@ function pview(html, cls = '') {
   v.innerHTML = html;
 }
 
-function onHostMessage(msg, conn, fail) {
+function onHostMessage(msg, conn, fail, code) {
   switch (msg.type) {
     case 'error':
-      fail(msg.text); break;
+      fail(msg.text, true); break;
+
+    case 'kicked':
+      kicked = true; myConn = null;
+      try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+      show('player');
+      pview('<p class="big">🚫</p><h2>You were removed from the room</h2>');
+      try { myPeer && myPeer.destroy(); } catch (e) {}
+      break;
 
     case 'welcome':
-      myConn = conn;
+      myConn = conn; retries = 0;
+      session = { code, name: msg.name, at: Date.now() };
+      lsSet(SESSION_KEY, JSON.stringify(session));
       document.getElementById('pName').textContent = msg.name;
       document.getElementById('pScore').textContent = msg.score;
       show('player'); break;
@@ -880,6 +1010,12 @@ document.getElementById('editor').addEventListener('change', () => { dirty = tru
 
 /* QR code opens ?join=1234 → join screen with the code filled in */
 try { history.replaceState({ screen: 'home' }, '', location.pathname + location.search); } catch (e) {}
+(function () {           // this phone was in a game in the last few hours: offer to go back
+  const s = savedSession();
+  if (!s) return;
+  document.getElementById('rejoinBtn').textContent = `↩ Back to room ${s.code} as ${s.name}`;
+  document.getElementById('rejoinBox').hidden = false;
+})();
 const preCode = new URLSearchParams(location.search).get('join');
 if (preCode) {
   show('join');
