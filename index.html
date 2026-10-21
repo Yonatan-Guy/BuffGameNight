@@ -163,7 +163,7 @@
     <div class="btnRow">
       <button onclick="newQuiz()">➕ New quiz</button>
       <button class="secondary" onclick="document.getElementById('importFile').click()">📂 Import file</button>
-      <button class="secondary" onclick="show('home')">⬅ Back</button>
+      <button class="secondary back" onclick="history.back()">⬅ Back</button>
     </div>
     <input type="file" id="importFile" accept=".json,application/json" hidden onchange="importQuiz(this)">
     <p class="muted small" style="text-align:center">Quizzes are saved in this browser. Create them on the device
@@ -175,7 +175,7 @@
 <div class="screen" id="editor">
   <div class="panel">
     <div class="edTop">
-      <button class="secondary mini" onclick="closeEditor()">⬅ Back</button>
+      <button class="secondary mini back" onclick="closeEditor()">⬅ Back</button>
       <button class="mini" onclick="saveQuiz()">💾 Save</button>
     </div>
     <input id="qzTitle" class="edInput" dir="auto" maxlength="60" placeholder="Quiz name">
@@ -189,6 +189,7 @@
 <!-- ================= TV: lobby ================= -->
 <div class="screen" id="lobby">
   <div class="wide">
+    <div style="text-align:start"><button class="secondary mini back" onclick="history.back()">⬅ Back</button></div>
     <div class="hostTop">
       <div>
         <div class="muted">Open this site on your phone and enter:</div>
@@ -217,6 +218,7 @@
   <input id="codeInput" inputmode="numeric" maxlength="4" placeholder="Room code"><br>
   <input id="nameInput" maxlength="16" placeholder="Your name"><br>
   <button id="joinBtn" onclick="joinRoom()">Join</button>
+  <button class="secondary back" onclick="history.back()">⬅ Back</button>
   <div id="status" class="muted" style="margin-top:14px;min-height:1.4em"></div>
 </div>
 
@@ -248,10 +250,31 @@ const MAX_POINTS = 1000;      // fast correct answer ≈ 1000, slow correct ≈ 
 const PREFIX = "partyquiz-demo-g7k2-";   // keeps our room IDs unique on the free PeerJS server
 const SHAPES = ["▲", "◆", "●", "■"];
 
-function show(id) {
+let current = 'home';
+// every screen change is a browser history step, so the browser's Back button works
+function show(id, push = true) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if (push && id !== current) { try { history.pushState({ screen: id }, '', '#' + id); } catch (e) {} }
+  current = id;
 }
+let hostPeer = null;
+window.addEventListener('popstate', e => {
+  const target = (e.state && e.state.screen) || 'home';
+  const stay = () => { try { history.pushState({ screen: current }, '', '#' + current); } catch (err) {} };
+  if (current === 'lobby' || current === 'game') {          // leaving the TV: close the room
+    const mid = !previewMode && (phase === 'question' || phase === 'reveal');
+    if (mid && !confirm('Leave the game? The room will close for everyone.')) { stay(); return; }
+    location.href = location.pathname; return;
+  }
+  if (current === 'player') {                                // phone leaving a game
+    if (!confirm('Leave the game?')) { stay(); return; }
+    location.href = location.pathname; return;
+  }
+  if (current === 'editor' && dirty && !confirm('Leave without saving?')) { stay(); return; }
+  if (target === 'quizzes') renderQuizList();
+  show(target, false);
+});
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* =========================================================
@@ -265,6 +288,7 @@ function startHost() {
   show('lobby');
   const code = String(Math.floor(1000 + Math.random() * 9000));
   const peer = new Peer(PREFIX + code);
+  hostPeer = peer;
 
   peer.on('open', () => {
     document.getElementById('roomCode').textContent = code;
@@ -284,7 +308,7 @@ function startHost() {
   document.addEventListener('keydown', e => {
     if (e.code !== 'Space' && e.code !== 'Enter') return;
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
-    const btn = document.querySelector('.screen.active button:not(:disabled)');
+    const btn = document.querySelector('.screen.active button:not(:disabled):not(.back)');
     if (btn) { e.preventDefault(); btn.click(); }
   });
 }
@@ -843,17 +867,19 @@ function saveQuiz() {
   if (at >= 0) list[at] = editing; else list.push(editing);
   if (!storeQuizzes(list)) return;
   dirty = false;
-  openQuizList();
+  history.back();
 }
 
 function closeEditor() {
   if (dirty && !confirm('Leave without saving?')) return;
-  openQuizList();
+  dirty = false;
+  history.back();
 }
 document.getElementById('editor').addEventListener('input', () => { dirty = true; });
 document.getElementById('editor').addEventListener('change', () => { dirty = true; });
 
 /* QR code opens ?join=1234 → join screen with the code filled in */
+try { history.replaceState({ screen: 'home' }, '', location.pathname + location.search); } catch (e) {}
 const preCode = new URLSearchParams(location.search).get('join');
 if (preCode) {
   show('join');
