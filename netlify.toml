@@ -1,0 +1,4 @@
+# Netlify settings — read automatically on every deploy from GitHub.
+# No build step: the site is plain HTML, served from the repo root.
+[build]
+  publish = "."
