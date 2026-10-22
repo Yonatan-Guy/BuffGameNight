@@ -82,12 +82,39 @@ details p,details pre{margin-top:10px}
 details pre{background:#07090d;border-radius:12px;padding:14px;overflow:auto;font-family:var(--mono);font-size:.8rem;direction:ltr;text-align:left;color:#d6d2c8}
 .section{padding:34px 0;border-top:1px solid var(--line)}
 .cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:12px}
+.tb{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ---------- retro look (same switch as the game) ---------- */
+html[data-skin=retro]{--ink:#119c9c;--paper:#fff;--mute:#e7fbfb;--hi:#ffe14d;--line:#000;--silver:#c6c6c6;--navy:#0a1a8c;--navy2:#2f6fd6;
+  --bev-out:inset -2px -2px 0 #0a0a0a,inset 2px 2px 0 #fff,inset -4px -4px 0 #808080,inset 4px 4px 0 #dfdfdf;
+  --bev-in:inset 2px 2px 0 #0a0a0a,inset -2px -2px 0 #fff,inset 4px 4px 0 #808080,inset -4px -4px 0 #dfdfdf;
+  --display:"Rubik","Assistant",system-ui,sans-serif;--body:"Rubik","Assistant",system-ui,sans-serif;--mono:"VT323",ui-monospace,monospace}
+html[data-skin=retro] body{background-color:#119c9c;background-image:radial-gradient(rgba(0,0,0,.09) 1px,transparent 1.2px);background-size:4px 4px}
+html[data-skin=retro] h1,html[data-skin=retro] h2{font-weight:900;color:#fff;-webkit-text-stroke:.035em #000;paint-order:stroke fill;text-shadow:.05em .05em 0 #000;line-height:.98}
+html[data-skin=retro] .lede{background:#fff6d5;color:#111;border:3px solid #000;border-radius:18px;padding:14px 18px;box-shadow:6px 6px 0 #000}
+html[data-skin=retro] .muted{color:#e7fbfb}
+html[data-skin=retro] a{color:#ffe14d;text-shadow:2px 2px 0 #000}
+html[data-skin=retro] .btn{border-radius:12px;background:var(--hi);color:#000;border:3px solid #000;box-shadow:4px 4px 0 #000;text-shadow:none}
+html[data-skin=retro] .btn.ghost{border:0;border-radius:0;background:var(--silver);box-shadow:var(--bev-out)}
+html[data-skin=retro] .fx,html[data-skin=retro] .card{border-radius:0;background:var(--silver);color:#111;box-shadow:var(--bev-out),6px 6px 0 #000}
+html[data-skin=retro] .fx span,html[data-skin=retro] .card .muted{color:#333}
+html[data-skin=retro] .fx b{color:#000} html[data-skin=retro] .fx.code b{color:#0a1a8c}
+html[data-skin=retro] .card a{color:var(--navy);text-shadow:none}
+html[data-skin=retro] .arrow{color:#000}
+html[data-skin=retro] .step,html[data-skin=retro] .section{border-top:3px solid #000}
+html[data-skin=retro] .num{color:#ffe14d;-webkit-text-stroke:.04em #000;paint-order:stroke fill;text-shadow:.06em .06em 0 #000;font-weight:900}
+html[data-skin=retro] .prompt pre{border-radius:0;background:#000;color:#ffe14d;font-family:var(--mono);font-size:1rem;box-shadow:var(--bev-in)}
+html[data-skin=retro] .tip{background:#ffffe1;color:#000;border:2px solid #000;border-radius:0;box-shadow:4px 4px 0 #000}
+html[data-skin=retro] code{background:#000;color:#ffe14d;border-radius:0}
+html[data-skin=retro] details{border-color:#000}
+html[data-skin=retro] summary{color:#fff;text-shadow:2px 2px 0 #000}
+html[data-skin=retro] details pre{border-radius:0;background:#000;color:#ffe14d}
 </style>
 </head>
 <body>
 <div class="top">
   <a class="btn ghost" href="./" id="toGame">← למשחק</a>
-  <button class="btn ghost" id="langBtn" onclick="toggleLang()">English</button>
+  <span class="tb"><button class="btn ghost" id="skinBtn" onclick="toggleSkin()"></button><button class="btn ghost" id="langBtn" onclick="toggleLang()">English</button></span>
 </div>
 
 <!-- ======================= HEBREW ======================= -->
@@ -348,8 +375,22 @@ function applyLang() {
   document.getElementById('langBtn').textContent = LANG === 'he' ? 'English' : 'עברית';
   document.getElementById('toGame').textContent = LANG === 'he' ? '→ למשחק' : '← To the game';
   document.title = LANG === 'he' ? 'מי שלח? איך מכינים משחק' : 'Who sent it? Making a game';
+  setSkin(SKIN);
 }
 function toggleLang() { LANG = LANG === 'he' ? 'en' : 'he'; lsSet('wst.lang', LANG); applyLang(); }
+let SKIN = new URLSearchParams(location.search).get('skin') || lsGet('wst.skin') || 'night';
+if (SKIN !== 'retro') SKIN = 'night';
+let fonts = false;
+function setSkin(sk) {
+  SKIN = sk; document.documentElement.dataset.skin = sk;
+  if (sk === 'retro' && !fonts) {
+    fonts = true; const l = document.createElement('link'); l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;900&family=VT323&display=swap'; document.head.appendChild(l);
+  }
+  const name = LANG === 'he' ? (sk === 'retro' ? 'רטרו' : 'לילה') : (sk === 'retro' ? 'Retro' : 'Night');
+  document.getElementById('skinBtn').textContent = (LANG === 'he' ? 'סגנון: ' : 'Look: ') + name;
+}
+function toggleSkin() { setSkin(SKIN === 'retro' ? 'night' : 'retro'); lsSet('wst.skin', SKIN); }
 const PROMPT = document.getElementById('promptTpl').content.textContent.trim();
 const FORMAT = document.getElementById('formatTpl').content.textContent.trim();
 document.querySelectorAll('.promptText').forEach(p => { p.textContent = PROMPT; });

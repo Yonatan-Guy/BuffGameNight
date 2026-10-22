@@ -67,7 +67,6 @@ a{color:var(--hi);text-underline-offset:3px}
 
 /* home */
 .home{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:28px;padding-top:min(6vh,60px)}
-.langbar{display:flex;justify-content:flex-end}
 .logo{white-space:nowrap;font-family:var(--display);font-weight:700;font-size:clamp(96px,24vw,280px);line-height:.82;margin:0;letter-spacing:-.005em}
 .tagline{font-size:clamp(19px,2.2vw,24px);max-width:36ch;margin:0;color:#d9d4c8;text-wrap:balance}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:820px}
@@ -82,7 +81,6 @@ a{color:var(--hi);text-underline-offset:3px}
 .tile.primary .tt span{color:#5a4a00}
 .guideLink{font-weight:800;font-size:1.1rem}
 .tile svg.px,.desk{display:none}
-.langbar{gap:8px}
 @media (max-width:560px){
   .home{gap:20px;padding-top:0}
   .logo{font-size:25vw}
@@ -122,6 +120,16 @@ details summary{cursor:pointer;font-weight:700;color:var(--mute)}
 .qlist .qd{color:var(--mute);font-variant-numeric:tabular-nums;font-size:.9rem;flex:none}
 .qlist .qt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gact{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pics{display:flex;flex-direction:column;gap:8px}
+.picsLabel{font-size:.85rem;color:var(--mute);font-weight:600}
+.picRow{display:flex;flex-wrap:wrap;gap:12px}
+.pic{display:flex;flex-direction:column;align-items:center;gap:3px;width:78px;text-align:center}
+.picBtn{position:relative;width:64px;height:64px;border-radius:50%;padding:0;border:0;background:none;overflow:visible}
+.picBtn img{width:64px;height:64px;border-radius:50%;object-fit:cover;display:block}
+.picBtn .plus{position:absolute;bottom:-2px;inset-inline-end:-2px;width:24px;height:24px;border-radius:50%;background:var(--hi);color:var(--hi-ink);
+  font-weight:800;display:grid;place-items:center;line-height:1}
+.pic .pn{font-weight:700;font-size:.9rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pic .linkbtn{font-size:.8rem}
 .gact .spacer{flex:1}
 @media (max-width:640px){.settings{grid-template-columns:1fr}}
 
@@ -139,6 +147,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--mute)}
 [dir=rtl] .chip{padding:6px 14px 6px 8px}
 .chip.off{opacity:.45}
 .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#0c0e13;flex:none;font-size:1rem}
+img.av{object-fit:cover;background:#3b4a54}
 .kick{width:30px;height:30px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:var(--mute);font-size:.9rem;display:grid;place-items:center}
 .kick:hover,.kick:focus-visible{background:var(--bad);color:#fff}
 .lobbyFoot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -207,7 +216,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--mute)}
 .wa{background:#0b141a;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;font-family:var(--chat);
     box-shadow:0 30px 80px rgba(0,0,0,.45);color:#e9edef}
 .wa-head{background:#202c33;padding:11px 16px;display:flex;gap:12px;align-items:center}
-.wa-gav{width:42px;height:42px;border-radius:50%;background:#6b7c85;display:grid;place-items:center;flex:none}
+.wa-gav{width:42px;height:42px;border-radius:50%;background:#6b7c85;flex:none;object-fit:cover}
 .wa-gname{font-weight:600;font-size:1.15rem}
 .wa-sub{font-size:.85rem;color:#8696a0}
 .wa-body{padding:14px 18px 18px;display:flex;flex-direction:column;gap:3px;max-height:calc(100vh - 170px);overflow-y:auto;
@@ -215,6 +224,14 @@ details summary{cursor:pointer;font-weight:700;color:var(--mute)}
 .wa-date,.wa-sys{align-self:center;border-radius:8px;text-align:center;margin-bottom:6px}
 .wa-date{background:#182229;color:#8696a0;font-size:.85rem;padding:4px 12px}
 .wa-sys{max-width:90%;background:#2a2617;color:#ffd279;font-size:1rem;padding:6px 14px;white-space:pre-line}
+.msg{display:flex;align-items:flex-start;gap:7px;max-width:86%;align-self:flex-start}
+.msg.out{align-self:flex-end}
+.msg .ava{width:34px;height:34px;border-radius:50%;flex:none;object-fit:cover;margin-top:7px;background:#3b4a54}
+.msg .ava.sp{visibility:hidden;height:0}
+.msg .ava.shown{animation:rise .5s ease-out both}
+.msg.react{animation:rise .45s ease-out both}
+.wa.sm .msg .ava{width:26px;height:26px}
+.msg .b{max-width:100%}
 .b{position:relative;max-width:82%;align-self:flex-start;padding:6px 10px 7px;border-radius:9px;background:#202c33;
    font-size:1.35rem;line-height:1.38;white-space:pre-line;overflow-wrap:anywhere}
 .b.first{margin-top:7px;border-start-start-radius:0}
@@ -229,7 +246,6 @@ details summary{cursor:pointer;font-weight:700;color:var(--mute)}
 [dir=ltr] .b .tm{float:right}
 .b.out .tm{color:#a3d4c8}
 .b.target{box-shadow:0 0 0 3px var(--hi),0 0 26px rgba(255,216,77,.35)}
-.b.react{animation:rise .45s ease-out both}
 .ask{align-self:flex-start;color:var(--hi);font-family:var(--body);font-weight:800;font-size:1.05rem;margin:10px 2px 0}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .wa.sm{border-radius:14px}
@@ -244,6 +260,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--mute)}
       padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
       background:var(--ink-2);font-weight:800}
 .pbar .sc{font-family:var(--mono);color:var(--hi)}
+.pbar .pr{display:flex;align-items:center;gap:10px}
 .pbar .pprog{color:var(--mute);font-weight:600;font-size:.9rem;font-variant-numeric:tabular-nums}
 .pview{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .pq{display:flex;flex-direction:column;gap:12px}
@@ -276,8 +293,11 @@ details summary{cursor:pointer;font-weight:700;color:var(--mute)}
 .prow:last-child{border-bottom:0}
 .prow .nm{flex:1;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--ok);flex:none} .dot.off{background:var(--mute)}
-#previewBar{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:calc(16px + env(safe-area-inset-left,0px));
-            z-index:30;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#prefs{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:calc(14px + env(safe-area-inset-left,0px));z-index:35;display:flex;gap:8px}
+#prefs .btn{min-height:36px;padding:.25em .9em;font-size:.85rem;background:var(--ink-2)}
+body.inPlay #prefs,body.inGame #prefs{display:none}
+#previewBar{display:flex;gap:8px;align-items:center}
+#previewBar[hidden]{display:none}
 #previewBar .tag{background:var(--ink-3);border-radius:999px;padding:8px 14px;font-weight:700;font-size:.9rem;color:var(--mute)}
 #toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;
        background:var(--paper);color:var(--ink);font-weight:800;padding:10px 18px;border-radius:999px;max-width:calc(100vw - 32px)}
@@ -433,6 +453,7 @@ html[data-skin=retro] #codeInput{font-family:var(--pixel);font-size:1.3rem}
 html[data-skin=retro] #playersPanel{border-radius:0;padding:46px 10px 10px!important}
 html[data-skin=retro] .prow{border-bottom:1px solid #808080}
 html[data-skin=retro] .dot{border-radius:0;box-shadow:0 0 0 1px #000}
+html[data-skin=retro] #prefs .btn{background:var(--silver)}
 html[data-skin=retro] #previewBar .tag,html[data-skin=retro] #toast{background:#ffffe1;color:#000;border:2px solid #000;border-radius:0;box-shadow:4px 4px 0 #000}
 
 @media (prefers-reduced-motion:reduce){
@@ -445,7 +466,7 @@ html[data-skin=retro] #previewBar .tag,html[data-skin=retro] #toast{background:#
 <!-- ================= Home ================= -->
 <section class="screen active" id="home">
   <div class="home">
-    <div class="langbar"><button class="btn ghost small" id="skinBtn" onclick="toggleSkin()"></button><button class="btn ghost small" onclick="toggleLang()" data-t="langSwitch">English</button></div>
+
     <div class="desk" aria-hidden="true">
       <span class="dicon"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="1" y="4" width="14" height="10" fill="#000"/><rect x="2" y="5" width="12" height="8" fill="#ffe14d"/><rect x="1" y="2" width="6" height="3" fill="#000"/><rect x="2" y="3" width="4" height="2" fill="#ffe14d"/></svg><i>חחחח</i></span>
       <span class="dicon"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="3" y="1" width="10" height="14" fill="#000"/><rect x="4" y="2" width="8" height="12" fill="#fff"/><rect x="5" y="4" width="6" height="1" fill="#0a1a8c"/><rect x="5" y="6" width="6" height="1" fill="#0a1a8c"/><rect x="5" y="8" width="4" height="1" fill="#0a1a8c"/></svg><i>_chat.txt</i></span>
@@ -477,6 +498,7 @@ html[data-skin=retro] #previewBar .tag,html[data-skin=retro] #toast{background:#
     </div>
     <label class="drop wnd" data-title="open_game.exe" id="drop" for="fileInput">
       <input type="file" id="fileInput" accept=".json,application/json" hidden>
+      <input type="file" id="picInput" accept="image/*" hidden>
       <strong data-t="dropTitle"></strong>
       <span class="muted" data-t="dropSub"></span>
     </label>
@@ -522,7 +544,10 @@ html[data-skin=retro] #previewBar .tag,html[data-skin=retro] #toast{background:#
     <header class="ghead">
       <span class="brand" data-t="docTitle"></span>
       <span class="prog" id="prog"></span>
-      <span class="hright"><button id="playersBtn" class="btn ghost small" hidden onclick="togglePlayers()" data-t="playersBtn"></button>
+      <span class="hright"><span id="previewBar" hidden><span class="tag" data-t="previewOn"></span>
+        <button class="btn ghost small" onclick="location.reload()" data-t="exitPreview"></button></span>
+      <button class="btn ghost small" onclick="toggleSkin()" aria-label="Style" title="Style">◐</button>
+      <button id="playersBtn" class="btn ghost small" hidden onclick="togglePlayers()" data-t="playersBtn"></button>
       <span class="timer" id="timer"></span></span>
     </header>
     <div id="stage"></div>
@@ -545,15 +570,13 @@ html[data-skin=retro] #previewBar .tag,html[data-skin=retro] #toast{background:#
 
 <!-- ================= Phone: in game ================= -->
 <section class="screen" id="player">
-  <div class="pbar"><span id="pName" dir="auto"></span><span class="pprog" id="pProg"></span><span class="sc" id="pScore">0</span></div>
+  <div class="pbar"><span id="pName" dir="auto"></span><span class="pprog" id="pProg"></span><span class="pr"><button class="kick" onclick="toggleSkin()" aria-label="Style" title="Style">◐</button><span class="sc" id="pScore">0</span></span></div>
   <div class="pview" id="pview"></div>
 </section>
 
+<div id="prefs"><button class="btn ghost small" id="skinBtn" onclick="toggleSkin()"></button><button class="btn ghost small" id="langBtn" onclick="toggleLang()" data-t="langSwitch">English</button></div>
 <div id="playersPanel" class="wnd" data-title="players.exe" hidden></div>
-<div id="previewBar" hidden>
-  <span class="tag" data-t="previewOn"></span>
-  <button class="btn ghost small" onclick="location.reload()" data-t="exitPreview"></button>
-</div>
+
 <div id="toast" role="status" aria-live="polite" hidden></div>
 
 <script>
@@ -579,7 +602,8 @@ function toast(msg) { const el = $('toast'); el.textContent = msg; el.hidden = f
    ========================================================= */
 const STR = {
   he: {
-    docTitle: 'מי שלח?', langSwitch: 'English', skinLabel: 'סגנון: {s}', skinNight: 'לילה', skinRetro: 'רטרו', logoA: 'מי ', logoB: 'שלח', logoC: '?',
+    docTitle: 'מי שלח?', langSwitch: 'English', skinLabel: 'סגנון: {s}', skinNight: 'לילה', skinRetro: 'רטרו',
+    picsLabel: 'תמונות פרופיל (לא חובה): מופיעות בחשיפה', groupPic: 'הקבוצה', addPic: 'להוסיף תמונה ל{n}', removePic: 'להסיר', errPic: 'לא הצלחנו לקרוא את התמונה.', logoA: 'מי ', logoB: 'שלח', logoC: '?',
     tagline: 'משחק ניחושים על הקבוצה שלכם: ההודעות הכי מצחיקות מהצ\'אט, עם השמות מוסתרים. כולם מנחשים מהטלפון מי כתב מה.',
     hostTitle: 'לפתוח חדר', hostSub: 'על המסך הגדול, עם קובץ המשחק', joinTitle: 'להצטרף', joinSub: 'מהטלפון, עם קוד בן 4 ספרות',
     howTo: 'איך מכינים משחק מהצ\'אט שלכם ←', back: 'חזרה',
@@ -615,7 +639,8 @@ const STR = {
     kicked: 'הוציאו אתכם מהחדר', leaveGame: 'לצאת מהמשחק?', fake: ['נועם', 'שירה', 'גל']
   },
   en: {
-    docTitle: 'Who sent it?', langSwitch: 'עברית', skinLabel: 'Look: {s}', skinNight: 'Night', skinRetro: 'Retro', logoA: 'Who ', logoB: 'sent', logoC: ' it?',
+    docTitle: 'Who sent it?', langSwitch: 'עברית', skinLabel: 'Look: {s}', skinNight: 'Night', skinRetro: 'Retro',
+    picsLabel: 'Profile pictures (optional): shown at the reveal', groupPic: 'Group', addPic: 'Add a picture for {n}', removePic: 'Remove', errPic: 'Couldn’t read that image.', logoA: 'Who ', logoB: 'sent', logoC: ' it?',
     tagline: 'A guessing game about your group chat: its funniest messages with the names hidden. Everyone guesses who wrote what from their phone.',
     hostTitle: 'Host a room', hostSub: 'On the big screen, with your game file', joinTitle: 'Join', joinSub: 'From your phone, with a 4-digit code',
     howTo: 'How to make a game from your chat →', back: 'Back',
@@ -698,6 +723,8 @@ function show(id, push = true) {
   $(id).classList.add('active');
   if (push && id !== current) { try { history.pushState({ screen: id }, '', '#' + id); } catch (e) {} }
   current = id;
+  document.body.classList.toggle('inPlay', id === 'player');
+  document.body.classList.toggle('inGame', id === 'game');
   window.scrollTo(0, 0);
 }
 function replaceScreen(id) { try { history.replaceState({ screen: id }, '', '#' + id); } catch (e) {} }
@@ -843,6 +870,16 @@ function renderGames() {
           <div class="field"><label for="set-pace">${esc(t('settingPace'))}</label>
             <select id="set-pace" onchange="setSetting('pace',this.value)">${opt('relaxed', t('paceRelaxed'), s.pace)}${opt('normal', t('paceNormal'), s.pace)}${opt('fast', t('paceFast'), s.pace)}</select></div>
         </div>
+        <div class="pics">
+          <span class="picsLabel">${esc(t('picsLabel'))}</span>
+          <div class="picRow">${[{ name: t('groupPic'), src: (rec.pics && rec.pics.group) || DEFAULT_GROUP, custom: !!(rec.pics && rec.pics.group) },
+            ...g.participants.map(pp => ({ name: pp.name, src: (rec.pics && rec.pics.people && rec.pics.people[pp.name]) || DEFAULT_PERSON,
+              custom: !!(rec.pics && rec.pics.people && rec.pics.people[pp.name]) }))].map((x, i) => `
+            <div class="pic"><button class="picBtn" data-k="${i}" onclick="pickPic(this)" aria-label="${esc(t('addPic', { n: x.name }))}">
+              <img src="${x.src}" alt=""><span class="plus">+</span></button>
+              <span class="pn" dir="auto">${esc(x.name)}</span>
+              ${x.custom ? `<button class="linkbtn small" data-k="${i}" onclick="clearPic(this)">${esc(t('removePic'))}</button>` : ''}</div>`).join('')}</div>
+        </div>
         <details><summary id="qsum">${esc(t('questionsList', { a: active, n: g.questions.length }))}</summary>
           <ol class="qlist">${g.questions.map(q => {
             const a = q.messages.find(m => m.answer);
@@ -865,6 +902,34 @@ function renderGames() {
   }).join('');
 }
 function goSetup() { renderGames(); show('setup'); }
+
+/* profile pictures: stored with the game in this browser, shrunk to 160px */
+let picTarget = null;
+function picKeyAt(i) { const rec = currentRec(); return i === 0 ? '__group__' : rec.game.participants[i - 1].name; }
+function pickPic(btn) { picTarget = picKeyAt(Number(btn.dataset.k)); $('picInput').click(); }
+function clearPic(btn) {
+  const rec = currentRec(); if (!rec || !rec.pics) return;
+  const k = picKeyAt(Number(btn.dataset.k));
+  if (k === '__group__') delete rec.pics.group; else delete rec.pics.people[k];
+  if (!rec.sample) saveGames(); renderGames();
+}
+function readPic(file) {
+  const rec = currentRec(); if (!file || !rec || !picTarget) return;
+  const img = new Image(), url = URL.createObjectURL(file);
+  img.onload = () => {
+    const S = 160, c = document.createElement('canvas'); c.width = c.height = S;
+    const m = Math.min(img.width, img.height);
+    c.getContext('2d').drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, S, S);
+    URL.revokeObjectURL(url);
+    const data = c.toDataURL('image/jpeg', 0.82);
+    rec.pics = rec.pics || { group: '', people: {} }; rec.pics.people = rec.pics.people || {};
+    if (picTarget === '__group__') rec.pics.group = data; else rec.pics.people[picTarget] = data;
+    if (!rec.sample && !saveGames()) setMsg(t('notSaved'), 'err');
+    renderGames();
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); setMsg(t('errPic'), 'err'); };
+  img.src = url;
+}
 
 /* =========================================================
    building a round
@@ -891,7 +956,8 @@ function prepareRound(rec) {
   if (s.count && s.count !== 'all') qs = qs.slice(0, Number(s.count));
   if (s.order === 'date') qs.sort((a, b) => a.id - b.id);
   const pace = { relaxed: 1.4, normal: 1, fast: 0.7 }[s.pace] || 1;
-  ROUND = { game: g, colors: Object.fromEntries(g.participants.map(p => [p.name, p.color])),
+  const pics = (rec.pics && rec.pics.people) || {};
+  ROUND = { game: g, colors: Object.fromEntries(g.participants.map(p => [p.name, p.color])), pics, groupPic: (rec.pics && rec.pics.group) || '',
     items: qs.map(q => { const options = optionsFor(q, g);
       return { q, options, correct: options.findIndex(o => o.name === q.sender), dur: Math.max(8, Math.round(autoTime(q) * pace)) }; }) };
 }
@@ -902,6 +968,8 @@ function prepareRound(rec) {
    Before the reveal names are solid bars (their width does not depend on the name).
    ========================================================= */
 const BAR_W = [3.4, 4.6, 2.8, 3.9, 5.1, 3.1, 4.2];
+const DEFAULT_GROUP = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCACAAIADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD4yooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAoqS3hmuJVigieWRvuoilifoBRcQzW8rRTxPFIv3kdSpH1BoFdbE2lafe6rqVvpunW0t1d3MgjhhjXLOx6ACvpPwV+zDaGwjn8Ya5ci6cAta6ftCx+xkYHcfoMe5rF/Yn0K1vfFet67PGrzabaxxW+f4GmLAsPfahH/AjX1fsNc9Wq07I+Qz7NsRSrewoPltu+up81eNf2YbQWEk/hDXLk3SAlbXUNpWT2EigbT9Rj3FfNmq6fe6VqVxpuo20trd20hjmhkXDIw6giv0o2GvlD9tjQrWy8V6JrsEapNqVrJFcY/jaEqAx99rgf8AARRSqNuzDIc2xFWt7Cu+a+z6nz5RUlvDNcSrFBE8sjfdRFLE/QCi4hmt5WinieKRfvI6lSPqDXQfX3WxHRRRQMKKKKACiiigAooooA+6P2bfBekeGfhrpGp21tE2p6tapd3V3tBkO8blQHqFUEDA75NH7SXgvSPE3w11fUrm2iXU9JtXu7W72gSDYNzIT1KsARg98GvJPgJ8f9O8N+Gbbwt4wtbt7ezBSzvbZBIVjySI3TIPGeCO3BHGaPj38f8ATvEnhm48LeD7a7S3vQEvL25QRlo8gmNEyTzgZJ7cAc5rk5J858h/Z+L+ve013vfy/wCG6HK/so+N7Hwl4+msNWmS30/WYlt2mc4WKVWzGzHsDllJ7bga+1Nvsa/Mn3r2j4Z+P/jho+lRWWg6Xqut6dGoEKXOmSXKRr6K4AYD23Yq6tO7ujuzbKPrE/bQaT63Ps7b7Gviv9q7xvY+LfH0NhpUyXGn6NE1usyHKyys2ZGU9wMBQe+3PSpviZ8QPjhrGly2WvaXquiadIpE0dtpklski9wzkFiPbdivF+adKnZ3YZTlH1eftptN9LH3P+zb4L0jwz8NdI1O2tom1PVrVLu6u9oMh3jcqA9QqggYHfJo/aS8F6R4m+Gur6lc20S6npNq93a3e0CQbBuZCepVgCMHvg15J8BPj/p3hvwzbeFvGFrdvb2YKWd7bIJCseSRG6ZB4ycEduCOM0fHv4/6d4k8M3Hhbwfa3aW96Al5e3KCMtHkExomSecDJPbgDnNZ8k+c4f7Pxf172mu97+X/AA3Q+cqKKK6z68KKKKACiiigArvPgv8ADLWPiX4heyspBaafbAPe3rruWFT0AH8TnBwPYk4Arg6+5v2P9KtrH4I2F5FGom1G6uLiZh1YrIY1/IJ+prKtU5I3RyY2tKjSvHcn8N/s+fDDSLdI5tDk1ecABpr64dix/wB1Sqj8q+evGXhrQviJ8Xl8IfCrw7Z2FnaFkuL5HkMcgU4eZskgRqeFwMt75AH09+0R4jm8K/B/XdStHMd3NGtnbspwVeY7Nw9wu4/hXLfse+EINC+F0evSwgX+uyGZnI5ECErGv04Zv+BD0rlhUai5tnlUJ1YQlWlJt7LU6D4ZfBvwV4Gs4jb6bDqWqKB5moXkYeQt32KciMew59Sa9FwcAZOB0Gal2ijaKwc23dnnVIzqS5pu7IsHBGTg9RmvO/ib8G/BXjm0la402LTdUYZj1GzjCSBv9tRgSD2PPoRXpO0UbRQptO6CnGdOXNB2Z8QeDfDWhfDv4vN4Q+Kvh6zv7K7Kpb3zvII4wxwky4IBjY8NkZX2wQfoXxJ+z58MNXt3jh0OTSJyCFmsbh1Kn/dYsp/Ks/8AbC8IQa78LpNejhBv9CkEyuByYHYLIv05Vv8AgJ9a6r9njxHN4q+EGhaldu0l3DE1ncMxyWeI7Nx9yu0/jW86jcVNM9GvUqzhGtGTT2ep8afGj4Zax8NPEKWV7ILvT7kF7K9RdqzKOoI/hcZGR7gjINcHX3P+2BpVtffBHULyVFM2m3VvcQMRyC0gjYfiH/QV8MV1UajnG7PVwVaVWleW4UUUVqdYUUUUAFenfDf44+OvAehxaHpU9hc6bC7PFb3lsHCbjlgGBDAEknGe5rzGilKKkrMmcIzVpK5638Vvjrr/AMRfCCeHtU0fTLRFukuTNamQElVYYwzEY+bP4V9hfBKNV+D3hAKAB/Y1sfzQE/rX5xV7R8K/2ifFvgfw9b+H5NPsNZ021BW3W4LpLEpOdgdTyoycZBx9OK561G8bQOWthlKCjBH3Lto2181aX+1xoroP7U8F6hC3f7NepIP/AB5Vrag/au+Hrgebo3iWI9x5ELD/ANGVxOhVXQ43g5Loe97aNteCT/tXfD1AfK0bxLKew8iFR/6MrG1T9rjRUQ/2X4L1CZu32m9SMf8AjqtQqFV9AWDk+h7J8bY1b4PeLw2CP7GuT+SEj9RXx78Kfjrr/wAO/CD+HtL0fTLtGunuRNdGQkFgoxhWAx8ufxq78Vf2ifFnjjw/ceH4tPsNG026AW4W3LvLKoOdhdjwpIGcAZ+nFeL120aLUbTOyhhlGDjNHpvxI+OPjvx3ocuh6tPYW2mzOrywWdsED7TlQWJLEAgHGewrzKiit4xUVZHVCEYK0VYKKKKooKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAP/2Q==';
+const DEFAULT_PERSON = 'data:image/jpeg;base64,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';
 const GROUP_ICON = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cfd8dc" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"></circle><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M16 13.6c2.9.2 5 2.2 5 5.4"></path></svg>';
 function hiddenLines(q) {   // what phones get: no names, no reactions, only where a new sender starts
   const vis = q.messages.filter(m => !m.reaction);
@@ -923,11 +991,14 @@ function chatHtml(c, o = {}) {
       } else nm = `<span class="nm"><i class="rb" style="width:${BAR_W[run % BAR_W.length]}em"></i></span>`;
     }
     const ask = (!reveal && l.answer && !asked) ? (asked = true, `<div class="ask">${esc(t('whoSent'))}</div>`) : '';
-    const cls = ['b', out ? 'out' : '', first ? 'first' : '', l.answer ? 'target' : '', l.reaction ? 'react' : ''].join(' ');
+    const cls = ['b', out ? 'out' : '', first ? 'first' : '', l.answer ? 'target' : ''].join(' ');
     const delay = l.reaction ? ` style="animation-delay:${900 + (ri++) * 450}ms"` : '';
-    return `${ask}<div class="${cls}"${delay}>${nm}<span dir="auto">${esc(l.text)}</span><span class="tm">${esc(l.time || '')}</span></div>`;
+    // avatar beside the first message of each run; everyone is the grey silhouette until the reveal
+    const src = reveal && o.pics && o.pics[l.from] ? o.pics[l.from] : DEFAULT_PERSON;
+    const ava = out ? '' : `<img class="ava${first ? '' : ' sp'}${reveal ? ' shown' : ''}" src="${src}" alt="">`;
+    return `${ask}<div class="msg${out ? ' out' : ''}${l.reaction ? ' react' : ''}"${delay}>${ava}<div class="${cls}">${nm}<span dir="auto">${esc(l.text)}</span><span class="tm">${esc(l.time || '')}</span></div></div>`;
   }).join('');
-  const head = o.small ? '' : `<div class="wa-head"><span class="wa-gav">${GROUP_ICON}</span><div>
+  const head = o.small ? '' : `<div class="wa-head"><img class="wa-gav" src="${o.groupPic || DEFAULT_GROUP}" alt=""><div>
       <div class="wa-gname" dir="auto">${esc(c.group || '')}</div>
       <div class="wa-sub">${reveal ? esc((o.names || []).join(', ')) : esc(t('namesHidden'))}</div></div></div>`;
   return `<div class="wa${o.small ? ' sm' : ''}">${head}<div class="wa-body">
@@ -1002,7 +1073,7 @@ function handleConnection(conn) {
       p.conn = conn; p.connected = true; p.token = token; conn._key = key;
       players.set(key, p);
       if (old && old !== conn) { try { old.close(); } catch (e) {} }
-      conn.send({ type: 'welcome', name: p.name, score: p.score, skin: SKIN });
+      conn.send({ type: 'welcome', name: p.name, score: p.score, skin: SKIN, pics: (ROUND && ROUND.pics) || {} });
       syncPlayer(p);
       refreshHost();
     } else if (msg.type === 'answer') {
@@ -1098,12 +1169,12 @@ function nextQuestion() {
   qDur = it.dur;
   $('prog').textContent = t('qOf', { i: qIndex + 1, n: ROUND.items.length });
   $('stage').innerHTML = `<div class="qgrid">
-      <div id="chatBox">${chatHtml({ group: g.group, date: q.date, note: q.note, lines: hiddenLines(q) })}</div>
+      <div id="chatBox">${chatHtml({ group: g.group, date: q.date, note: q.note, lines: hiddenLines(q) }, { groupPic: ROUND.groupPic })}</div>
       <aside class="side">
         ${q.category ? `<span class="cat" dir="auto">${esc(q.category)}</span>` : ''}
         <h2>${esc(t('whoSentMarked'))}</h2>
         <div class="suspects">${it.options.map((o, i) => `<div class="sus" id="sus${i}" style="--c:${o.color}">
-            <span class="av" style="background:${o.color}">${esc(initial(o.name))}</span><span class="nm" dir="auto">${esc(o.name)}</span>
+            ${avHtml(o, ROUND.pics)}<span class="nm" dir="auto">${esc(o.name)}</span>
             <span class="cnt" id="cnt${i}"></span><span class="voters" id="vot${i}"></span></div>`).join('')}</div>
         <div class="locked"><span class="lc" id="lockedCount"></span><div class="lchips" id="lockedChips"></div></div>
         <div class="sideFoot" id="sideFoot"><button class="btn ghost small" onclick="endQuestion()">${esc(t('revealNow'))}</button></div>
@@ -1114,6 +1185,10 @@ function nextQuestion() {
   if (previewMode) setTimeout(() => { if (phase === 'question') fakeAnswers(); }, 1800);
   clearInterval(timerId);
   tick(); timerId = setInterval(tick, 200);
+}
+function avHtml(o, pics) {
+  const pic = pics && pics[o.name];
+  return pic ? `<img class="av pic" src="${pic}" alt="">` : `<span class="av" style="background:${okColor(o.color) ? o.color : '#8696a0'}">${esc(initial(o.name))}</span>`;
 }
 function tick() {
   const left = Math.max(0, qDur - (performance.now() - qStart) / 1000);
@@ -1162,7 +1237,7 @@ function endQuestion() {
     score: p.score, rank: i + 1, of: ranked.length, sender: { name: q.sender, color: (ROUND.colors[q.sender] || '#8696a0') } }));
   // chat with names, reactions, and the votes per suspect
   $('chatBox').innerHTML = chatHtml({ group: g.group, date: q.date, note: q.note, lines: q.messages },
-    { reveal: true, me: g.me, colors: ROUND.colors, names: g.participants.map(p => p.name) });
+    { reveal: true, me: g.me, colors: ROUND.colors, names: g.participants.map(p => p.name), pics: ROUND.pics, groupPic: ROUND.groupPic });
   it.options.forEach((o, i) => {
     const voters = [...players.values()].filter(p => p.answer === i);
     const el = $('sus' + i);
@@ -1251,6 +1326,7 @@ document.addEventListener('keydown', e => {
 /* =========================================================
    PLAYER (phone)
    ========================================================= */
+let phonePics = {};
 let myConn = null, myPeer = null, session = null, kicked = false, retries = 0, retryTimer = null, lastQ = null;
 const SESSION_KEY = 'wst.session', MAX_RETRIES = 15;
 function deviceToken() { let tk = lsGet('wst.device'); if (!tk) { tk = newId(); lsSet('wst.device', tk); } return tk; }
@@ -1334,6 +1410,10 @@ function onHostMessage(msg, conn, fail, code) {
       lsSet(SESSION_KEY, JSON.stringify(session));
       $('pName').textContent = msg.name; $('pScore').textContent = msg.score;
       if (msg.skin) setSkin(msg.skin);
+      phonePics = {};
+      if (msg.pics && typeof msg.pics === 'object') Object.entries(msg.pics).slice(0, 40).forEach(([k, v]) => {
+        if (typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v) && v.length < 200000) phonePics[k] = v;
+      });
       $('status').textContent = ''; $('joinBtn').disabled = false;
       if (current !== 'player') show('player');
       break;
@@ -1371,7 +1451,7 @@ function renderPhoneQuestion(m) {
   pview(`<div class="pq">
       ${chatHtml({ date: m.date, note: m.note, lines }, { small: true })}
       <div class="opts">${opts.map((o, i) => `<button class="opt" onclick="answer(${i})">
-        <span class="av" style="background:${okColor(o.color) ? o.color : '#8696a0'}">${esc(initial(o.name))}</span><span class="nm" dir="auto">${esc(o.name)}</span></button>`).join('')}</div>
+        ${avHtml(o, phonePics)}<span class="nm" dir="auto">${esc(o.name)}</span></button>`).join('')}</div>
     </div>`);
   const tgt = document.querySelector('#pview .b.target'); if (tgt && tgt.scrollIntoView) tgt.scrollIntoView({ block: 'center' });
 }
@@ -1468,6 +1548,7 @@ function showRejoinBanner() {
   setTimeout(() => $('logo').classList.add('open'), 700);
   const drop = $('drop'), input = $('fileInput');
   input.addEventListener('change', () => { readFile(input.files[0]); input.value = ''; });
+  $('picInput').addEventListener('change', e => { readPic(e.target.files[0]); e.target.value = ''; });
   ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
   ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
   drop.addEventListener('drop', e => readFile(e.dataTransfer.files[0]));
