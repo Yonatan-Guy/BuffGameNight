@@ -3,410 +3,1559 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>מי שלח? איך מכינים משחק</title>
-<meta name="description" content="How to turn your WhatsApp group chat into a 'Who sent it?' party game with Claude.">
+<title>מי שלח?</title>
+<meta name="description" content="Party game for your group chat: the funniest messages with the names hidden. Everyone guesses who sent it from their phone.">
 <meta name="theme-color" content="#0c0e13">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;800&family=JetBrains+Mono:wght@500;700&family=Karantina:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;800&family=JetBrains+Mono:wght@700&family=Karantina:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-/* Layout: one reading column; each step is a numbered band with the real file or screen it produces. */
+/* Layout: a dark after-hours stage. The group chat is the centrepiece; names are covered
+   with solid "redaction" bars until the reveal peels them off. */
 :root{
   --ink:#0c0e13; --ink-2:#141821; --ink-3:#1c2230; --line:#2b3344;
-  --paper:#f4efe4; --mute:#9ba2b3; --hi:#ffd84d; --hi-ink:#1d1700; --ok:#3ddc97;
+  --paper:#f4efe4; --mute:#9ba2b3; --hi:#ffd84d; --hi-ink:#1d1700;
+  --ok:#3ddc97; --bad:#ff5d6c;
   --display:"Karantina","Assistant",system-ui,sans-serif;
   --body:"Assistant",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --chat:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--ink);background-image:radial-gradient(1000px 500px at 50% -10%,#1b2131 0%,rgba(12,14,19,0) 65%);background-attachment:fixed;
-     color:var(--paper);font-family:var(--body);font-size:19px;line-height:1.6;-webkit-font-smoothing:antialiased;
-     padding-block:calc(18px + env(safe-area-inset-top,0px)) calc(48px + env(safe-area-inset-bottom,0px));
-     padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body{background:var(--ink);background-image:radial-gradient(1100px 540px at 50% -10%,#1b2131 0%,rgba(12,14,19,0) 65%);
+     background-attachment:fixed;color:var(--paper);font-family:var(--body);font-size:18px;line-height:1.45;
+     -webkit-font-smoothing:antialiased}
 [hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
 a{color:var(--hi);text-underline-offset:3px}
 :focus-visible{outline:3px solid var(--hi);outline-offset:3px}
-main{max-width:860px;margin:0 auto}
-.top{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:860px;margin:0 auto 28px}
-.btn{display:inline-flex;align-items:center;gap:.5em;min-height:44px;padding:.45em 1.2em;border:0;border-radius:999px;font:inherit;font-weight:800;
-     background:var(--hi);color:var(--hi-ink);cursor:pointer;text-decoration:none}
+.muted{color:var(--mute)} .small{font-size:.9rem}
+
+.screen{display:none;min-height:100vh;min-height:100dvh;
+        padding-block:calc(20px + env(safe-area-inset-top,0px)) calc(84px + env(safe-area-inset-bottom,0px));
+        padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.screen.active{display:block}
+.wrap{max-width:900px;margin:0 auto}
+.wrap.wide{max-width:1440px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5em;min-height:48px;padding:.55em 1.35em;border:0;
+     border-radius:999px;background:var(--hi);color:var(--hi-ink);font-weight:800;font-size:1.05rem;transition:transform .12s,filter .12s}
+.btn:hover{filter:brightness(1.07)} .btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.35;cursor:default;transform:none;filter:none}
 .btn.ghost{background:transparent;color:var(--paper);box-shadow:inset 0 0 0 1.5px var(--line)}
-h1{font-family:var(--display);font-weight:700;font-size:clamp(64px,11vw,128px);line-height:.86;margin:0 0 18px;text-wrap:balance}
-h2{font-family:var(--display);font-weight:700;font-size:clamp(42px,6vw,64px);line-height:.92;margin:0 0 12px;text-wrap:balance}
-h3{font-size:1.1rem;margin:0 0 6px}
-p{margin:0 0 12px;max-width:62ch}
-.lede{font-size:clamp(20px,2.4vw,24px);color:#d9d4c8;max-width:40ch}
-.muted{color:var(--mute)}
-code,.mono{font-family:var(--mono);font-size:.88em}
-code{background:var(--ink-3);padding:1px 7px;border-radius:6px;direction:ltr;unicode-bidi:isolate}
+.btn.ghost:hover{box-shadow:inset 0 0 0 1.5px var(--mute)}
+.btn.small{min-height:40px;font-size:.95rem;padding:.35em 1em}
+.btn.big{min-height:62px;font-size:1.35rem;padding:.5em 2em}
+.btn.danger{background:transparent;color:var(--bad);box-shadow:inset 0 0 0 1.5px rgba(255,93,108,.45)}
+.linkbtn{background:none;border:0;padding:0;color:var(--hi);text-decoration:underline;text-underline-offset:3px}
+.topbar{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.topbar h2{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(40px,6vw,64px);line-height:.95}
 
-/* the three files that carry the game */
-.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:10px;margin:34px 0 46px}
-.fx{background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
-.fx b{font-family:var(--mono);font-size:.95rem;direction:ltr;text-align:start;overflow-wrap:anywhere}
-.fx span{color:var(--mute);font-size:.9rem}
-.fx.code b{font-size:1.6rem;color:var(--hi);letter-spacing:.12em}
-.arrow{color:var(--mute);font-size:1.4rem}
-[dir=rtl] .arrow{transform:scaleX(-1)}
-@media (max-width:640px){.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg)!important;justify-self:center}}
+/* the redaction motif */
+.redact{position:relative;display:inline-block}
+.redact .bar{position:absolute;inset:.1em -.05em .04em;background:var(--paper);border-radius:3px;transform:scaleX(1);
+             transition:transform .5s cubic-bezier(.7,0,.2,1)}
+[dir=rtl] .redact .bar{transform-origin:right} [dir=ltr] .redact .bar{transform-origin:left}
+.logo.open .redact .bar{transform:scaleX(0)}
+.logo.open:hover .redact .bar{transform:scaleX(1)}
 
-/* steps */
-.step{display:grid;grid-template-columns:64px minmax(0,1fr);gap:4px 18px;padding:30px 0;border-top:1px solid var(--line)}
-.num{font-family:var(--display);font-weight:700;font-size:72px;line-height:.8;color:var(--hi)}
-.step > div{min-width:0}
-.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
-.card{background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);border-radius:16px;padding:16px 18px}
-.card ol{margin:6px 0 0;padding-inline-start:1.2em}
-.card li{margin:2px 0}
-.path{font-weight:700}
-@media (max-width:640px){.step{grid-template-columns:1fr}.num{font-size:56px}.cols{grid-template-columns:1fr}}
+/* home */
+.home{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:28px;padding-top:min(6vh,60px)}
+.logo{white-space:nowrap;font-family:var(--display);font-weight:700;font-size:clamp(96px,24vw,280px);line-height:.82;margin:0;letter-spacing:-.005em}
+.tagline{font-size:clamp(19px,2.2vw,24px);max-width:36ch;margin:0;color:#d9d4c8;text-wrap:balance}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:820px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:start;padding:22px 24px 24px;border-radius:22px;border:0;
+      background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);color:var(--paper);transition:transform .15s,box-shadow .15s}
+.tile:hover{box-shadow:inset 0 0 0 1.5px var(--mute)} .tile:active{transform:scale(.98)}
+.tile svg{width:34px;height:34px;margin-bottom:8px}
+.tile b{font-family:var(--display);font-weight:700;font-size:clamp(40px,4.6vw,56px);line-height:.9}
+.tile .tt{display:flex;flex-direction:column;gap:4px}
+.tile .tt span{color:var(--mute)}
+.tile.primary{background:var(--hi);color:var(--hi-ink);box-shadow:none}
+.tile.primary .tt span{color:#5a4a00}
+.guideLink{font-weight:800;font-size:1.1rem}
+.tile svg.px,.desk{display:none}
+@media (max-width:560px){
+  .home{gap:20px;padding-top:0}
+  .logo{font-size:25vw}
+  .tiles{grid-template-columns:1fr;gap:12px}
+  .tile{flex-direction:row;align-items:center;gap:16px;padding:16px 18px}
+  .tile svg{margin:0;flex:none;width:30px;height:30px}
+  .tile b{font-size:42px}
+}
 
-/* the prompt */
-.prompt{position:relative;margin:14px 0}
-.prompt pre{margin:0;max-height:300px;overflow:auto;background:#07090d;border-radius:16px;box-shadow:inset 0 0 0 1.5px var(--line);
-            padding:18px 18px 18px;font-family:var(--mono);font-size:.8rem;line-height:1.55;white-space:pre-wrap;direction:ltr;text-align:left;color:#d6d2c8}
-.prompt .copy{position:absolute;top:10px;right:10px}
-.reply{display:inline-block;background:#005c4b;color:#e9edef;border-radius:10px;padding:6px 12px;margin:4px 0 10px;font-family:"Segoe UI",system-ui,sans-serif}
-.tip{background:rgba(255,216,77,.08);border-radius:14px;padding:12px 16px;margin:12px 0}
+/* setup */
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;min-height:150px;
+      border-radius:22px;border:2px dashed var(--line);padding:24px;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--hi);background:rgba(255,216,77,.05)}
+.drop strong{font-family:var(--display);font-weight:700;font-size:clamp(34px,4.5vw,48px);line-height:1}
+.msg{min-height:1.5em;margin:12px 2px;font-weight:600}
+.msg.err{color:var(--bad)} .msg.ok{color:var(--ok)}
+.setupFoot{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.games{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.gcard{border-radius:22px;background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);overflow:hidden}
+.gcard.sel{box-shadow:inset 0 0 0 2px var(--hi)}
+.gsum{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;width:100%;padding:18px 22px;background:none;border:0;text-align:start}
+.gtitle{font-family:var(--display);font-weight:700;font-size:clamp(34px,4vw,46px);line-height:1;flex:1 1 220px;min-width:0;overflow-wrap:anywhere}
+.gmeta{color:var(--mute);font-variant-numeric:tabular-nums}
+.faces{display:flex}
+.faces i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:.85rem;
+         color:#0c0e13;box-shadow:0 0 0 2px var(--ink-2);margin-inline-start:-6px}
+.gbody{padding:0 22px 22px;display:flex;flex-direction:column;gap:18px}
+.settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.85rem;color:var(--mute);font-weight:600;letter-spacing:.02em}
+select,.txt{width:100%;min-height:46px;border-radius:12px;border:0;background:var(--ink-3);box-shadow:inset 0 0 0 1.5px var(--line);padding:8px 12px}
+details summary{cursor:pointer;font-weight:700;color:var(--mute)}
+.qlist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:320px;overflow-y:auto}
+.qlist label{display:flex;gap:12px;align-items:baseline;padding:6px 4px;border-radius:8px;cursor:pointer}
+.qlist label:hover{background:var(--ink-3)}
+.qlist input{accent-color:var(--hi);width:18px;height:18px;flex:none;align-self:center}
+.qlist .qd{color:var(--mute);font-variant-numeric:tabular-nums;font-size:.9rem;flex:none}
+.qlist .qt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gact{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pics{display:flex;flex-direction:column;gap:8px}
+.picsLabel{font-size:.85rem;color:var(--mute);font-weight:600}
+.picRow{display:flex;flex-wrap:wrap;gap:12px}
+.pic{display:flex;flex-direction:column;align-items:center;gap:3px;width:78px;text-align:center}
+.picBtn{position:relative;width:64px;height:64px;border-radius:50%;padding:0;border:0;background:none;overflow:visible}
+.picBtn img{width:64px;height:64px;border-radius:50%;object-fit:cover;display:block}
+.picBtn .plus{position:absolute;bottom:-2px;inset-inline-end:-2px;width:24px;height:24px;border-radius:50%;background:var(--hi);color:var(--hi-ink);
+  font-weight:800;display:grid;place-items:center;line-height:1}
+.pic .pn{font-weight:700;font-size:.9rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pic .linkbtn{font-size:.8rem}
+.gact .spacer{flex:1}
+@media (max-width:640px){.settings{grid-template-columns:1fr}}
 
-/* privacy + faq */
-.priv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
-.priv .card b{display:block;margin-bottom:4px}
-@media (max-width:760px){.priv{grid-template-columns:1fr}}
-details{border-top:1px solid var(--line);padding:14px 0}
-details:last-of-type{border-bottom:1px solid var(--line)}
-summary{cursor:pointer;font-weight:800;font-size:1.1rem}
-details p,details pre{margin-top:10px}
-details pre{background:#07090d;border-radius:12px;padding:14px;overflow:auto;font-family:var(--mono);font-size:.8rem;direction:ltr;text-align:left;color:#d6d2c8}
-.section{padding:34px 0;border-top:1px solid var(--line)}
-.cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:12px}
-.tb{display:flex;gap:8px;flex-wrap:wrap}
+/* lobby */
+.lobbyMain{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:28px;align-items:center}
+.joinInfo{display:flex;flex-direction:column;gap:2px}
+.joinUrl{font-weight:800;font-size:clamp(24px,3vw,36px);direction:ltr;text-align:start;overflow-wrap:anywhere}
+[dir=rtl] .joinUrl{text-align:right}
+.code{font-family:var(--mono);font-weight:700;font-size:clamp(90px,14vw,200px);line-height:1;letter-spacing:.12em;color:var(--hi);direction:ltr}
+[dir=rtl] .code{text-align:right}
+.qrBox{background:#fff;padding:14px;border-radius:18px;display:flex;flex-direction:column;align-items:center;gap:6px;color:#0c0e13;font-weight:800}
+.players{display:flex;flex-wrap:wrap;gap:10px;margin:30px 0 22px;min-height:56px}
+.chip{display:inline-flex;align-items:center;gap:10px;padding:6px 8px 6px 14px;border-radius:999px;background:var(--ink-2);
+      box-shadow:inset 0 0 0 1.5px var(--line);font-weight:800;font-size:1.25rem;animation:pop .3s ease-out}
+[dir=rtl] .chip{padding:6px 14px 6px 8px}
+.chip.off{opacity:.45}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#0c0e13;flex:none;font-size:1rem}
+img.av{object-fit:cover;background:#3b4a54}
+.kick{width:30px;height:30px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:var(--mute);font-size:.9rem;display:grid;place-items:center}
+.kick:hover,.kick:focus-visible{background:var(--bad);color:#fff}
+.lobbyFoot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+@media (max-width:760px){.lobbyMain{grid-template-columns:1fr}}
 
-/* ---------- retro look (same switch as the game) ---------- */
-html[data-skin=retro]{--ink:#119c9c;--paper:#fff;--mute:#e7fbfb;--hi:#ffe14d;--line:#000;--silver:#c6c6c6;--navy:#0a1a8c;--navy2:#2f6fd6;
+/* game (TV) */
+#game{padding-top:calc(14px + env(safe-area-inset-top,0px))}
+.timebar{position:fixed;inset:0 0 auto;height:6px;background:var(--ink-3);z-index:20}
+.timebar i{display:block;height:100%;width:100%;background:var(--hi);transition:width .2s linear}
+.timebar.hurry i{background:var(--bad)}
+[dir=rtl] .timebar i{margin-inline-start:0}
+.ghead{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:6px 0 18px}
+.ghead .brand{font-family:var(--display);font-weight:700;font-size:40px;line-height:1}
+.ghead .prog{color:var(--mute);font-weight:700;font-variant-numeric:tabular-nums;font-size:1.1rem}
+.timer{font-family:var(--mono);font-weight:700;font-size:44px;min-width:2.2ch;text-align:center;font-variant-numeric:tabular-nums}
+.timer.hurry{color:var(--bad)}
+.qgrid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(330px,1fr);gap:28px;align-items:start}
+.side{display:flex;flex-direction:column;gap:18px}
+.side h2{font-family:var(--display);font-weight:700;font-size:clamp(46px,4.6vw,78px);line-height:.9;margin:0;text-wrap:balance}
+.cat{align-self:flex-start;font-weight:700;font-size:.95rem;padding:4px 12px;border-radius:999px;background:var(--ink-3);color:#d9d4c8}
+.suspects{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sus{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;border-radius:16px;background:var(--ink-2);
+     box-shadow:inset 0 0 0 1.5px var(--line);transition:opacity .4s,transform .4s,box-shadow .4s,background .4s}
+.sus .nm{font-weight:800;font-size:1.4rem;min-width:0;overflow-wrap:anywhere;flex:1}
+.sus .cnt{font-family:var(--mono);font-weight:700;color:var(--mute)}
+.sus .voters{flex-basis:100%;font-size:.9rem;color:var(--mute);min-height:0}
+.sus.win{background:var(--ink-3);box-shadow:inset 0 0 0 3px var(--c);transform:scale(1.03)}
+@supports (background:color-mix(in srgb,red 10%,blue)){.sus.win{background:color-mix(in srgb,var(--c) 24%,var(--ink-2))}}
+.sus.win .cnt{color:var(--paper)}
+.sus.dim{opacity:.35}
+.locked{display:flex;flex-direction:column;gap:10px}
+.locked .lc{font-weight:800;font-size:1.15rem;font-variant-numeric:tabular-nums}
+.lchips{display:flex;flex-wrap:wrap;gap:6px}
+.lchips span{padding:3px 12px;border-radius:999px;background:var(--ink-3);font-weight:700;font-size:.95rem;animation:pop .25s ease-out}
+.board{display:flex;flex-direction:column;gap:6px}
+.board h3{margin:0 0 4px;font-size:.9rem;letter-spacing:.06em;color:var(--mute);text-transform:uppercase}
+.row{display:flex;align-items:center;gap:12px;padding:9px 14px;border-radius:12px;background:var(--ink-2);font-weight:800;font-size:1.2rem}
+.row .rk{font-family:var(--mono);color:var(--mute);width:1.6em}
+.row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .sc{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.row .plus{font-family:var(--mono);font-size:.9rem;color:var(--ok)}
+.row.lead{background:var(--hi);color:var(--hi-ink)} .row.lead .rk,.row.lead .plus{color:#5a4a00}
+.sideFoot{display:flex;justify-content:flex-end;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.timer:empty{display:none}
+@media (max-width:980px){.qgrid{grid-template-columns:1fr}}
+@media (max-width:560px){.ghead .brand{display:none}.side h2{font-size:40px}.timer{font-size:34px}.sus .nm{font-size:1.15rem}}
+
+/* final */
+.final{display:flex;flex-direction:column;gap:26px;align-items:stretch;max-width:1100px;margin:0 auto}
+.final h2{font-family:var(--display);font-weight:700;font-size:clamp(56px,8vw,120px);line-height:.88;margin:0;text-wrap:balance}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:end}
+.pod{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.pod .nm{font-weight:800;font-size:clamp(22px,2.6vw,34px);overflow-wrap:anywhere}
+.pod .sc{font-family:var(--mono);color:var(--mute)}
+.pod .blk{width:100%;border-radius:18px 18px 6px 6px;background:var(--ink-3);display:grid;place-items:center;
+          font-family:var(--display);font-weight:700;font-size:clamp(60px,8vw,110px);line-height:1;color:var(--mute)}
+.pod.p1 .blk{height:220px;background:var(--hi);color:var(--hi-ink)} .pod.p2 .blk{height:160px} .pod.p3 .blk{height:120px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.fact{padding:18px 20px;border-radius:18px;background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);display:flex;flex-direction:column;gap:4px}
+.fact .k{font-size:.85rem;letter-spacing:.06em;color:var(--mute);font-weight:700;text-transform:uppercase}
+.fact .v{font-family:var(--display);font-weight:700;font-size:44px;line-height:1}
+.fact .s{color:var(--mute)}
+
+/* chat panel (WhatsApp-like) */
+.wa{background:#0b141a;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;font-family:var(--chat);
+    box-shadow:0 30px 80px rgba(0,0,0,.45);color:#e9edef}
+.wa-head{background:#202c33;padding:11px 16px;display:flex;gap:12px;align-items:center}
+.wa-gav{width:42px;height:42px;border-radius:50%;background:#6b7c85;flex:none;object-fit:cover}
+.wa-gname{font-weight:600;font-size:1.15rem}
+.wa-sub{font-size:.85rem;color:#8696a0}
+.wa-body{padding:14px 18px 18px;display:flex;flex-direction:column;gap:3px;max-height:calc(100vh - 170px);overflow-y:auto;
+         background-color:#0b0b0b;background-image:url("data:image/jpeg;base64,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VGcP5ph8+6NpBMmRnr2Nn/IyJFDSyh5S7G60jnMsbg58Dyyryy+Xyj5+peh/J3j6EvAi1nHRVI0K6X0Jjh+ROb0y8JsRTD8FwQ0seehW80j+wjAkyv6NlPNDJJKRd30P/oS81daEii6plD5EXCGEuPkaXryjJtfDHnmyLEWnIuG2qJ17EsDTARy8iaSGOU63st+Eh63d7EZfgei2K15eBoHaqq7MvI8EXN9vA04x/CsCyVs7uQTeJqVUbHjxStxpPHehuK46SRIcBPXQTImdDVLwKkq8ivlxcUuK7Hkg7oUykslbVy8jae9+DHCbPR/YvVJC2hGdMW6O7E3W5SFpsdFowS12xKqsO+h4aykv6YJPkwlVsTUeWvFE1HH0M9z/ACRtp7GkjleTp5yLeMrxwcAIrh4Hxmjbe2LCDxCq0VhT0yfYbZS9kFz/ALKczofBb7FRVqx8clxeVgxMQn2JX9jNJ1spJ2F0NXpeXRwvsik48f03kgkYb/2Nkl2JkahK2mUJt6GTw/Hp9DCMNehYqTjMG/wU6ktjOZTRA7F9FRvg5D4pxf0bb3lI2wEKsFbsVKm2NERtV9iTo2wslvYu2uxc3jow6kQyR+nkSbZLrIJUeA8pt/gifEun+IukPY1n7H1LA+Hg0GaRsI7+FkMlfGULLJ6pTZj1OKavr8N/giu9j26YvSQze2Lf2PV6NcV4+htvbYlll/hK16G2fD/wKY//2gAMAwEAAgADAAAAEIhstjupjpvrmrtgvCFDBJFJNDPEDPIIktmtlnlhtrklpkkpimlnntumjqjjpuojrjkniqtuvukgjithkktnoupgvsijqlqimtrnsuhtoknpmgghpmvpkglnhmhmnivpssjhsnookhrvnkimkthrlmjmsijskshrgjmgsuouvhoungosgtpgmnuusrtqhnjngqugjmvutvqokqlrhgijqppninuuttqngrojtjutvrvnrgllmikqouuogovvhvsusnhrlvtuqjrtkmjjgnnnpkgqipipsihghnupkithqioimqJDOABIAIFIPCHNAtrvgippurqurrhv/8QAFBEBAAAAAAAAAAAAAAAAAAAAgP/aAAgBAwEBPxAlf//EABQRAQAAAAAAAAAAAAAAAAAAAID/2gAIAQIBAT8QJX//xAAmEAEBAAICAgEDBQEBAAAAAAABEQAh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");background-repeat:repeat;background-size:236px auto}
+.wa-date,.wa-sys{align-self:center;border-radius:8px;text-align:center;margin-bottom:6px}
+.wa-date{background:#182229;color:#8696a0;font-size:.85rem;padding:4px 12px}
+.wa-sys{max-width:90%;background:#2a2617;color:#ffd279;font-size:1rem;padding:6px 14px;white-space:pre-line}
+.wa-body > *{flex-shrink:0}
+.wm{display:flex;align-items:flex-start;gap:7px;max-width:86%;align-self:flex-start}
+.wm.out{align-self:flex-end}
+.wm .ava{width:34px;height:34px;border-radius:50%;flex:none;object-fit:cover;margin-top:7px;background:#3b4a54}
+.wm .ava.sp{visibility:hidden;height:0}
+.wm .ava.shown{animation:rise .5s ease-out both}
+.wm.react{animation:rise .45s ease-out both}
+.wa.sm .wm .ava{width:26px;height:26px}
+.wm .b{max-width:100%}
+.b{position:relative;max-width:82%;align-self:flex-start;padding:6px 10px 7px;border-radius:9px;background:#202c33;
+   font-size:1.35rem;line-height:1.38;white-space:pre-line;overflow-wrap:anywhere}
+.b.first{margin-top:7px;border-start-start-radius:0}
+.b.out{align-self:flex-end;background:#005c4b}
+.b.out.first{border-start-start-radius:9px;border-start-end-radius:0}
+.b .nm{position:relative;display:block;width:fit-content;font-size:.9rem;font-weight:700;margin-bottom:1px;min-height:1.15em}
+.b .rb{display:inline-block;height:.82em;vertical-align:-.04em;background:#d6dade;border-radius:2px}
+.b .nm .cover{position:absolute;inset:.08em -2px .02em;background:#d6dade;border-radius:2px;animation:peel .55s cubic-bezier(.7,0,.2,1) both}
+[dir=rtl] .b .nm .cover{transform-origin:right} [dir=ltr] .b .nm .cover{transform-origin:left}
+@keyframes peel{to{transform:scaleX(0)}}
+.b .tm{font-size:.72rem;color:#8696a0;margin-top:8px;margin-inline-start:14px;float:left}
+[dir=ltr] .b .tm{float:right}
+.b.out .tm{color:#a3d4c8}
+.b.target{box-shadow:0 0 0 3px var(--hi),0 0 26px rgba(255,216,77,.35)}
+.ask{align-self:flex-start;color:var(--hi);font-family:var(--body);font-weight:800;font-size:1.05rem;margin:10px 2px 0}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.wa.sm{border-radius:14px}
+.wa.sm .wa-body{max-height:40vh;padding:10px 12px 12px;background-size:180px auto}
+.wa.sm .b{font-size:1.02rem}
+.wa.sm .b .nm{font-size:.8rem}
+.wa.sm .wa-sys{font-size:.85rem}
+
+/* phone */
+#player{padding:0}
+.pbar{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:10px;
+      padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
+      background:var(--ink-2);font-weight:800}
+.pbar .sc{font-family:var(--mono);color:var(--hi)}
+.pbar .pr{display:flex;align-items:center;gap:10px}
+.pbar .pprog{color:var(--mute);font-weight:600;font-size:.9rem;font-variant-numeric:tabular-nums}
+.pview{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.pq{display:flex;flex-direction:column;gap:12px}
+.pq .lbl{font-weight:800;font-size:1.05rem;color:var(--hi)}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;position:sticky;bottom:0;z-index:2;
+      padding:12px 0 calc(8px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(12,14,19,0),var(--ink) 16px)}
+.pq .wa.sm .wa-body{max-height:none}
+.opt{min-height:66px;border:0;border-radius:16px;background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);
+     display:flex;align-items:center;gap:10px;padding:10px 12px;font-weight:800;font-size:1.15rem;text-align:start}
+.opt:active{transform:scale(.97)}
+.opt .nm{min-width:0;overflow-wrap:anywhere}
+.state{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:20px}
+.state .big{font-family:var(--display);font-weight:700;font-size:clamp(64px,20vw,110px);line-height:.85;margin:0}
+.state .pts{font-family:var(--mono);font-size:2rem}
+.state .who{font-weight:800;font-size:1.3rem;color:var(--c)}
+.state.ok{background:linear-gradient(180deg,rgba(61,220,151,.18),rgba(61,220,151,0));border-radius:24px}
+.state.bad{background:linear-gradient(180deg,rgba(255,93,108,.16),rgba(255,93,108,0));border-radius:24px}
+.joinForm{max-width:420px;margin:0 auto;display:flex;flex-direction:column;gap:14px;padding-top:4vh}
+.joinForm h2{font-family:var(--display);font-weight:700;font-size:clamp(48px,14vw,64px);line-height:.9;margin:0}
+.joinForm label{font-size:.9rem;color:var(--mute);font-weight:600}
+.joinForm .txt{min-height:58px;font-size:1.4rem;text-align:center}
+#codeInput{font-family:var(--mono);letter-spacing:.3em}
+
+/* floating host controls */
+.hright{display:flex;align-items:center;gap:14px}
+#playersPanel{position:fixed;top:calc(84px + env(safe-area-inset-top,0px));inset-inline-end:max(16px,env(safe-area-inset-right,0px));
+              width:min(380px,calc(100vw - 32px));max-height:60vh;overflow-y:auto;background:var(--ink-2);border-radius:18px;padding:12px;
+              z-index:30;box-shadow:0 14px 50px rgba(0,0,0,.55),inset 0 0 0 1.5px var(--line)}
+.prow{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--line)}
+.prow:last-child{border-bottom:0}
+.prow .nm{flex:1;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--ok);flex:none} .dot.off{background:var(--mute)}
+#prefs{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:calc(14px + env(safe-area-inset-left,0px));z-index:35;display:flex;gap:8px}
+#prefs .btn{min-height:36px;padding:.25em .9em;font-size:.85rem;background:var(--ink-2)}
+body.inPlay #prefs,body.inGame #prefs{display:none}
+#previewBar{display:flex;gap:8px;align-items:center}
+#previewBar[hidden]{display:none}
+#previewBar .tag{background:var(--ink-3);border-radius:999px;padding:8px 14px;font-weight:700;font-size:.9rem;color:var(--mute)}
+#toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;
+       background:var(--paper);color:var(--ink);font-weight:800;padding:10px 18px;border-radius:999px;max-width:calc(100vw - 32px)}
+
+
+/* =================== RETRO SKIN ===================
+   An old-desktop look: teal dithered desktop, grey bevelled windows with title bars,
+   chunky outlined headlines. The WhatsApp chat panel is left exactly as it is. */
+html[data-skin=retro]{
+  --ink:#119c9c; --paper:#ffffff; --mute:#e7fbfb; --hi:#ffe14d; --hi-ink:#000; --line:#000;
+  --silver:#c6c6c6; --navy:#0a1a8c; --navy2:#2f6fd6; --pink:#ff4fc3;
   --bev-out:inset -2px -2px 0 #0a0a0a,inset 2px 2px 0 #fff,inset -4px -4px 0 #808080,inset 4px 4px 0 #dfdfdf;
   --bev-in:inset 2px 2px 0 #0a0a0a,inset -2px -2px 0 #fff,inset 4px 4px 0 #808080,inset -4px -4px 0 #dfdfdf;
-  --display:"Rubik","Assistant",system-ui,sans-serif;--body:"Rubik","Assistant",system-ui,sans-serif;--mono:"VT323",ui-monospace,monospace}
-html[data-skin=retro] body{background-color:#119c9c;background-image:radial-gradient(rgba(0,0,0,.09) 1px,transparent 1.2px);background-size:4px 4px}
-html[data-skin=retro] h1,html[data-skin=retro] h2{font-weight:900;color:#fff;-webkit-text-stroke:.035em #000;paint-order:stroke fill;text-shadow:.05em .05em 0 #000;line-height:.98}
-html[data-skin=retro] .lede{background:#fff6d5;color:#111;border:3px solid #000;border-radius:18px;padding:14px 18px;box-shadow:6px 6px 0 #000}
+  --display:"Rubik","Assistant",system-ui,sans-serif; --body:"Rubik","Assistant",system-ui,sans-serif;
+  --mono:"VT323",ui-monospace,monospace; --pixel:"Press Start 2P","VT323",monospace;
+}
+html[data-skin=retro] body{background-color:#119c9c;
+  background-image:radial-gradient(rgba(0,0,0,.09) 1px,transparent 1.2px),radial-gradient(rgba(255,255,255,.06) 1px,transparent 1.2px);
+  background-size:4px 4px,4px 4px;background-position:0 0,2px 2px;color:#fff}
 html[data-skin=retro] .muted{color:#e7fbfb}
 html[data-skin=retro] a{color:#ffe14d;text-shadow:2px 2px 0 #000}
-html[data-skin=retro] .btn{border-radius:12px;background:var(--hi);color:#000;border:3px solid #000;box-shadow:4px 4px 0 #000;text-shadow:none}
-html[data-skin=retro] .btn.ghost{border:0;border-radius:0;background:var(--silver);box-shadow:var(--bev-out)}
-html[data-skin=retro] .fx,html[data-skin=retro] .card{border-radius:0;background:var(--silver);color:#111;box-shadow:var(--bev-out),6px 6px 0 #000}
-html[data-skin=retro] .fx span,html[data-skin=retro] .card .muted{color:#333}
-html[data-skin=retro] .fx b{color:#000} html[data-skin=retro] .fx.code b{color:#0a1a8c}
-html[data-skin=retro] .card a{color:var(--navy);text-shadow:none}
-html[data-skin=retro] .arrow{color:#000}
-html[data-skin=retro] .step,html[data-skin=retro] .section{border-top:3px solid #000}
-html[data-skin=retro] .num{color:#ffe14d;-webkit-text-stroke:.04em #000;paint-order:stroke fill;text-shadow:.06em .06em 0 #000;font-weight:900}
-html[data-skin=retro] .prompt pre{border-radius:0;background:#000;color:#ffe14d;font-family:var(--mono);font-size:1rem;box-shadow:var(--bev-in)}
-html[data-skin=retro] .tip{background:#ffffe1;color:#000;border:2px solid #000;border-radius:0;box-shadow:4px 4px 0 #000}
-html[data-skin=retro] code{background:#000;color:#ffe14d;border-radius:0}
-html[data-skin=retro] details{border-color:#000}
-html[data-skin=retro] summary{color:#fff;text-shadow:2px 2px 0 #000}
-html[data-skin=retro] details pre{border-radius:0;background:#000;color:#ffe14d}
+
+/* windows */
+html[data-skin=retro] .wnd{position:relative;background:var(--silver)!important;color:#111;border:0;border-radius:0!important;
+  box-shadow:var(--bev-out),8px 8px 0 #000!important;padding-top:44px!important}
+html[data-skin=retro] .wnd::before{content:attr(data-title);position:absolute;top:4px;left:4px;right:4px;height:30px;padding:0 40px 0 10px;
+  background:linear-gradient(90deg,var(--navy),var(--navy2));color:#fff;font:400 22px/30px var(--mono);letter-spacing:.04em;text-align:left;
+  direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:none}
+html[data-skin=retro] .wnd::after{content:"✕";position:absolute;top:8px;right:9px;width:24px;height:22px;background:var(--silver);
+  box-shadow:inset -1px -1px 0 #0a0a0a,inset 1px 1px 0 #fff,inset -2px -2px 0 #808080;color:#000;font:700 13px/22px var(--body);text-align:center}
+html[data-skin=retro] .wnd .muted,html[data-skin=retro] .wnd .gmeta,html[data-skin=retro] .wnd label,html[data-skin=retro] .wnd details summary{color:#3a3a3a}
+html[data-skin=retro] .wnd a{color:var(--navy);text-shadow:none}
+
+/* headlines: white, black outline, hard shadow */
+html[data-skin=retro] .logo,html[data-skin=retro] .topbar h2,html[data-skin=retro] .side h2,html[data-skin=retro] .final h2{
+  font-family:var(--display);font-weight:900;color:#fff;-webkit-text-stroke:.035em #000;paint-order:stroke fill;
+  text-shadow:.05em .05em 0 #000;letter-spacing:0;line-height:.95}
+html[data-skin=retro] .logo{font-size:clamp(80px,15vw,200px)}
+html[data-skin=retro] .redact .bar{background:#000;border-radius:0}
+html[data-skin=retro] .tagline{position:relative;align-self:flex-start;background:#fff6d5;color:#111;border:3px solid #000;border-radius:20px;
+  padding:14px 20px;box-shadow:6px 6px 0 #000;font-weight:500}
+html[data-skin=retro] .tagline::after{content:"";position:absolute;bottom:-17px;inset-inline-start:40px;width:24px;height:16px;background:#fff6d5;
+  border:3px solid #000;border-top:0;clip-path:polygon(0 0,100% 0,0 100%)}
+
+/* buttons */
+html[data-skin=retro] .btn{border-radius:14px;background:var(--hi);color:#000;border:3px solid #000;box-shadow:5px 5px 0 #000;font-weight:900;font-family:var(--body)}
+html[data-skin=retro] .btn:active{transform:translate(3px,3px);box-shadow:2px 2px 0 #000}
+html[data-skin=retro] .btn.ghost,html[data-skin=retro] .btn.danger{border:0;border-radius:0;background:var(--silver);color:#000;box-shadow:var(--bev-out)}
+html[data-skin=retro] .btn.danger{color:#b00020}
+html[data-skin=retro] .btn.ghost:active,html[data-skin=retro] .btn.danger:active{transform:none;box-shadow:var(--bev-in)}
+html[data-skin=retro] .linkbtn{color:#ffe14d;text-shadow:2px 2px 0 #000}
+html[data-skin=retro] .wnd .linkbtn{color:var(--navy);text-shadow:none}
+html[data-skin=retro] :focus-visible{outline:2px dotted #000;outline-offset:-6px}
+html[data-skin=retro] select,html[data-skin=retro] .txt{border-radius:0;background:#fff;color:#000;box-shadow:var(--bev-in)}
+
+/* home */
+html[data-skin=retro] .home{gap:30px}
+html[data-skin=retro] .tile{gap:4px;padding:16px 20px 20px}
+html[data-skin=retro] .tile.primary{background:var(--silver)!important;color:#111}
+html[data-skin=retro] .tile b{font-weight:900;color:#000}
+html[data-skin=retro] .tile .tt span,html[data-skin=retro] .tile.primary .tt span{color:#3a3a3a}
+html[data-skin=retro] .tile svg.ln{display:none}
+html[data-skin=retro] .tile svg.px{display:block;width:48px;height:48px;margin:0}
+html[data-skin=retro] .desk{display:flex;gap:26px;flex-wrap:wrap}
+html[data-skin=retro] .dicon{display:flex;flex-direction:column;align-items:center;gap:6px;width:78px}
+html[data-skin=retro] .dicon svg{width:44px;height:44px}
+html[data-skin=retro] .dicon i{font:400 20px/1 var(--mono);font-style:normal;color:#fff;background:rgba(10,26,140,.85);padding:1px 4px;direction:ltr}
+html[data-skin=retro] .guideLink{align-self:flex-start;background:#fff6d5;color:#000;border:3px solid #000;box-shadow:5px 5px 0 #000;padding:8px 14px;
+  border-radius:12px;text-decoration:none;text-shadow:none}
+@media (max-width:560px){html[data-skin=retro] .logo{font-size:19vw}html[data-skin=retro] .desk{display:none}}
+
+/* setup */
+html[data-skin=retro] .drop{border:0;min-height:180px}
+html[data-skin=retro] .drop strong{font-weight:900;color:#000}
+html[data-skin=retro] .drop.over,html[data-skin=retro] .drop:hover{background:#d8d8d8!important}
+html[data-skin=retro] .msg.ok{color:#fff;text-shadow:2px 2px 0 #000}
+html[data-skin=retro] .msg.err{color:#ffe14d;text-shadow:2px 2px 0 #000}
+html[data-skin=retro] .gcard.sel{box-shadow:var(--bev-out),8px 8px 0 #000,0 0 0 4px var(--hi)!important}
+html[data-skin=retro] .gtitle{font-weight:900;color:#000}
+html[data-skin=retro] .faces i{border-radius:0;box-shadow:0 0 0 2px #000}
+html[data-skin=retro] .qlist label:hover{background:#d8d8d8}
+html[data-skin=retro] .qlist input{accent-color:var(--navy)}
+
+/* lobby */
+html[data-skin=retro] .joinInfo{padding:44px 22px 20px}
+html[data-skin=retro] .joinUrl{color:#000}
+html[data-skin=retro] .code{font-family:var(--pixel);font-size:clamp(46px,7vw,96px);letter-spacing:.15em;color:var(--hi);background:#000;
+  padding:20px 22px 14px;margin:8px 0;box-shadow:var(--bev-in);align-self:flex-start;line-height:1.1}
+html[data-skin=retro] .qrBox{padding:44px 14px 12px}
+html[data-skin=retro] .chip{border-radius:0;background:var(--silver);color:#000;box-shadow:var(--bev-out),4px 4px 0 #000}
+html[data-skin=retro] .av{border-radius:0;box-shadow:0 0 0 2px #000}
+html[data-skin=retro] .kick{border-radius:0;background:var(--silver);color:#000;box-shadow:var(--bev-out)}
+html[data-skin=retro] .kick:hover,html[data-skin=retro] .kick:focus-visible{background:#b00020;color:#fff}
+html[data-skin=retro] #count{color:#fff;text-shadow:2px 2px 0 #000;font-weight:700}
+
+/* game (TV) */
+html[data-skin=retro] .timebar{height:16px;background:var(--silver);box-shadow:var(--bev-in)}
+html[data-skin=retro] .timebar i{background:repeating-linear-gradient(90deg,var(--navy) 0 14px,transparent 14px 18px);margin:4px 0;height:8px}
+html[data-skin=retro] .timebar.hurry i{background:repeating-linear-gradient(90deg,#c0002a 0 14px,transparent 14px 18px)}
+html[data-skin=retro] #game{padding-top:calc(26px + env(safe-area-inset-top,0px))}
+html[data-skin=retro] .ghead{background:var(--silver);box-shadow:var(--bev-out),6px 6px 0 #000;padding:6px 10px;color:#000}
+html[data-skin=retro] .ghead .brand{font-weight:900;font-size:30px}
+html[data-skin=retro] .ghead .prog{color:#000;font:400 26px/1 var(--mono)}
+html[data-skin=retro] .timer{font:400 46px/1 var(--mono);color:var(--hi);background:#000;box-shadow:var(--bev-in);padding:2px 12px;min-width:3ch}
+html[data-skin=retro] .timer.hurry{color:#ff5d6c}
+html[data-skin=retro] .wa{box-shadow:0 0 0 3px #000,10px 10px 0 #000}
+html[data-skin=retro] .side h2{font-size:clamp(44px,4.4vw,74px)}
+html[data-skin=retro] .cat{border-radius:0;background:var(--silver);color:#000;box-shadow:var(--bev-out)}
+html[data-skin=retro] .sus{border-radius:0;background:var(--silver);color:#000;box-shadow:var(--bev-out),5px 5px 0 #000}
+html[data-skin=retro] .sus .cnt{color:#000;font:400 28px/1 var(--mono)}
+html[data-skin=retro] .sus .voters{color:#333}
+html[data-skin=retro] .sus.win{background:var(--hi)!important;box-shadow:var(--bev-in),0 0 0 4px #000,5px 5px 0 4px #000;transform:scale(1.04)}
+html[data-skin=retro] .sus.dim{opacity:.45}
+html[data-skin=retro] .locked .lc{color:#fff;text-shadow:2px 2px 0 #000}
+html[data-skin=retro] .lchips span{border-radius:0;background:var(--silver);color:#000;box-shadow:var(--bev-out)}
+html[data-skin=retro] .board{padding:44px 10px 10px!important}
+html[data-skin=retro] .board h3{display:none}
+html[data-skin=retro] .row{border-radius:0;background:#fff;color:#000;box-shadow:var(--bev-in);font-weight:700}
+html[data-skin=retro] .row .rk,html[data-skin=retro] .row .sc,html[data-skin=retro] .row .plus{font:400 26px/1 var(--mono)}
+html[data-skin=retro] .row .rk{color:#555} html[data-skin=retro] .row .plus{color:#007a3d}
+html[data-skin=retro] .row.lead{background:var(--hi);color:#000}
+html[data-skin=retro] .pod .nm{color:#fff;text-shadow:2px 2px 0 #000}
+html[data-skin=retro] .pod .sc{color:#fff;font:400 30px/1 var(--mono);text-shadow:2px 2px 0 #000}
+html[data-skin=retro] .pod .blk{border-radius:0;background:var(--silver);color:#000;box-shadow:var(--bev-out),8px 8px 0 #000;font-family:var(--pixel);font-size:clamp(34px,5vw,64px)}
+html[data-skin=retro] .pod.p1 .blk{background:var(--hi)}
+html[data-skin=retro] .fact{padding:44px 18px 16px!important}
+html[data-skin=retro] .fact .k{color:#333} html[data-skin=retro] .fact .v{font-weight:900;color:#000;font-size:38px} html[data-skin=retro] .fact .s{color:#333}
+
+/* phone */
+html[data-skin=retro] .pbar{background:var(--silver);color:#000;box-shadow:var(--bev-out)}
+html[data-skin=retro] .pbar .sc{font:400 28px/1 var(--mono);color:var(--hi);background:#000;padding:2px 8px;box-shadow:var(--bev-in)}
+html[data-skin=retro] .pbar .pprog{color:#000;font:400 22px/1 var(--mono)}
+html[data-skin=retro] .opts{background:linear-gradient(rgba(17,156,156,0),#119c9c 16px)}
+html[data-skin=retro] .opt{border-radius:0;background:var(--silver);color:#000;box-shadow:var(--bev-out),4px 4px 0 #000}
+html[data-skin=retro] .opt:active{transform:none;box-shadow:var(--bev-in)}
+html[data-skin=retro] .opt:disabled{opacity:.6}
+html[data-skin=retro] .state{position:relative;background:var(--silver)!important;color:#111;border-radius:0!important;
+  box-shadow:var(--bev-out),8px 8px 0 #000;padding-top:54px;margin:10px 4px;min-height:60vh}
+html[data-skin=retro] .state::before{content:"message.txt";position:absolute;top:4px;left:4px;right:4px;height:30px;padding:0 10px;
+  background:linear-gradient(90deg,var(--navy),var(--navy2));color:#fff;font:400 22px/30px var(--mono);text-align:left;direction:ltr}
+html[data-skin=retro] .state.ok::before{content:"correct.exe";background:linear-gradient(90deg,#00692f,#18b35a)}
+html[data-skin=retro] .state.bad::before{content:"⚠ error.exe";background:linear-gradient(90deg,#7a0019,#d81b45)}
+html[data-skin=retro] .state .big{font-weight:900;color:#000}
+html[data-skin=retro] .state .muted{color:#333}
+html[data-skin=retro] .state .who{color:#000}
+html[data-skin=retro] .state .who::before{content:"";display:inline-block;width:.8em;height:.8em;background:var(--c);margin-inline-end:.4em;box-shadow:0 0 0 2px #000;vertical-align:-.05em}
+html[data-skin=retro] .state .pts{font:400 44px/1 var(--mono)}
+html[data-skin=retro] .joinForm{padding:56px 20px 22px!important;margin-top:4vh}
+html[data-skin=retro] .joinForm h2{font-weight:900;color:#000}
+html[data-skin=retro] #codeInput{font-family:var(--pixel);font-size:1.3rem}
+
+/* floating bits */
+html[data-skin=retro] #playersPanel{border-radius:0;padding:46px 10px 10px!important}
+html[data-skin=retro] .prow{border-bottom:1px solid #808080}
+html[data-skin=retro] .dot{border-radius:0;box-shadow:0 0 0 1px #000}
+html[data-skin=retro] #prefs .btn{background:var(--silver)}
+html[data-skin=retro] #previewBar .tag,html[data-skin=retro] #toast{background:#ffffe1;color:#000;border:2px solid #000;border-radius:0;box-shadow:4px 4px 0 #000}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}
+}
 </style>
 </head>
 <body>
-<div class="top">
-  <a class="btn ghost" href="./" id="toGame">← למשחק</a>
-  <span class="tb"><button class="btn ghost" id="skinBtn" onclick="toggleSkin()"></button><button class="btn ghost" id="langBtn" onclick="toggleLang()">English</button></span>
-</div>
 
-<!-- ======================= HEBREW ======================= -->
-<main data-lang="he" dir="rtl" lang="he">
-  <h1>איך מכינים משחק מהצ'אט שלכם</h1>
-  <p class="lede">מייצאים את הקבוצה מוואטסאפ, בוחרים עם Claude את ההודעות הכי מצחיקות, ומקבלים קובץ אחד שהמשחק קורא. בערך עשרים דקות, ומשחקים בו כמה פעמים שרוצים.</p>
+<!-- ================= Home ================= -->
+<section class="screen active" id="home">
+  <div class="home">
 
-  <div class="flow" aria-label="שלושה שלבים">
-    <div class="fx"><b>_chat.txt</b><span>הצ'אט מוואטסאפ, בלי מדיה</span></div>
-    <span class="arrow" aria-hidden="true">→</span>
-    <div class="fx"><b>who-sent-that.json</b><span>הקובץ ש־Claude בונה איתכם</span></div>
-    <span class="arrow" aria-hidden="true">→</span>
-    <div class="fx code"><b>4821</b><span>קוד החדר על הטלוויזיה</span></div>
+    <div class="desk" aria-hidden="true">
+      <span class="dicon"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="1" y="4" width="14" height="10" fill="#000"/><rect x="2" y="5" width="12" height="8" fill="#ffe14d"/><rect x="1" y="2" width="6" height="3" fill="#000"/><rect x="2" y="3" width="4" height="2" fill="#ffe14d"/></svg><i>חחחח</i></span>
+      <span class="dicon"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="3" y="1" width="10" height="14" fill="#000"/><rect x="4" y="2" width="8" height="12" fill="#fff"/><rect x="5" y="4" width="6" height="1" fill="#0a1a8c"/><rect x="5" y="6" width="6" height="1" fill="#0a1a8c"/><rect x="5" y="8" width="4" height="1" fill="#0a1a8c"/></svg><i>_chat.txt</i></span>
+      <span class="dicon"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="7" y="1" width="2" height="1" fill="#000"/><rect x="6" y="2" width="4" height="2" fill="#000"/><rect x="5" y="4" width="6" height="2" fill="#000"/><rect x="4" y="6" width="8" height="2" fill="#000"/><rect x="3" y="8" width="10" height="2" fill="#000"/><rect x="2" y="10" width="12" height="2" fill="#000"/><rect x="1" y="12" width="14" height="2" fill="#000"/><rect x="7" y="3" width="2" height="1" fill="#ffe14d"/><rect x="6" y="4" width="4" height="3" fill="#ffe14d"/><rect x="5" y="7" width="6" height="2" fill="#ffe14d"/><rect x="4" y="9" width="8" height="2" fill="#ffe14d"/><rect x="3" y="11" width="10" height="2" fill="#ffe14d"/><rect x="7" y="6" width="2" height="4" fill="#000"/><rect x="7" y="11" width="2" height="1" fill="#000"/></svg><i>roast.exe</i></span>
+    </div>
+    <h1 class="logo" id="logo"><span data-t="logoA">מי </span><span class="redact"><span data-t="logoB">שלח</span><i class="bar"></i></span><span data-t="logoC">?</span></h1>
+    <p class="tagline" data-t="tagline"></p>
+    <div class="tiles">
+      <button class="tile primary wnd" data-title="host.exe" onclick="goSetup()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="ln" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="19" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg><svg class="px" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="2" width="14" height="10" fill="#000"/><rect x="2" y="3" width="12" height="8" fill="#c6c6c6"/><rect x="3" y="4" width="10" height="6" fill="#0a1a8c"/><rect x="4" y="5" width="3" height="2" fill="#2f6fd6"/><rect x="5" y="12" width="6" height="1" fill="#000"/><rect x="3" y="13" width="10" height="2" fill="#000"/><rect x="4" y="13" width="8" height="1" fill="#c6c6c6"/></svg>
+        <span class="tt"><b data-t="hostTitle"></b><span data-t="hostSub"></span></span>
+      </button>
+      <button class="tile wnd" data-title="join.exe" onclick="show('join')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="ln" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"></rect><path d="M11 18.5h2"></path></svg><svg class="px" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="4" y="1" width="8" height="14" fill="#000"/><rect x="5" y="2" width="6" height="10" fill="#18a3a3"/><rect x="6" y="3" width="2" height="1" fill="#fff"/><rect x="7" y="13" width="2" height="1" fill="#c6c6c6"/></svg>
+        <span class="tt"><b data-t="joinTitle"></b><span data-t="joinSub"></span></span>
+      </button>
+    </div>
+    <div id="rejoinBox" hidden><button class="btn" id="rejoinBtn" onclick="rejoin()"></button></div>
+    <a class="guideLink" href="guide.html" data-t="howTo"></a>
   </div>
+</section>
 
-  <section class="step"><span class="num">1</span><div>
-    <h2>מייצאים את הצ'אט</h2>
-    <p>מהטלפון של אחד מחברי הקבוצה. בוחרים <b>בלי מדיה</b>: אין צורך בתמונות, והקובץ יוצא קטן.</p>
-    <div class="cols">
-      <div class="card"><h3>אייפון</h3><ol>
-        <li>פותחים את הקבוצה ולוחצים על השם שלה למעלה</li>
-        <li>גוללים למטה: <span class="path">ייצוא צ'אט</span></li>
-        <li><span class="path">ללא מדיה</span></li>
-        <li>שומרים בקבצים או שולחים לעצמכם</li></ol>
-        <p class="muted" style="margin-top:8px">יוצא קובץ ‎.zip. אפשר להעלות אותו כמו שהוא, או לפתוח אותו ולהעלות את <code>_chat.txt</code> שבתוכו.</p></div>
-      <div class="card"><h3>אנדרואיד</h3><ol>
-        <li>פותחים את הקבוצה</li>
-        <li>שלוש הנקודות ⋮ ← <span class="path">עוד</span> ← <span class="path">ייצוא צ'אט</span></li>
-        <li><span class="path">ללא מדיה</span></li>
-        <li>שומרים או שולחים לעצמכם</li></ol>
-        <p class="muted" style="margin-top:8px">יוצא קובץ טקסט בשם בסגנון <code>WhatsApp Chat with…txt</code>.</p></div>
+<!-- ================= TV: choose a game ================= -->
+<section class="screen" id="setup">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn ghost small back" onclick="history.back()" data-t="back"></button>
+      <h2 data-t="setupTitle"></h2>
     </div>
-    <p class="muted">שמות התפריטים יכולים להשתנות קצת בין גרסאות של וואטסאפ.</p>
-  </div></section>
-
-  <section class="step"><span class="num">2</span><div>
-    <h2>פותחים שיחה חדשה עם Claude</h2>
-    <p>ב־<a href="https://claude.ai" target="_blank" rel="noopener">claude.ai</a> או באפליקציה. מעלים את קובץ הצ'אט, מעתיקים את ההוראות האלה ושולחים אותן יחד איתו. ההוראות באנגלית, אבל Claude יענה לכם בשפה שתכתבו בה.</p>
-    <div class="prompt"><pre class="promptText"></pre><button class="btn copy" onclick="copyPrompt(this)">להעתיק</button></div>
-    <p class="muted">צ'אט ארוך? Claude עובר עליו עם קוד, וזה עובד גם על שנים של הודעות. אם הוא אומר שהקובץ גדול מדי, בקשו ממנו להתמקד בשנה האחרונה.</p>
-  </div></section>
-
-  <section class="step"><span class="num">3</span><div>
-    <h2>בוחרים את ההודעות</h2>
-    <p>Claude מוצא הודעות שמישהו אחר צחק עליהן: "חחחח", 😂, "אני מת", או דירוג כמו "1" ו־"#5". הוא מראה לכם אותן בסבבים של 15, כל אחת עם השיחה שלפניה. אתם עונים מה להשאיר, למשל:</p>
-    <span class="reply">4, 11 טוב, 15, 16 בינוני. ב־8 תוסיף עוד הקשר</span>
-    <div class="tip"><b>טיפים מהמשחק הראשון שלנו:</b> רוב ההודעות "מצחיקות" רק בחצי. שמרו את הטובות באמת. בדיחה שתלויה בתמונה לא תעבוד. ואם משהו אישי מדי, פשוט אל תכניסו אותו.</div>
-    <p>בסוף Claude ישאל אתכם איך לקרוא לכל אחד, מי מכם ייצא את הצ'אט, ואיך לקרוא למשחק. 15 עד 30 שאלות זה ערב טוב.</p>
-  </div></section>
-
-  <section class="step"><span class="num">4</span><div>
-    <h2>מקבלים את הקובץ</h2>
-    <p>כותבים ל־Claude <b>build</b>, והוא נותן קובץ להורדה בשם <code>who-sent-that.json</code>. שומרים אותו במחשב שיחובר לטלוויזיה, למשל בהורדות.</p>
-    <p class="muted">רוצים לשנות משהו אחר כך? חוזרים לאותה שיחה עם Claude, מבקשים, ומורידים קובץ חדש.</p>
-  </div></section>
-
-  <section class="step"><span class="num">5</span><div>
-    <h2>משחקים</h2>
-    <p>במחשב שמחובר לטלוויזיה פותחים את האתר ← <b>לפתוח חדר</b> ← גוררים את הקובץ ← <b>לפתוח חדר</b>. כל אחד סורק את הקוד על המסך מהטלפון ומקליד שם. אין מה להתקין.</p>
-    <p>בכל שאלה רואים קטע מהשיחה עם השמות מוסתרים. כל אחד בוחר מהטלפון מי שלח את ההודעה המסומנת, ובחשיפה השמות מתגלים יחד עם הצחוקים שבאו אחרי. תשובה נכונה ומהירה שווה עד 1,000 נקודות.</p>
-    <div class="cta"><a class="btn" href="./">למשחק</a><span class="muted">אפשר לנסות קודם עם קבוצה לדוגמה, בלי קובץ.</span></div>
-  </div></section>
-
-  <section class="section">
-    <h2>מה קורה עם הצ'אט</h2>
-    <div class="priv">
-      <div class="card"><b>אצל Claude</b>הצ'אט עובר דרך Claude כדי למצוא את ההודעות. העלו רק צ'אט שאתם והקבוצה בסדר לשתף, ואם יש ספק, תשאלו אותם קודם.</div>
-      <div class="card"><b>במשחק</b>הקובץ נשמר רק בדפדפן שבו פתחתם אותו. האתר לא מעלה אותו לשום שרת.</div>
-      <div class="card"><b>בטלפונים</b>כל שאלה נשלחת ישר מהטלוויזיה לטלפונים שבחדר, בלי שמות, ונעלמת בסוף המשחק.</div>
+    <label class="drop wnd" data-title="open_game.exe" id="drop" for="fileInput">
+      <input type="file" id="fileInput" accept=".json,application/json" hidden>
+      <input type="file" id="picInput" accept="image/*" hidden>
+      <strong data-t="dropTitle"></strong>
+      <span class="muted" data-t="dropSub"></span>
+    </label>
+    <div id="loadMsg" class="msg" role="status" aria-live="polite"></div>
+    <div id="gamesList" class="games"></div>
+    <div class="setupFoot small">
+      <a href="guide.html" data-t="noFile"></a>
+      <button class="linkbtn" onclick="loadSample()" data-t="trySample"></button>
+      <span class="muted" data-t="privacy"></span>
     </div>
-    <p class="muted">אם אתם שומרים את האתר ב־GitHub, אל תשימו את קובץ ה־JSON או את הצ'אט בתיקייה של האתר. מה שבתיקייה עולה לאינטרנט.</p>
-  </section>
-
-  <section class="section">
-    <h2>שאלות</h2>
-    <details><summary>חייבים להיות באותה רשת וויי־פיי?</summary><p>לא, החיבור עובר דרך האינטרנט. אבל אם טלפון נתקע על "מתחברים…", חיבור לוויי־פיי של הבית בדרך כלל פותר את זה.</p></details>
-    <details><summary>מה קורה אם טלפון מתנתק באמצע?</summary><p>הוא מתחבר מחדש לבד תוך כמה שניות, עם אותו שם ואותו ניקוד. אם סגרו את הדפדפן, נכנסים שוב לאתר ולוחצים "לחזור לחדר".</p></details>
-    <details><summary>אפשר להוציא מישהו מהחדר?</summary><p>כן. בלובי יש ✕ ליד כל שם, ובאמצע המשחק יש כפתור "שחקנים" בפינה.</p></details>
-    <details><summary>אפשר לשחק בלי לשתף את הצ'אט עם Claude?</summary><p>אפשר לכתוב את הקובץ ביד לפי הפורמט שלמטה, אבל זה הרבה עבודה. החלק של Claude הוא למצוא את ההודעות בין אלפי שורות.</p></details>
-    <details><summary>הפורמט של הקובץ (למי שרוצה לערוך ביד)</summary><pre class="formatText"></pre></details>
-  </section>
-</main>
-
-<!-- ======================= ENGLISH ======================= -->
-<main data-lang="en" dir="ltr" lang="en" hidden>
-  <h1>How to make a game from your chat</h1>
-  <p class="lede">Export your group from WhatsApp, pick the funniest messages together with Claude, and get one file the game reads. About twenty minutes, and you can play it as often as you like.</p>
-
-  <div class="flow" aria-label="Three stages">
-    <div class="fx"><b>_chat.txt</b><span>The WhatsApp chat, without media</span></div>
-    <span class="arrow" aria-hidden="true">→</span>
-    <div class="fx"><b>who-sent-that.json</b><span>The file Claude builds with you</span></div>
-    <span class="arrow" aria-hidden="true">→</span>
-    <div class="fx code"><b>4821</b><span>The room code on the TV</span></div>
   </div>
+</section>
 
-  <section class="step"><span class="num">1</span><div>
-    <h2>Export the chat</h2>
-    <p>From any group member’s phone. Choose <b>Without media</b>: photos aren’t needed and the file stays small.</p>
-    <div class="cols">
-      <div class="card"><h3>iPhone</h3><ol>
-        <li>Open the group and tap its name at the top</li>
-        <li>Scroll down: <span class="path">Export Chat</span></li>
-        <li><span class="path">Without Media</span></li>
-        <li>Save to Files or send it to yourself</li></ol>
-        <p class="muted" style="margin-top:8px">You get a .zip. Upload it as is, or open it and upload the <code>_chat.txt</code> inside.</p></div>
-      <div class="card"><h3>Android</h3><ol>
-        <li>Open the group</li>
-        <li>⋮ → <span class="path">More</span> → <span class="path">Export chat</span></li>
-        <li><span class="path">Without media</span></li>
-        <li>Save it or send it to yourself</li></ol>
-        <p class="muted" style="margin-top:8px">You get a text file named like <code>WhatsApp Chat with…txt</code>.</p></div>
+<!-- ================= TV: lobby ================= -->
+<section class="screen" id="lobby">
+  <div class="wrap wide">
+    <div class="topbar">
+      <button class="btn ghost small back" onclick="history.back()" data-t="back"></button>
+      <span class="muted" id="lobbyTitle" dir="auto"></span>
     </div>
-    <p class="muted">Menu names can differ slightly between WhatsApp versions.</p>
-  </div></section>
-
-  <section class="step"><span class="num">2</span><div>
-    <h2>Start a new chat with Claude</h2>
-    <p>On <a href="https://claude.ai" target="_blank" rel="noopener">claude.ai</a> or in the app. Upload the chat file, copy these instructions, and send them with it.</p>
-    <div class="prompt"><pre class="promptText"></pre><button class="btn copy" onclick="copyPrompt(this)">Copy</button></div>
-    <p class="muted">Long chat? Claude goes through it with code, so years of messages are fine. If it says the file is too big, ask it to focus on the last year.</p>
-  </div></section>
-
-  <section class="step"><span class="num">3</span><div>
-    <h2>Pick the messages</h2>
-    <p>Claude finds messages that someone else laughed at: "hahaha", 😂, "I’m dead", or a rating like "1" or "#5". It shows them in rounds of 15, each with the conversation before it. You reply with what to keep, for example:</p>
-    <span class="reply">4, 11 good, 15, 16 ok. Add more context to 8</span>
-    <div class="tip"><b>Tips from our first game:</b> most messages are only half funny, so keep the really good ones. A joke that needs a photo won’t work. If something is too personal, just leave it out.</div>
-    <p>At the end Claude asks what to call each person, which of you exported the chat, and what to call the game. 15 to 30 questions makes a good evening.</p>
-  </div></section>
-
-  <section class="step"><span class="num">4</span><div>
-    <h2>Get the file</h2>
-    <p>Tell Claude <b>build</b> and it gives you a download called <code>who-sent-that.json</code>. Keep it on the computer you’ll connect to the TV, for example in Downloads.</p>
-    <p class="muted">Want changes later? Go back to the same chat with Claude, ask, and download a new file.</p>
-  </div></section>
-
-  <section class="step"><span class="num">5</span><div>
-    <h2>Play</h2>
-    <p>On the computer connected to the TV, open the site → <b>Host a room</b> → drop in the file → <b>Open the room</b>. Everyone scans the code on the screen with their phone and types a name. Nothing to install.</p>
-    <p>Each question shows a piece of the conversation with the names hidden. Everyone picks on their phone who sent the highlighted message. The reveal uncovers the names and the laughs that followed. A fast correct answer is worth up to 1,000 points.</p>
-    <div class="cta"><a class="btn" href="./">To the game</a><span class="muted">You can try a sample group first, no file needed.</span></div>
-  </div></section>
-
-  <section class="section">
-    <h2>Where your chat goes</h2>
-    <div class="priv">
-      <div class="card"><b>With Claude</b>The chat goes through Claude so it can find the messages. Only upload a chat you and your group are fine sharing; if in doubt, ask them first.</div>
-      <div class="card"><b>In the game</b>The file is saved only in the browser where you opened it. The site never uploads it to a server.</div>
-      <div class="card"><b>On the phones</b>Each question goes straight from the TV to the phones in the room, without names, and is gone when the game ends.</div>
+    <div class="lobbyMain">
+      <div class="joinInfo wnd" data-title="join_the_room.exe">
+        <span class="muted" data-t="joinAt"></span>
+        <span class="joinUrl" id="joinUrl"></span>
+        <span class="muted" data-t="andCode"></span>
+        <span class="code" id="roomCode">····</span>
+        <span class="muted small" id="hostStatus"></span>
+      </div>
+      <div class="qrBox wnd" data-title="scan_me.png"><div id="qr"></div><span data-t="orScan"></span></div>
     </div>
-    <p class="muted">If you keep the site on GitHub, don’t put the JSON file or the chat in the site folder. Whatever is in that folder goes online.</p>
-  </section>
+    <div id="players" class="players"></div>
+    <div class="lobbyFoot">
+      <span class="muted" id="count"></span>
+      <button class="btn big" id="startBtn" onclick="startGame()" disabled data-primary data-t="start"></button>
+    </div>
+  </div>
+</section>
 
-  <section class="section">
-    <h2>Questions</h2>
-    <details><summary>Do we need to be on the same Wi-Fi?</summary><p>No, it connects over the internet. If a phone gets stuck on "Connecting…", switching it to the home Wi-Fi usually fixes it.</p></details>
-    <details><summary>What if a phone disconnects mid-game?</summary><p>It reconnects by itself within seconds, with the same name and score. If the browser was closed, open the site again and tap "Back to room".</p></details>
-    <details><summary>Can I remove someone from the room?</summary><p>Yes. In the lobby there’s a ✕ next to each name; during the game there’s a "Players" button in the corner.</p></details>
-    <details><summary>Can we play without sharing the chat with Claude?</summary><p>You can write the file by hand using the format below, but it’s a lot of work. Claude’s part is finding the messages among thousands of lines.</p></details>
-    <details><summary>The file format (for editing by hand)</summary><pre class="formatText"></pre></details>
-  </section>
-</main>
+<!-- ================= TV: game ================= -->
+<section class="screen" id="game">
+  <div class="timebar" id="timebar"><i id="timeFill"></i></div>
+  <div class="wrap wide">
+    <header class="ghead">
+      <span class="brand" data-t="docTitle"></span>
+      <span class="prog" id="prog"></span>
+      <span class="hright"><span id="previewBar" hidden><span class="tag" data-t="previewOn"></span>
+        <button class="btn ghost small" onclick="location.reload()" data-t="exitPreview"></button></span>
+      <button class="btn ghost small" onclick="toggleSkin()" aria-label="Style" title="Style">◐</button>
+      <button id="playersBtn" class="btn ghost small" hidden onclick="togglePlayers()" data-t="playersBtn"></button>
+      <span class="timer" id="timer"></span></span>
+    </header>
+    <div id="stage"></div>
+  </div>
+</section>
 
-<template id="promptTpl">I want to make a "Who Sent That?" party game from my WhatsApp group chat. The exported chat is attached (a .txt file, or a .zip with _chat.txt inside). Please work through it with me like this:
+<!-- ================= Phone: join ================= -->
+<section class="screen" id="join">
+  <div class="joinForm wnd" data-title="join.exe">
+    <div><button class="btn ghost small back" onclick="history.back()" data-t="back"></button></div>
+    <h2 data-t="joinHeading"></h2>
+    <label for="codeInput" data-t="codePh"></label>
+    <input class="txt" id="codeInput" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="1234">
+    <label for="nameInput" data-t="namePh"></label>
+    <input class="txt" id="nameInput" maxlength="16" autocomplete="nickname" dir="auto">
+    <button class="btn big" id="joinBtn" onclick="joinRoom()" data-t="joinBtn"></button>
+    <div id="status" class="msg" role="status" aria-live="polite"></div>
+  </div>
+</section>
 
-1. READ THE WHOLE CHAT WITH CODE. It can be long, so parse it with code instead of reading it by eye. Message lines look like "[DD/MM/YYYY, HH:MM:SS] Name: text" (iPhone) or "DD/MM/YYYY, HH:MM - Name: text" (Android); the date order may be M/D on some phones. A line without a timestamp continues the previous message. Skip system lines (joined, left, changed the name, deleted messages).
+<!-- ================= Phone: in game ================= -->
+<section class="screen" id="player">
+  <div class="pbar"><span id="pName" dir="auto"></span><span class="pprog" id="pProg"></span><span class="pr"><button class="kick" onclick="toggleSkin()" aria-label="Style" title="Style">◐</button><span class="sc" id="pScore">0</span></span></div>
+  <div class="pview" id="pview"></div>
+</section>
 
-2. FIND CANDIDATES. A message is a candidate when, within about 15 minutes, someone OTHER than its sender reacts with laughter, for example:
-   - laughing: חחחח / ההההה / haha / lol / lmao / xD, 😂 🤣 💀
-   - "dying": מת / אני מת / מתתתת / קרסתי / dead / I'm dying
-   - rating the joke: "1", "#5", "top 3", "6/10", "solid 4", "מקום 1"
-   (Watch out: in Hebrew "מתי" means "when", and lone numbers are often times like "22?". Only count them when they react to a joke.)
-   Score each candidate by how many different people laughed and how hard. Messages that only work with a photo, video or voice note go on a separate list; don't make them questions.
+<div id="prefs"><button class="btn ghost small" id="skinBtn" onclick="toggleSkin()"></button><button class="btn ghost small" id="langBtn" onclick="toggleLang()" data-t="langSwitch">English</button></div>
+<div id="playersPanel" class="wnd" data-title="players.exe" hidden></div>
 
-3. SHOW ME ROUNDS OF 15, best first. For each candidate show: a number, the date, the sender, the conversation just before it (the continuous run of messages, usually 2 to 8, with names visible to me), the message itself, and the reactions after it. Suggest a short category with an emoji (for example 🔥 roasts, 🍺 nights out, 💸 money, ⏰ always late).
+<div id="toast" role="status" aria-live="polite" hidden></div>
 
-4. I REPLY with the numbers to keep, maybe with "good" or "ok", plus fixes like "add more context to 12". Keep a running tally of what I kept. Never invent, merge or rewrite messages: copy text exactly as written, typos included.
-
-5. BEFORE BUILDING THE FILE, ASK ME: a short display name for each person (first names; some exports show phone numbers), which person is me (whose phone exported the chat), and a title for the game.
-
-6. WHEN I SAY "build", create a downloadable file called who-sent-that.json in exactly this format:
-
-{
-  "format": "who-sent-that",
-  "version": 1,
-  "title": "Game title",
-  "group": "Group chat name",
-  "me": "Display name of the person who exported",
-  "participants": [
-    { "name": "Dana", "color": "#53bdeb" },
-    { "name": "Tom" }
-  ],
-  "questions": [
-    {
-      "date": "31/01/2023",
-      "category": "💸 money",
-      "note": "optional one-line background shown above the chat",
-      "messages": [
-        { "from": "Tom", "time": "16:35", "text": "context message" },
-        { "from": "Dana", "time": "16:36", "text": "the funny message", "answer": true },
-        { "from": "Dana", "time": "16:36", "text": "its second line, if she sent it as two messages", "answer": true },
-        { "from": "Tom", "time": "16:37", "text": "חחחחחחח", "reaction": true }
-      ]
-    }
-  ]
-}
-
-Rules for the file:
-- Every "from" is exactly one of the participant names.
-- In each question, the messages marked "answer": true all have the same sender. That sender is the right answer.
-- Order inside a question: the context before (no flags), then the answer message(s), then up to 3 laughs marked "reaction": true. Reactions stay hidden until the reveal.
-- A photo, video or voice note inside the context becomes a text line like "📷 Photo".
-- "time" is HH:MM, "date" is DD/MM/YYYY. "category", "note" and "color" are optional.
-- Check that the JSON is valid before giving it to me.
-
-Talk to me in the language I write to you in.</template>
-<template id="formatTpl">{
-  "format": "who-sent-that",
-  "version": 1,
-  "title": "Game title",
-  "group": "Group chat name",
-  "me": "Display name of the person who exported",
-  "participants": [
-    { "name": "Dana", "color": "#53bdeb" },
-    { "name": "Tom" }
-  ],
-  "questions": [
-    {
-      "date": "31/01/2023",
-      "category": "💸 money",
-      "note": "optional one-line background shown above the chat",
-      "messages": [
-        { "from": "Tom", "time": "16:35", "text": "context message" },
-        { "from": "Dana", "time": "16:36", "text": "the funny message", "answer": true },
-        { "from": "Dana", "time": "16:36", "text": "its second line, if she sent it as two messages", "answer": true },
-        { "from": "Tom", "time": "16:37", "text": "חחחחחחח", "reaction": true }
-      ]
-    }
-  ]
-}
-
-Rules for the file:
-- Every "from" is exactly one of the participant names.
-- In each question, the messages marked "answer": true all have the same sender. That sender is the right answer.
-- Order inside a question: the context before (no flags), then the answer message(s), then up to 3 laughs marked "reaction": true. Reactions stay hidden until the reveal.
-- A photo, video or voice note inside the context becomes a text line like "📷 Photo".
-- "time" is HH:MM, "date" is DD/MM/YYYY. "category", "note" and "color" are optional.
-- Check that the JSON is valid before giving it to me.</template>
 <script>
 'use strict';
+/* =========================================================
+   small helpers
+   ========================================================= */
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function newId() { return 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function initial(n) { return [...String(n || '?').trim()][0] || '?'; }
+function okColor(c) { return /^#[0-9a-f]{3,8}$/i.test(String(c || '')); }
+function $(id) { return document.getElementById(id); }
+let toastTimer = null;
+function toast(msg) { const el = $('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 2600); }
+
+/* =========================================================
+   language
+   ========================================================= */
+const STR = {
+  he: {
+    docTitle: 'מי שלח?', langSwitch: 'English', skinLabel: 'סגנון: {s}', skinNight: 'לילה', skinRetro: 'רטרו',
+    picsLabel: 'תמונות פרופיל (לא חובה): מופיעות בחשיפה', groupPic: 'הקבוצה', addPic: 'להוסיף תמונה ל{n}', removePic: 'להסיר', errPic: 'לא הצלחנו לקרוא את התמונה.', logoA: 'מי ', logoB: 'שלח', logoC: '?',
+    tagline: 'משחק ניחושים על הקבוצה שלכם: ההודעות הכי מצחיקות מהצ\'אט, עם השמות מוסתרים. כולם מנחשים מהטלפון מי כתב מה.',
+    hostTitle: 'לפתוח חדר', hostSub: 'על המסך הגדול, עם קובץ המשחק', joinTitle: 'להצטרף', joinSub: 'מהטלפון, עם קוד בן 4 ספרות',
+    howTo: 'איך מכינים משחק מהצ\'אט שלכם ←', back: 'חזרה',
+    setupTitle: 'איזה צ\'אט משחקים?', dropTitle: 'גררו לכאן את קובץ המשחק', dropSub: 'או לחצו כדי לבחור את קובץ ה־JSON שקיבלתם מ־Claude',
+    noFile: 'אין לכם קובץ? ככה מכינים אחד', trySample: 'או נסו קבוצה לדוגמה', privacy: 'הקובץ נשמר רק בדפדפן הזה ולא עולה לשום שרת.',
+    metaQ: '{n} שאלות', metaP: '{n} בקבוצה', openRoom: 'לפתוח חדר', preview: 'תצוגה מקדימה', del: 'מחיקה',
+    delConfirm: 'למחוק את "{t}" מהדפדפן הזה?', settingCount: 'כמה שאלות', all: 'כולן ({n})', settingOrder: 'סדר',
+    orderShuffle: 'מעורבב', orderDate: 'לפי תאריך', settingPace: 'קצב', paceRelaxed: 'רגוע', paceNormal: 'רגיל', paceFast: 'מהיר',
+    questionsList: 'השאלות בקובץ ({a} מתוך {n} פעילות)', loaded: 'נטען: {t}', skipped: ' ({n} שאלות דולגו כי חסר בהן מידע)',
+    errNotGame: 'זה לא נראה כמו קובץ משחק.', errNoQuestions: 'אין בקובץ שאלות.', errNoValid: 'לא מצאנו בקובץ אף שאלה תקינה.',
+    errRead: 'לא הצלחנו לקרוא את הקובץ. ודאו שזה קובץ ה־JSON שקיבלתם מ־Claude.', errBig: 'הקובץ גדול מדי (מעל 8MB).',
+    notSaved: 'הדפדפן לא מאפשר לשמור (אולי גלישה בסתר). המשחק יישאר רק עד שתסגרו את הדף.', untitled: 'הקבוצה',
+    joinAt: 'נכנסים מהטלפון ל־', andCode: 'ומקלידים את הקוד', orScan: 'או סורקים',
+    creating: 'פותחים חדר…', roomOpen: 'החדר פתוח', roomErr: 'בעיה בחיבור ({e}). נסו לרענן את הדף.',
+    noPeer: 'רכיב החיבור לא נטען. בדקו את האינטרנט ורעננו.', waiting: 'מחכים לשחקנים…', nPlayers: '{n} מחוברים', start: 'להתחיל',
+    removeConfirm: 'להוציא את {n} מהחדר?', removed: '{n} הוצא/ה מהחדר', playersBtn: 'שחקנים', noPlayers: 'אין שחקנים עדיין',
+    offline: 'מנותק', removeAria: 'להוציא את {n}',
+    qOf: 'שאלה {i} מתוך {n}', whoSentMarked: 'מי שלח את ההודעה המסומנת?', whoSent: 'מי שלח את זה?', namesHidden: 'השמות מוסתרים',
+    lockedN: '{a} מתוך {n} ננעלו', revealNow: 'לחשוף עכשיו', next: 'לשאלה הבאה', toFinal: 'לתוצאות',
+    nobody: 'אף אחד לא זיהה', everybody: 'כולם זיהו', board: 'הטבלה',
+    finalTitle: 'מי מכיר את הקבוצה הכי טוב?', hardest: 'הכי קשה לזיהוי', hardestSub: 'רק {p}% זיהו נכון',
+    easiest: 'הכי צפוי/ה', easiestSub: '{p}% זיהו נכון', fastest: 'הכי מהיר/ה', fastestSub: '{s} שניות לתשובה נכונה, בממוצע',
+    playAgain: 'עוד סיבוב, אותם שחקנים', otherGame: 'לבחור משחק אחר', leaveConfirm: 'לצאת מהמשחק? החדר ייסגר לכולם.',
+    previewOn: 'תצוגה מקדימה, עם 3 שחקנים מדומים', exitPreview: 'יציאה',
+    joinHeading: 'הצטרפות', codePh: 'קוד החדר', namePh: 'השם שלכם', joinBtn: 'להיכנס',
+    enterCode: 'צריך קוד של 4 ספרות', enterName: 'צריך שם', connecting: 'מתחברים…',
+    roomNotFound: 'אין חדר עם הקוד הזה. בדקו את המספר על המסך.', connProblem: 'בעיה בחיבור ({e})', nameTaken: 'השם הזה כבר תפוס בחדר',
+    inLobby: 'אתם בפנים', inLobbySub: 'המשחק יתחיל עוד רגע. העיניים על המסך.',
+    pickSender: 'מי שלח את ההודעה המסומנת?', lockedOn: 'ננעלתם על', waitOthers: 'מחכים לשאר השחקנים',
+    correct: 'צדקתם', wrong: 'לא הפעם', timeUp: 'נגמר הזמן', itWas: 'זה היה {n}', rankOf: 'מקום {r} מתוך {n}',
+    getReady: 'השאלה הבאה בדרך', reconnecting: 'מתחברים מחדש…', tryN: 'ניסיון {i} מתוך {n}', disconnected: 'החיבור נותק',
+    roomClosed: 'החדר נסגר', scoreKept: 'הניקוד שלכם נשמר.', rejoinAs: 'לחזור בתור {n}', backToRoom: 'לחזור לחדר {c} בתור {n}',
+    kicked: 'הוציאו אתכם מהחדר', leaveGame: 'לצאת מהמשחק?', fake: ['נועם', 'שירה', 'גל']
+  },
+  en: {
+    docTitle: 'Who sent it?', langSwitch: 'עברית', skinLabel: 'Look: {s}', skinNight: 'Night', skinRetro: 'Retro',
+    picsLabel: 'Profile pictures (optional): shown at the reveal', groupPic: 'Group', addPic: 'Add a picture for {n}', removePic: 'Remove', errPic: 'Couldn’t read that image.', logoA: 'Who ', logoB: 'sent', logoC: ' it?',
+    tagline: 'A guessing game about your group chat: its funniest messages with the names hidden. Everyone guesses who wrote what from their phone.',
+    hostTitle: 'Host a room', hostSub: 'On the big screen, with your game file', joinTitle: 'Join', joinSub: 'From your phone, with a 4-digit code',
+    howTo: 'How to make a game from your chat →', back: 'Back',
+    setupTitle: 'Which chat are we playing?', dropTitle: 'Drop your game file here', dropSub: 'or click to pick the JSON file you got from Claude',
+    noFile: 'No file yet? Here’s how to make one', trySample: 'or try a sample group', privacy: 'The file stays in this browser. It is never uploaded to a server.',
+    metaQ: '{n} questions', metaP: '{n} in the chat', openRoom: 'Open the room', preview: 'Preview', del: 'Delete',
+    delConfirm: 'Delete "{t}" from this browser?', settingCount: 'Questions', all: 'All ({n})', settingOrder: 'Order',
+    orderShuffle: 'Shuffled', orderDate: 'By date', settingPace: 'Pace', paceRelaxed: 'Relaxed', paceNormal: 'Normal', paceFast: 'Fast',
+    questionsList: 'Questions in the file ({a} of {n} on)', loaded: 'Loaded: {t}', skipped: ' ({n} questions skipped because they were incomplete)',
+    errNotGame: 'This doesn’t look like a game file.', errNoQuestions: 'The file has no questions.', errNoValid: 'No usable questions in this file.',
+    errRead: 'Couldn’t read the file. Make sure it’s the JSON file you got from Claude.', errBig: 'The file is too big (over 8 MB).',
+    notSaved: 'This browser won’t save files (private mode?). The game stays only until you close the page.', untitled: 'The group',
+    joinAt: 'On your phone, go to', andCode: 'and enter the code', orScan: 'or scan',
+    creating: 'Opening the room…', roomOpen: 'The room is open', roomErr: 'Connection problem ({e}). Try refreshing the page.',
+    noPeer: 'The connection library didn’t load. Check the internet and refresh.', waiting: 'Waiting for players…', nPlayers: '{n} connected', start: 'Start',
+    removeConfirm: 'Remove {n} from the room?', removed: '{n} was removed', playersBtn: 'Players', noPlayers: 'No players yet',
+    offline: 'offline', removeAria: 'Remove {n}',
+    qOf: 'Question {i} of {n}', whoSentMarked: 'Who sent the highlighted message?', whoSent: 'Who sent this?', namesHidden: 'Names hidden',
+    lockedN: '{a} of {n} locked in', revealNow: 'Reveal now', next: 'Next question', toFinal: 'Results',
+    nobody: 'Nobody got it', everybody: 'Everyone got it', board: 'Scores',
+    finalTitle: 'Who knows the group best?', hardest: 'Hardest to spot', hardestSub: 'only {p}% guessed right',
+    easiest: 'Most predictable', easiestSub: '{p}% guessed right', fastest: 'Fastest', fastestSub: '{s} s per correct answer, on average',
+    playAgain: 'Another round, same players', otherGame: 'Pick another game', leaveConfirm: 'Leave the game? The room closes for everyone.',
+    previewOn: 'Preview with 3 pretend players', exitPreview: 'Exit',
+    joinHeading: 'Join', codePh: 'Room code', namePh: 'Your name', joinBtn: 'Join',
+    enterCode: 'Enter the 4-digit code', enterName: 'Enter your name', connecting: 'Connecting…',
+    roomNotFound: 'No room with that code. Check the number on the screen.', connProblem: 'Connection problem ({e})', nameTaken: 'That name is already taken in this room',
+    inLobby: 'You’re in', inLobbySub: 'The game starts soon. Eyes on the screen.',
+    pickSender: 'Who sent the highlighted message?', lockedOn: 'You locked in', waitOthers: 'Waiting for the others',
+    correct: 'Correct', wrong: 'Not this time', timeUp: 'Time’s up', itWas: 'It was {n}', rankOf: '{r} of {n}',
+    getReady: 'Next question coming up', reconnecting: 'Reconnecting…', tryN: 'Try {i} of {n}', disconnected: 'Disconnected',
+    roomClosed: 'The room is closed', scoreKept: 'Your score is kept.', rejoinAs: 'Rejoin as {n}', backToRoom: 'Back to room {c} as {n}',
+    kicked: 'You were removed from the room', leaveGame: 'Leave the game?', fake: ['Sam', 'Alex', 'Robin']
+  }
+};
 let LANG = lsGet('wst.lang') || ((navigator.language || '').toLowerCase().startsWith('he') ? 'he' : 'en');
+if (!STR[LANG]) LANG = 'en';
+function t(k, v) {
+  let s = STR[LANG][k] ?? STR.en[k] ?? k;
+  if (v && typeof s === 'string') s = s.replace(/\{(\w+)\}/g, (m, x) => (v[x] ?? m));
+  return s;
+}
 function applyLang() {
-  document.querySelectorAll('main[data-lang]').forEach(m => { m.hidden = m.dataset.lang !== LANG; });
-  document.documentElement.lang = LANG; document.documentElement.dir = LANG === 'he' ? 'rtl' : 'ltr';
-  document.getElementById('langBtn').textContent = LANG === 'he' ? 'English' : 'עברית';
-  document.getElementById('toGame').textContent = LANG === 'he' ? '→ למשחק' : '← To the game';
-  document.title = LANG === 'he' ? 'מי שלח? איך מכינים משחק' : 'Who sent it? Making a game';
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG === 'he' ? 'rtl' : 'ltr';
+  document.title = t('docTitle');
+  document.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
+  if (current === 'setup') renderGames();
+  if (current === 'home') showRejoinBanner();
   setSkin(SKIN);
 }
 function toggleLang() { LANG = LANG === 'he' ? 'en' : 'he'; lsSet('wst.lang', LANG); applyLang(); }
+
+/* looks: 'night' (default) or 'retro'. The TV's choice is sent to the phones. */
+const SKINS = ['night', 'retro'];
 let SKIN = new URLSearchParams(location.search).get('skin') || lsGet('wst.skin') || 'night';
-if (SKIN !== 'retro') SKIN = 'night';
-let fonts = false;
-function setSkin(sk) {
-  SKIN = sk; document.documentElement.dataset.skin = sk;
-  if (sk === 'retro' && !fonts) {
-    fonts = true; const l = document.createElement('link'); l.rel = 'stylesheet';
-    l.href = 'https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;900&family=VT323&display=swap'; document.head.appendChild(l);
+if (!SKINS.includes(SKIN)) SKIN = 'night';
+let retroFonts = false;
+function setSkin(sk, save) {
+  if (!SKINS.includes(sk)) return;
+  SKIN = sk;
+  document.documentElement.dataset.skin = sk;
+  if (save) lsSet('wst.skin', sk);
+  if (sk === 'retro' && !retroFonts) {
+    retroFonts = true;
+    const l = document.createElement('link'); l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@500;700;900&family=VT323&display=swap';
+    document.head.appendChild(l);
   }
-  const name = LANG === 'he' ? (sk === 'retro' ? 'רטרו' : 'לילה') : (sk === 'retro' ? 'Retro' : 'Night');
-  document.getElementById('skinBtn').textContent = (LANG === 'he' ? 'סגנון: ' : 'Look: ') + name;
+  const b = $('skinBtn'); if (b) b.textContent = t('skinLabel', { s: t(sk === 'retro' ? 'skinRetro' : 'skinNight') });
 }
-function toggleSkin() { setSkin(SKIN === 'retro' ? 'night' : 'retro'); lsSet('wst.skin', SKIN); }
-const PROMPT = document.getElementById('promptTpl').content.textContent.trim();
-const FORMAT = document.getElementById('formatTpl').content.textContent.trim();
-document.querySelectorAll('.promptText').forEach(p => { p.textContent = PROMPT; });
-document.querySelectorAll('.formatText').forEach(p => { p.textContent = FORMAT; });
-function copyPrompt(btn) {
-  const label = btn.textContent, done = LANG === 'he' ? 'הועתק' : 'Copied';
-  const fallback = () => {
-    const pre = btn.parentElement.querySelector('pre'), r = document.createRange();
-    r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
-    btn.textContent = LANG === 'he' ? 'מסומן, העתיקו' : 'Selected, copy it';
+function toggleSkin() { setSkin(SKIN === 'retro' ? 'night' : 'retro', true); broadcast({ type: 'skin', skin: SKIN }); }
+
+/* =========================================================
+   screens + browser Back
+   ========================================================= */
+let current = 'home';
+function show(id, push = true) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+  if (push && id !== current) { try { history.pushState({ screen: id }, '', '#' + id); } catch (e) {} }
+  current = id;
+  document.body.classList.toggle('inPlay', id === 'player');
+  document.body.classList.toggle('inGame', id === 'game');
+  window.scrollTo(0, 0);
+}
+function replaceScreen(id) { try { history.replaceState({ screen: id }, '', '#' + id); } catch (e) {} }
+window.addEventListener('popstate', e => {
+  let target = (e.state && e.state.screen) || 'home';
+  const stay = () => { try { history.pushState({ screen: current }, '', '#' + current); } catch (err) {} };
+  if (current === 'lobby' || current === 'game') {
+    const mid = roomActive && !previewMode && (phase === 'question' || phase === 'reveal');
+    if (mid && !confirm(t('leaveConfirm'))) { stay(); return; }
+    closeRoom();
+    target = 'setup'; replaceScreen('setup');
+  } else if (current === 'player') {
+    if (!kicked && myConn && !confirm(t('leaveGame'))) { stay(); return; }
+    leaveAsPlayer();
+    target = 'home'; replaceScreen('home');
+  }
+  if ((target === 'lobby' || target === 'game') && !roomActive) { target = 'setup'; replaceScreen('setup'); }
+  if (target === 'player' && !myConn) { target = 'home'; replaceScreen('home'); }
+  if (target === 'setup') renderGames();
+  if (target === 'home') showRejoinBanner();
+  show(target, false);
+});
+
+/* =========================================================
+   game files
+   Format: { title, group, me, participants:[{name,color}],
+             questions:[{ date, category, note, time, messages:[{from,text,time,answer,reaction}] }] }
+   Also reads the older party-quiz files (questions with chat.lines).
+   ========================================================= */
+const PALETTE = ['#53bdeb', '#ffbc38', '#06cf9c', '#fc9775', '#e542a3', '#a5b337', '#9b8cff', '#ff7a59', '#00a5f4', '#d3b56b', '#25d366', '#ff5d8f'];
+function normalizeGame(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error(t('errNotGame'));
+  const qs = Array.isArray(raw.questions) ? raw.questions : null;
+  if (!qs || !qs.length) throw new Error(t('errNoQuestions'));
+  const names = [], colorOf = {};
+  const addName = n => { n = String(n ?? '').trim().slice(0, 30); if (n && !names.includes(n)) names.push(n); return n; };
+  if (Array.isArray(raw.participants)) raw.participants.forEach(p => {
+    const n = addName(typeof p === 'string' ? p : p && p.name);
+    if (n && p && okColor(p.color)) colorOf[n] = p.color;
+  });
+  const out = []; let skipped = 0;
+  qs.slice(0, 500).forEach(q => {
+    try {
+      if (!q || typeof q !== 'object') throw 0;
+      let msgs, date, note, cat, time;
+      if (q.chat && Array.isArray(q.chat.lines)) {           // older party-quiz file
+        msgs = q.chat.lines.map(l => ({ from: l.who, text: l.text, time: l.time, answer: l.target, reaction: l.react }));
+        date = q.chat.date; note = q.chat.note; cat = q.cat; time = q.time;
+        if (Array.isArray(q.a)) q.a.forEach(addName);
+      } else { msgs = q.messages; date = q.date; note = q.note; cat = q.category; time = q.time; }
+      if (!Array.isArray(msgs) || !msgs.length) throw 0;
+      msgs = msgs.slice(0, 40).map(m => ({
+        from: addName(m && m.from), text: String((m && m.text) ?? '').slice(0, 3000), time: String((m && m.time) || '').slice(0, 8),
+        answer: !!(m && m.answer), reaction: !!(m && m.reaction && !m.answer)
+      }));
+      const ans = msgs.filter(m => m.answer);
+      if (!ans.length || !ans[0].from || !ans.every(m => m.from === ans[0].from)) throw 0;
+      const tm = Number(time);
+      out.push({ id: out.length, date: String(date || '').slice(0, 20), note: note ? String(note).slice(0, 240) : '',
+        category: cat ? String(cat).slice(0, 40) : '', time: Number.isFinite(tm) && tm >= 5 && tm <= 180 ? Math.round(tm) : 0,
+        messages: msgs, sender: ans[0].from });
+    } catch (e) { skipped++; }
+  });
+  if (!out.length) throw new Error(t('errNoValid'));
+  return {
+    title: String(raw.title || raw.group || t('untitled')).slice(0, 60),
+    group: String(raw.group || raw.title || t('untitled')).slice(0, 60),
+    me: String(raw.me || '').trim(),
+    participants: names.map((n, i) => ({ name: n, color: colorOf[n] || PALETTE[i % PALETTE.length] })),
+    questions: out, skipped
   };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(PROMPT).then(() => { btn.textContent = done; setTimeout(() => { btn.textContent = label; }, 1800); }, fallback);
-  } else fallback();
 }
-applyLang();
+
+/* saved games (this browser only) */
+const GAMES_KEY = 'wst.games';
+let games = [], canSave = true, selectedId = null;
+try { const a = JSON.parse(lsGet(GAMES_KEY)); if (Array.isArray(a)) games = a.filter(r => r && r.game && Array.isArray(r.game.questions)); } catch (e) {}
+function saveGames() { canSave = lsSet(GAMES_KEY, JSON.stringify(games.filter(r => !r.sample))); return canSave; }
+function currentRec() { return games.find(r => r.id === selectedId) || null; }
+function addGame(raw, sample) {
+  const g = normalizeGame(raw);
+  const rec = { id: newId(), addedAt: Date.now(), game: g, off: [], sample: !!sample,
+    settings: { count: 'all', order: 'shuffle', pace: 'normal' } };
+  games = games.filter(r => !(sample && r.sample));
+  games.unshift(rec); selectedId = rec.id;
+  if (!sample) saveGames();
+  return rec;
+}
+function setMsg(text, kind) { const el = $('loadMsg'); el.textContent = text || ''; el.className = 'msg' + (kind ? ' ' + kind : ''); }
+function readFile(file) {
+  if (!file) return;
+  if (file.size > 8e6) { setMsg(t('errBig'), 'err'); return; }
+  const r = new FileReader();
+  r.onload = () => {
+    let raw;
+    try { raw = JSON.parse(String(r.result).replace(/^﻿/, '')); } catch (e) { setMsg(t('errRead'), 'err'); return; }
+    try {
+      const rec = addGame(raw);
+      setMsg(t('loaded', { t: rec.game.title }) + (rec.game.skipped ? t('skipped', { n: rec.game.skipped }) : ''), 'ok');
+      if (!canSave) setMsg(t('notSaved'), 'err');
+      renderGames();
+    } catch (e) { setMsg(e.message || t('errRead'), 'err'); }
+  };
+  r.onerror = () => setMsg(t('errRead'), 'err');
+  r.readAsText(file);
+}
+function loadSample() {
+  addGame(LANG === 'he' ? SAMPLE_HE : SAMPLE_EN, true);
+  setMsg('', ''); renderGames();
+}
+function selectGame(id) { selectedId = selectedId === id ? null : id; renderGames(); }
+function deleteGame(id) {
+  const rec = games.find(r => r.id === id);
+  if (!rec || !confirm(t('delConfirm', { t: rec.game.title }))) return;
+  games = games.filter(r => r.id !== id); if (selectedId === id) selectedId = null;
+  saveGames(); renderGames();
+}
+function setSetting(key, val) { const rec = currentRec(); if (!rec) return; rec.settings[key] = val; if (!rec.sample) saveGames(); }
+function toggleQ(qid, on) {
+  const rec = currentRec(); if (!rec) return;
+  const off = new Set(rec.off || []); on ? off.delete(qid) : off.add(qid); rec.off = [...off];
+  if (!rec.sample) saveGames();
+  const sum = $('qsum'); if (sum) sum.textContent = t('questionsList', { a: rec.game.questions.length - off.size, n: rec.game.questions.length });
+}
+function renderGames() {
+  const box = $('gamesList');
+  if (!games.length) { box.innerHTML = ''; return; }
+  if (!selectedId) selectedId = games[0].id;
+  box.innerHTML = games.map(rec => {
+    const g = rec.game, sel = rec.id === selectedId, off = new Set(rec.off || []), s = rec.settings;
+    const active = g.questions.length - off.size;
+    const faces = g.participants.slice(0, 10).map(p => `<i style="background:${p.color}">${esc(initial(p.name))}</i>`).join('');
+    let body = '';
+    if (sel) {
+      const counts = [10, 15, 20, 30].filter(n => n < active);
+      const opt = (v, label, cur) => `<option value="${v}"${String(cur) === String(v) ? ' selected' : ''}>${esc(label)}</option>`;
+      body = `<div class="gbody">
+        <div class="settings">
+          <div class="field"><label for="set-count">${esc(t('settingCount'))}</label>
+            <select id="set-count" onchange="setSetting('count',this.value)">${opt('all', t('all', { n: active }), s.count)}${counts.map(n => opt(n, n, s.count)).join('')}</select></div>
+          <div class="field"><label for="set-order">${esc(t('settingOrder'))}</label>
+            <select id="set-order" onchange="setSetting('order',this.value)">${opt('shuffle', t('orderShuffle'), s.order)}${opt('date', t('orderDate'), s.order)}</select></div>
+          <div class="field"><label for="set-pace">${esc(t('settingPace'))}</label>
+            <select id="set-pace" onchange="setSetting('pace',this.value)">${opt('relaxed', t('paceRelaxed'), s.pace)}${opt('normal', t('paceNormal'), s.pace)}${opt('fast', t('paceFast'), s.pace)}</select></div>
+        </div>
+        <div class="pics">
+          <span class="picsLabel">${esc(t('picsLabel'))}</span>
+          <div class="picRow">${[{ name: t('groupPic'), src: (rec.pics && rec.pics.group) || DEFAULT_GROUP, custom: !!(rec.pics && rec.pics.group) },
+            ...g.participants.map(pp => ({ name: pp.name, src: (rec.pics && rec.pics.people && rec.pics.people[pp.name]) || DEFAULT_PERSON,
+              custom: !!(rec.pics && rec.pics.people && rec.pics.people[pp.name]) }))].map((x, i) => `
+            <div class="pic"><button class="picBtn" data-k="${i}" onclick="pickPic(this)" aria-label="${esc(t('addPic', { n: x.name }))}">
+              <img src="${x.src}" alt=""><span class="plus">+</span></button>
+              <span class="pn" dir="auto">${esc(x.name)}</span>
+              ${x.custom ? `<button class="linkbtn small" data-k="${i}" onclick="clearPic(this)">${esc(t('removePic'))}</button>` : ''}</div>`).join('')}</div>
+        </div>
+        <details><summary id="qsum">${esc(t('questionsList', { a: active, n: g.questions.length }))}</summary>
+          <ol class="qlist">${g.questions.map(q => {
+            const a = q.messages.find(m => m.answer);
+            return `<li><label><input type="checkbox" id="q-${q.id}"${off.has(q.id) ? '' : ' checked'} onchange="toggleQ(${q.id},this.checked)">
+              <span class="qd">${esc(q.date)}</span><span class="qt" dir="auto">${esc(a.text.replace(/\s+/g, ' '))}</span></label></li>`;
+          }).join('')}</ol></details>
+        <div class="gact">
+          <button class="btn big" data-primary onclick="openRoom()"${active ? '' : ' disabled'}>${esc(t('openRoom'))}</button>
+          <button class="btn ghost" onclick="startPreview()"${active ? '' : ' disabled'}>${esc(t('preview'))}</button>
+          <span class="spacer"></span>
+          ${rec.sample ? '' : `<button class="btn danger small" onclick="deleteGame('${rec.id}')">${esc(t('del'))}</button>`}
+        </div></div>`;
+    }
+    return `<article class="gcard wnd${sel ? ' sel' : ''}" data-title="game_${games.indexOf(rec) + 1}.json">
+      <button class="gsum" onclick="selectGame('${rec.id}')" aria-expanded="${sel}">
+        <span class="gtitle" dir="auto">${esc(g.title)}</span>
+        <span class="gmeta">${esc(t('metaQ', { n: active }))} · ${esc(t('metaP', { n: g.participants.length }))}</span>
+        <span class="faces" aria-hidden="true">${faces}</span>
+      </button>${body}</article>`;
+  }).join('');
+}
+function goSetup() { renderGames(); show('setup'); }
+
+/* profile pictures: stored with the game in this browser, shrunk to 160px */
+let picTarget = null;
+function picKeyAt(i) { const rec = currentRec(); return i === 0 ? '__group__' : rec.game.participants[i - 1].name; }
+function pickPic(btn) { picTarget = picKeyAt(Number(btn.dataset.k)); $('picInput').click(); }
+function clearPic(btn) {
+  const rec = currentRec(); if (!rec || !rec.pics) return;
+  const k = picKeyAt(Number(btn.dataset.k));
+  if (k === '__group__') delete rec.pics.group; else delete rec.pics.people[k];
+  if (!rec.sample) saveGames(); renderGames();
+}
+function readPic(file) {
+  const rec = currentRec(); if (!file || !rec || !picTarget) return;
+  const img = new Image(), url = URL.createObjectURL(file);
+  img.onload = () => {
+    const S = 160, c = document.createElement('canvas'); c.width = c.height = S;
+    const m = Math.min(img.width, img.height);
+    c.getContext('2d').drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, S, S);
+    URL.revokeObjectURL(url);
+    const data = c.toDataURL('image/jpeg', 0.82);
+    rec.pics = rec.pics || { group: '', people: {} }; rec.pics.people = rec.pics.people || {};
+    if (picTarget === '__group__') rec.pics.group = data; else rec.pics.people[picTarget] = data;
+    if (!rec.sample && !saveGames()) setMsg(t('notSaved'), 'err');
+    renderGames();
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); setMsg(t('errPic'), 'err'); };
+  img.src = url;
+}
+
+/* =========================================================
+   building a round
+   ========================================================= */
+let ROUND = null;   // { game, items:[{ q, options:[{name,color}], correct, dur }] }
+function autoTime(q) {
+  if (q.time) return q.time;
+  const chars = q.messages.filter(m => !m.reaction).reduce((s, m) => s + m.text.length, 0);
+  return clamp(Math.round((12 + chars / 30) / 5) * 5, 15, 60);
+}
+function optionsFor(q, g) {
+  const ps = g.participants;
+  let list = ps;
+  if (ps.length > 8) {
+    const others = shuffle(ps.filter(p => p.name !== q.sender)).slice(0, 5);
+    const keep = new Set([q.sender, ...others.map(p => p.name)]);
+    list = ps.filter(p => keep.has(p.name));
+  }
+  return list.map(p => ({ name: p.name, color: p.color }));
+}
+function prepareRound(rec) {
+  const g = rec.game, s = rec.settings || {}, off = new Set(rec.off || []);
+  let qs = shuffle(g.questions.filter(q => !off.has(q.id)));
+  if (s.count && s.count !== 'all') qs = qs.slice(0, Number(s.count));
+  if (s.order === 'date') qs.sort((a, b) => a.id - b.id);
+  const pace = { relaxed: 1.4, normal: 1, fast: 0.7 }[s.pace] || 1;
+  const pics = (rec.pics && rec.pics.people) || {};
+  ROUND = { game: g, colors: Object.fromEntries(g.participants.map(p => [p.name, p.color])), pics, groupPic: (rec.pics && rec.pics.group) || '',
+    items: qs.map(q => { const options = optionsFor(q, g);
+      return { q, options, correct: options.findIndex(o => o.name === q.sender), dur: Math.max(8, Math.round(autoTime(q) * pace)) }; }) };
+}
+
+/* =========================================================
+   the chat panel
+   lines: [{ from?, text, time, answer, reaction, first? }]
+   Before the reveal names are solid bars (their width does not depend on the name).
+   ========================================================= */
+const BAR_W = [3.4, 4.6, 2.8, 3.9, 5.1, 3.1, 4.2];
+const DEFAULT_GROUP = 'data:image/jpeg;base64,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';
+const DEFAULT_PERSON = 'data:image/jpeg;base64,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';
+const GROUP_ICON = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cfd8dc" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"></circle><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M16 13.6c2.9.2 5 2.2 5 5.4"></path></svg>';
+function hiddenLines(q) {   // what phones get: no names, no reactions, only where a new sender starts
+  const vis = q.messages.filter(m => !m.reaction);
+  return vis.map((m, i) => ({ text: m.text, time: m.time, answer: m.answer, first: i === 0 || vis[i - 1].from !== m.from }));
+}
+function chatHtml(c, o = {}) {
+  const reveal = !!o.reveal;
+  const lines = reveal ? c.lines : c.lines.filter(l => !l.reaction);
+  let run = -1, asked = false, ri = 0;
+  const body = lines.map((l, i) => {
+    const first = reveal ? (i === 0 || lines[i - 1].from !== l.from) : (l.first !== undefined ? l.first : true);
+    if (first) run++;
+    const out = reveal && o.me && l.from === o.me;
+    let nm = '';
+    if (first && !out) {
+      if (reveal) {
+        const col = (o.colors && o.colors[l.from]) || '#8696a0';
+        nm = `<span class="nm" style="color:${col}" dir="auto">${esc(l.from)}<i class="cover" style="animation-delay:${Math.min(run * 110, 1100)}ms"></i></span>`;
+      } else nm = `<span class="nm"><i class="rb" style="width:${BAR_W[run % BAR_W.length]}em"></i></span>`;
+    }
+    const ask = (!reveal && l.answer && !asked) ? (asked = true, `<div class="ask">${esc(t('whoSent'))}</div>`) : '';
+    const cls = ['b', out ? 'out' : '', first ? 'first' : '', l.answer ? 'target' : ''].join(' ');
+    const delay = l.reaction ? ` style="animation-delay:${900 + (ri++) * 450}ms"` : '';
+    // avatar beside the first message of each run; everyone is the grey silhouette until the reveal
+    const src = reveal && o.pics && o.pics[l.from] ? o.pics[l.from] : DEFAULT_PERSON;
+    const ava = out ? '' : `<img class="ava${first ? '' : ' sp'}${reveal ? ' shown' : ''}" src="${src}" alt="">`;
+    return `${ask}<div class="wm${out ? ' out' : ''}${l.reaction ? ' react' : ''}"${delay}>${ava}<div class="${cls}">${nm}<span dir="auto">${esc(l.text)}</span><span class="tm">${esc(l.time || '')}</span></div></div>`;
+  }).join('');
+  const head = o.small ? '' : `<div class="wa-head"><img class="wa-gav" src="${o.groupPic || DEFAULT_GROUP}" alt=""><div>
+      <div class="wa-gname" dir="auto">${esc(c.group || '')}</div>
+      <div class="wa-sub">${reveal ? esc((o.names || []).join(', ')) : esc(t('namesHidden'))}</div></div></div>`;
+  return `<div class="wa${o.small ? ' sm' : ''}">${head}<div class="wa-body">
+      ${c.date ? `<div class="wa-date">${esc(c.date)}</div>` : ''}
+      ${c.note ? `<div class="wa-sys" dir="auto">${esc(c.note)}</div>` : ''}${body}</div></div>`;
+}
+
+/* =========================================================
+   HOST (TV)
+   ========================================================= */
+const PREFIX = 'whosent-v1-';
+const players = new Map();      // key -> { name, token, conn, connected, score, answer, elapsed, lastPoints, hits:[] }
+const banned = new Set(), bannedTokens = new Set();
+let peer = null, roomActive = false, previewMode = false, phase = 'idle';
+let qIndex = -1, qStart = 0, qDur = 20, timerId = null, senderStats = {};
+
+function openRoom() {
+  const rec = currentRec(); if (!rec) return;
+  prepareRound(rec);
+  if (!ROUND.items.length) return;
+  closeRoom();
+  roomActive = true; phase = 'lobby';
+  $('lobbyTitle').textContent = rec.game.title;
+  $('joinUrl').textContent = (location.host + location.pathname).replace(/index\.html$/, '').replace(/\/$/, '');
+  $('roomCode').textContent = '····'; $('qr').innerHTML = '';
+  $('hostStatus').textContent = t('creating');
+  show('lobby'); renderLobby(); createPeer();
+}
+function createPeer() {
+  if (typeof Peer === 'undefined') { $('hostStatus').textContent = t('noPeer'); return; }
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  const p = new Peer(PREFIX + code);
+  peer = p;
+  p.on('open', () => {
+    if (peer !== p) return;
+    $('roomCode').textContent = code;
+    $('hostStatus').textContent = t('roomOpen');
+    const url = location.origin + location.pathname + '?join=' + code;
+    $('qr').innerHTML = '';
+    if (typeof QRCode !== 'undefined') new QRCode($('qr'), { text: url, width: 180, height: 180, colorDark: '#0c0e13', colorLight: '#ffffff' });
+  });
+  p.on('error', err => {
+    if (peer !== p) return;
+    if (err.type === 'unavailable-id') { p.destroy(); createPeer(); }
+    else if (err.type !== 'peer-unavailable') $('hostStatus').textContent = t('roomErr', { e: err.type });
+  });
+  p.on('disconnected', () => { if (peer === p && !p.destroyed) { try { p.reconnect(); } catch (e) {} } });
+  p.on('connection', handleConnection);
+}
+function closeRoom() {
+  clearInterval(timerId);
+  players.forEach(pl => { try { pl.conn && pl.conn.close(); } catch (e) {} });
+  if (peer) { const p = peer; peer = null; try { p.destroy(); } catch (e) {} }
+  players.clear(); banned.clear(); bannedTokens.clear();
+  roomActive = false; previewMode = false; phase = 'idle';
+  $('playersBtn').hidden = true; $('playersPanel').hidden = true; $('previewBar').hidden = true;
+}
+
+function handleConnection(conn) {
+  conn.on('data', msg => {
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.type === 'join') {
+      const name = String(msg.name || '').trim().slice(0, 16);
+      const key = name.toLowerCase();
+      const token = String(msg.token || '').slice(0, 40);
+      if (!name) return;
+      if (banned.has(key) || (token && bannedTokens.has(token))) { conn.send({ type: 'kicked' }); return; }
+      const existing = players.get(key);
+      if (existing && existing.connected && existing.token !== token) { conn.send({ type: 'error', code: 'taken' }); return; }
+      const p = existing || { name, score: 0, answer: null, elapsed: 0, lastPoints: 0, hits: [] };
+      const old = p.conn;
+      p.conn = conn; p.connected = true; p.token = token; conn._key = key;
+      players.set(key, p);
+      if (old && old !== conn) { try { old.close(); } catch (e) {} }
+      conn.send({ type: 'welcome', name: p.name, score: p.score, skin: SKIN, pics: (ROUND && ROUND.pics) || {} });
+      syncPlayer(p);
+      refreshHost();
+    } else if (msg.type === 'answer') {
+      const p = players.get(conn._key);
+      if (p && p.conn === conn) onAnswer(p, msg.choice);
+    }
+  });
+  conn.on('close', () => {
+    const p = players.get(conn._key);
+    if (!p || p.conn !== conn) return;
+    p.connected = false;
+    if (phase === 'lobby') players.delete(conn._key);
+    refreshHost(); maybeEndEarly();
+  });
+}
+function send(p, msg) { if (p.connected && p.conn && p.conn.open) { try { p.conn.send(msg); } catch (e) {} } }
+function broadcast(msg) { players.forEach(p => send(p, msg)); }
+function connectedPlayers() { return [...players.values()].filter(p => p.connected); }
+function ranking() { return [...players.values()].sort((a, b) => b.score - a.score); }
+function syncPlayer(p) {
+  if (phase === 'lobby') send(p, { type: 'lobby' });
+  else if (phase === 'question') send(p, p.answer === null ? questionMsg() : { type: 'locked', choice: ROUND.items[qIndex].options[p.answer] });
+  else if (phase === 'final') { const r = ranking(); send(p, { type: 'final', rank: r.indexOf(p) + 1, of: r.length, score: p.score }); }
+  else send(p, p.lastResult || { type: 'between' });
+}
+function refreshHost() {
+  if (phase === 'lobby') renderLobby();
+  if (phase === 'question') renderLocked();
+  renderPlayersPanel();
+}
+function renderLobby() {
+  const box = $('players'); box.innerHTML = '';
+  players.forEach((p, key) => {
+    const chip = document.createElement('div'); chip.className = 'chip' + (p.connected ? '' : ' off');
+    const av = document.createElement('span'); av.className = 'av'; av.style.background = PALETTE[[...key].reduce((s, c) => s + c.charCodeAt(0), 0) % PALETTE.length]; av.textContent = initial(p.name);
+    const nm = document.createElement('span'); nm.textContent = p.name; nm.dir = 'auto';
+    const b = document.createElement('button'); b.className = 'kick'; b.textContent = '✕';
+    b.setAttribute('aria-label', t('removeAria', { n: p.name })); b.onclick = () => kick(key);
+    chip.append(av, nm, b); box.appendChild(chip);
+  });
+  const n = connectedPlayers().length;
+  $('count').textContent = n ? t('nPlayers', { n }) : t('waiting');
+  $('startBtn').disabled = n === 0;
+}
+
+/* host controls */
+function kick(key) {
+  const p = players.get(key);
+  if (!p || !confirm(t('removeConfirm', { n: p.name }))) return;
+  banned.add(key); if (p.token) bannedTokens.add(p.token);
+  send(p, { type: 'kicked' });
+  const c = p.conn; setTimeout(() => { try { c && c.close(); } catch (e) {} }, 300);
+  players.delete(key);
+  toast(t('removed', { n: p.name }));
+  refreshHost(); maybeEndEarly();
+}
+function togglePlayers() { const pn = $('playersPanel'); pn.hidden = !pn.hidden; renderPlayersPanel(); }
+function renderPlayersPanel() {
+  const pn = $('playersPanel'); if (pn.hidden) return;
+  pn.innerHTML = '';
+  if (!players.size) { pn.textContent = t('noPlayers'); return; }
+  players.forEach((p, key) => {
+    const row = document.createElement('div'); row.className = 'prow';
+    const dot = document.createElement('span'); dot.className = 'dot' + (p.connected ? '' : ' off');
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.dir = 'auto'; nm.textContent = p.name;
+    const sc = document.createElement('span'); sc.className = 'muted'; sc.textContent = p.connected ? p.score : p.score + ' · ' + t('offline');
+    const b = document.createElement('button'); b.className = 'kick'; b.textContent = '✕';
+    b.setAttribute('aria-label', t('removeAria', { n: p.name })); b.onclick = () => kick(key);
+    row.append(dot, nm, sc, b); pn.appendChild(row);
+  });
+}
+
+/* game flow */
+function startGame() {
+  players.forEach((p, key) => { if (!p.connected) players.delete(key); });
+  players.forEach(p => { p.score = 0; p.hits = []; });
+  senderStats = {}; qIndex = -1;
+  show('game');
+  $('playersBtn').hidden = false;
+  nextQuestion();
+}
+function questionMsg() {
+  const it = ROUND.items[qIndex], q = it.q;
+  return { type: 'question', n: qIndex + 1, total: ROUND.items.length, date: q.date, note: q.note,
+           lines: hiddenLines(q), options: it.options };
+}
+function nextQuestion() {
+  qIndex++;
+  if (qIndex >= ROUND.items.length) { showFinal(); return; }
+  phase = 'question';
+  players.forEach(p => { p.answer = null; p.lastPoints = 0; p.elapsed = 0; p.lastResult = null; });
+  const it = ROUND.items[qIndex], q = it.q, g = ROUND.game;
+  qDur = it.dur;
+  $('prog').textContent = t('qOf', { i: qIndex + 1, n: ROUND.items.length });
+  $('stage').innerHTML = `<div class="qgrid">
+      <div id="chatBox">${chatHtml({ group: g.group, date: q.date, note: q.note, lines: hiddenLines(q) }, { groupPic: ROUND.groupPic })}</div>
+      <aside class="side">
+        ${q.category ? `<span class="cat" dir="auto">${esc(q.category)}</span>` : ''}
+        <h2>${esc(t('whoSentMarked'))}</h2>
+        <div class="suspects">${it.options.map((o, i) => `<div class="sus" id="sus${i}" style="--c:${o.color}">
+            ${avHtml(o, ROUND.pics)}<span class="nm" dir="auto">${esc(o.name)}</span>
+            <span class="cnt" id="cnt${i}"></span><span class="voters" id="vot${i}"></span></div>`).join('')}</div>
+        <div class="locked"><span class="lc" id="lockedCount"></span><div class="lchips" id="lockedChips"></div></div>
+        <div class="sideFoot" id="sideFoot"><button class="btn ghost small" onclick="endQuestion()">${esc(t('revealNow'))}</button></div>
+      </aside></div>`;
+  renderLocked();
+  qStart = performance.now();
+  broadcast(questionMsg());
+  if (previewMode) setTimeout(() => { if (phase === 'question') fakeAnswers(); }, 1800);
+  clearInterval(timerId);
+  tick(); timerId = setInterval(tick, 200);
+}
+function avHtml(o, pics) {
+  const pic = pics && pics[o.name];
+  return pic ? `<img class="av pic" src="${pic}" alt="">` : `<span class="av" style="background:${okColor(o.color) ? o.color : '#8696a0'}">${esc(initial(o.name))}</span>`;
+}
+function tick() {
+  const left = Math.max(0, qDur - (performance.now() - qStart) / 1000);
+  $('timer').textContent = Math.ceil(left);
+  $('timeFill').style.width = (left / qDur * 100) + '%';
+  const hurry = left <= 5;
+  $('timer').classList.toggle('hurry', hurry); $('timebar').classList.toggle('hurry', hurry);
+  if (left <= 0) endQuestion();
+}
+function renderLocked() {
+  const all = [...players.values()].filter(p => p.connected || p.answer !== null);
+  const done = all.filter(p => p.answer !== null);
+  const lc = $('lockedCount'); if (!lc) return;
+  lc.textContent = t('lockedN', { a: done.length, n: all.length });
+  $('lockedChips').innerHTML = done.map(p => `<span dir="auto">${esc(p.name)}</span>`).join('');
+}
+function onAnswer(p, choice) {
+  if (phase !== 'question' || p.answer !== null) return;
+  const it = ROUND.items[qIndex];
+  if (!Number.isInteger(choice) || choice < 0 || choice >= it.options.length) return;
+  p.answer = choice;
+  p.elapsed = (performance.now() - qStart) / 1000;   // measured on the TV, so phone clocks don't matter
+  send(p, { type: 'locked', choice: it.options[choice] });
+  renderLocked(); maybeEndEarly();
+}
+function maybeEndEarly() {
+  if (phase !== 'question') return;
+  const online = connectedPlayers();
+  if (online.length && online.every(x => x.answer !== null)) setTimeout(() => endQuestion(), 600);
+}
+function endQuestion() {
+  if (phase !== 'question') return;
+  phase = 'reveal';
+  clearInterval(timerId);
+  $('timer').textContent = ''; $('timeFill').style.width = '0%';
+  const it = ROUND.items[qIndex], q = it.q, g = ROUND.game;
+  const st = senderStats[q.sender] || (senderStats[q.sender] = { answers: 0, right: 0 });
+  players.forEach(p => {
+    const right = p.answer === it.correct;
+    p.lastPoints = right ? Math.round(1000 * (1 - 0.5 * Math.min(1, p.elapsed / qDur))) : 0;
+    p.score += p.lastPoints;
+    if (p.answer !== null) { st.answers++; if (right) { st.right++; p.hits.push(p.elapsed); } }
+  });
+  const ranked = ranking();
+  ranked.forEach((p, i) => send(p, p.lastResult = { type: 'result', answered: p.answer !== null, correct: p.answer === it.correct, points: p.lastPoints,
+    score: p.score, rank: i + 1, of: ranked.length, sender: { name: q.sender, color: (ROUND.colors[q.sender] || '#8696a0') } }));
+  // chat with names, reactions, and the votes per suspect
+  $('chatBox').innerHTML = chatHtml({ group: g.group, date: q.date, note: q.note, lines: q.messages },
+    { reveal: true, me: g.me, colors: ROUND.colors, names: g.participants.map(p => p.name), pics: ROUND.pics, groupPic: ROUND.groupPic });
+  it.options.forEach((o, i) => {
+    const voters = [...players.values()].filter(p => p.answer === i);
+    const el = $('sus' + i);
+    el.classList.add(i === it.correct ? 'win' : 'dim');
+    $('cnt' + i).textContent = voters.length || '';
+    $('vot' + i).textContent = voters.map(p => p.name).join(', ');
+  });
+  const last = qIndex === ROUND.items.length - 1;
+  const rightN = [...players.values()].filter(p => p.answer === it.correct).length;
+  const verdict = players.size ? (rightN === 0 ? t('nobody') : rightN === players.size ? t('everybody') : '') : '';
+  $('lockedCount').textContent = verdict; $('lockedChips').innerHTML = '';
+  $('sideFoot').innerHTML = `<div class="board wnd" data-title="scores.txt" style="flex:1">
+      <h3>${esc(t('board'))}</h3>
+      ${ranked.slice(0, 5).map((p, i) => `<div class="row${i === 0 && p.score > 0 ? ' lead' : ''}"><span class="rk">${i + 1}</span>
+        <span class="nm" dir="auto">${esc(p.name)}</span>${p.lastPoints ? `<span class="plus">+${p.lastPoints}</span>` : ''}<span class="sc">${p.score}</span></div>`).join('')}
+    </div>
+    <button class="btn big" data-primary onclick="nextQuestion()">${esc(last ? t('toFinal') : t('next'))}</button>`;
+  renderPlayersPanel();
+}
+function showFinal() {
+  phase = 'final';
+  clearInterval(timerId);
+  $('timer').textContent = ''; $('prog').textContent = ''; $('timeFill').style.width = '0%';
+  const r = ranking();
+  r.forEach((p, i) => send(p, { type: 'final', rank: i + 1, of: r.length, score: p.score }));
+  const pod = (p, place) => p ? `<div class="pod p${place}"><span class="nm" dir="auto">${esc(p.name)}</span><span class="sc">${p.score}</span><div class="blk">${place}</div></div>` : '<div></div>';
+  const facts = [];
+  const ss = Object.entries(senderStats).filter(([, s]) => s.answers > 0).map(([n, s]) => ({ n, p: Math.round(100 * s.right / s.answers) }));
+  if (ss.length >= 2) {
+    ss.sort((a, b) => a.p - b.p);
+    facts.push({ k: t('hardest'), v: ss[0].n, s: t('hardestSub', { p: ss[0].p }) });
+    const top = ss[ss.length - 1];
+    if (top.p > ss[0].p) facts.push({ k: t('easiest'), v: top.n, s: t('easiestSub', { p: top.p }) });
+  }
+  const fast = r.filter(p => p.hits.length >= 2).map(p => ({ n: p.name, s: p.hits.reduce((a, b) => a + b, 0) / p.hits.length })).sort((a, b) => a.s - b.s)[0];
+  if (fast) facts.push({ k: t('fastest'), v: fast.n, s: t('fastestSub', { s: fast.s.toFixed(1) }) });
+  $('stage').innerHTML = `<div class="final">
+      <h2>${esc(t('finalTitle'))}</h2>
+      <div class="podium">${pod(r[1], 2)}${pod(r[0], 1)}${pod(r[2], 3)}</div>
+      ${r.length > 3 ? `<div class="board wnd" data-title="scores.txt">${r.slice(3).map((p, i) => `<div class="row"><span class="rk">${i + 4}</span><span class="nm" dir="auto">${esc(p.name)}</span><span class="sc">${p.score}</span></div>`).join('')}</div>` : ''}
+      ${facts.length ? `<div class="facts">${facts.map(f => `<div class="fact wnd" data-title="stats.txt"><span class="k">${esc(f.k)}</span><span class="v" dir="auto">${esc(f.v)}</span><span class="s">${esc(f.s)}</span></div>`).join('')}</div>` : ''}
+      <div class="gact"><button class="btn big" data-primary onclick="playAgain()">${esc(t('playAgain'))}</button>
+        <button class="btn ghost" onclick="otherGame()">${esc(t('otherGame'))}</button></div>
+    </div>`;
+}
+function playAgain() {
+  if (previewMode) { startPreview(); return; }
+  const rec = currentRec(); if (rec) prepareRound(rec);
+  phase = 'lobby';
+  players.forEach((p, key) => { if (!p.connected) players.delete(key); else { p.score = 0; p.hits = []; p.answer = null; } });
+  broadcast({ type: 'lobby' }); broadcast({ type: 'score', score: 0 });
+  $('playersBtn').hidden = true;
+  show('lobby'); renderLobby();
+}
+function otherGame() { closeRoom(); renderGames(); show('setup', false); replaceScreen('setup'); }
+
+/* preview: the game on this screen with pretend players */
+function startPreview() {
+  const rec = currentRec(); if (!rec) return;
+  closeRoom();
+  prepareRound(rec);
+  roomActive = true; previewMode = true;
+  t('fake').forEach(n => players.set(n, { name: n, score: 0, answer: null, elapsed: 0, lastPoints: 0, hits: [], connected: false, conn: null }));
+  senderStats = {}; qIndex = -1;
+  $('previewBar').hidden = false;
+  show('game');
+  nextQuestion();
+}
+function fakeAnswers() {
+  const it = ROUND.items[qIndex];
+  players.forEach(p => {
+    p.answer = Math.random() < 0.5 ? it.correct : Math.floor(Math.random() * it.options.length);
+    p.elapsed = 2 + Math.random() * qDur * 0.6;
+  });
+  renderLocked();
+}
+
+/* Space / Enter presses the main button on the TV */
+document.addEventListener('keydown', e => {
+  if (e.code !== 'Space' && e.code !== 'Enter') return;
+  if (/^(INPUT|SELECT|TEXTAREA|BUTTON|A|SUMMARY)$/.test(e.target.tagName)) return;
+  const btn = document.querySelector('.screen.active [data-primary]:not(:disabled)');
+  if (btn) { e.preventDefault(); btn.click(); }
+});
+
+/* =========================================================
+   PLAYER (phone)
+   ========================================================= */
+let phonePics = {};
+let myConn = null, myPeer = null, session = null, kicked = false, retries = 0, retryTimer = null, lastQ = null;
+const SESSION_KEY = 'wst.session', MAX_RETRIES = 15;
+function deviceToken() { let tk = lsGet('wst.device'); if (!tk) { tk = newId(); lsSet('wst.device', tk); } return tk; }
+function savedSession() { try { const s = JSON.parse(lsGet(SESSION_KEY)); return s && Date.now() - s.at < 6 * 3600e3 ? s : null; } catch (e) { return null; } }
+function pview(html, cls) { const v = $('pview'); v.className = 'pview'; v.innerHTML = cls ? `<div class="state ${cls}">${html}</div>` : html; }
+
+function joinRoom() {
+  const code = $('codeInput').value.trim(), name = $('nameInput').value.trim(), st = $('status');
+  st.className = 'msg err';
+  if (!/^\d{4}$/.test(code)) { st.textContent = t('enterCode'); return; }
+  if (!name) { st.textContent = t('enterName'); return; }
+  st.className = 'msg'; st.textContent = t('connecting');
+  $('joinBtn').disabled = true;
+  kicked = false; retries = 0;
+  connectTo(code, name, true);
+}
+function connectTo(code, name, fromForm) {
+  clearTimeout(retryTimer);
+  if (typeof Peer === 'undefined') { $('status').textContent = t('noPeer'); $('joinBtn').disabled = false; return; }
+  if (myPeer) { try { myPeer.destroy(); } catch (e) {} }
+  const peerP = new Peer(); myPeer = peerP;
+  const fail = (text, roomGone) => {
+    if (peerP !== myPeer) return;
+    if (fromForm && !myConn) {
+      const st = $('status'); st.className = 'msg err'; st.textContent = text;
+      $('joinBtn').disabled = false; try { peerP.destroy(); } catch (e) {}
+    } else lost(roomGone ? t('roomClosed') : text, roomGone);
+  };
+  peerP.on('open', () => {
+    const conn = peerP.connect(PREFIX + code, { reliable: true });
+    conn.on('open', () => conn.send({ type: 'join', name, token: deviceToken() }));
+    conn.on('data', msg => onHostMessage(msg, conn, fail, code));
+    conn.on('close', () => { if (myConn === conn) lost(); });
+  });
+  peerP.on('error', err => fail(err.type === 'peer-unavailable' ? t('roomNotFound') : t('connProblem', { e: err.type }), err.type === 'peer-unavailable'));
+}
+function lost(reason, stop) {
+  if (kicked || !session) return;
+  myConn = null;
+  if (stop || retries >= MAX_RETRIES) {
+    pview(`<p class="big">${esc(reason || t('disconnected'))}</p><p class="muted">${esc(t('scoreKept'))}</p>
+      <button class="btn big" onclick="rejoin()">${esc(t('rejoinAs', { n: session.name }))}</button>`, 'bad');
+    return;
+  }
+  retries++;
+  pview(`<p class="big">${esc(t('reconnecting'))}</p><p class="muted">${esc(t('tryN', { i: retries, n: MAX_RETRIES }))}</p>`, 'plain');
+  retryTimer = setTimeout(() => connectTo(session.code, session.name, false), 2000);
+}
+function rejoin() {
+  session = session || savedSession();
+  if (!session) { show('join'); return; }
+  retries = 0; kicked = false;
+  $('pName').textContent = session.name;
+  if (current !== 'player') show('player');
+  pview(`<p class="big">${esc(t('connecting'))}</p>`, 'plain');
+  connectTo(session.code, session.name, false);
+}
+function leaveAsPlayer() {
+  clearTimeout(retryTimer);
+  const p = myPeer; myPeer = null; myConn = null; session = null;
+  if (p) { try { p.destroy(); } catch (e) {} }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && current === 'player' && session && !kicked && !(myConn && myConn.open)) {
+    retries = 0; connectTo(session.code, session.name, false);
+  }
+});
+function onHostMessage(msg, conn, fail, code) {
+  if (!msg || typeof msg !== 'object') return;
+  switch (msg.type) {
+    case 'error': fail(msg.code === 'taken' ? t('nameTaken') : t('connProblem', { e: msg.code }), msg.code === 'taken'); break;
+    case 'kicked':
+      kicked = true; myConn = null; lsDel(SESSION_KEY);
+      if (current !== 'player') show('player');
+      pview(`<p class="big">${esc(t('kicked'))}</p>`, 'bad');
+      try { myPeer && myPeer.destroy(); } catch (e) {}
+      break;
+    case 'welcome':
+      myConn = conn; retries = 0;
+      session = { code, name: msg.name, at: Date.now() };
+      lsSet(SESSION_KEY, JSON.stringify(session));
+      $('pName').textContent = msg.name; $('pScore').textContent = msg.score;
+      if (msg.skin) setSkin(msg.skin);
+      phonePics = {};
+      if (msg.pics && typeof msg.pics === 'object') Object.entries(msg.pics).slice(0, 40).forEach(([k, v]) => {
+        if (typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v) && v.length < 200000) phonePics[k] = v;
+      });
+      $('status').textContent = ''; $('joinBtn').disabled = false;
+      if (current !== 'player') show('player');
+      break;
+    case 'lobby': pview(`<p class="big">${esc(t('inLobby'))}</p><p class="muted">${esc(t('inLobbySub'))}</p>`, 'plain'); break;
+    case 'between': pview(`<p class="big">${esc(t('getReady'))}</p>`, 'plain'); break;
+    case 'score': $('pScore').textContent = msg.score; break;
+    case 'skin': setSkin(msg.skin); break;
+    case 'question': renderPhoneQuestion(msg); break;
+    case 'locked': {
+      const o = msg.choice || {};
+      pview(`<p class="muted">${esc(t('lockedOn'))}</p><p class="big" dir="auto" style="color:${okColor(o.color) ? o.color : 'inherit'}">${esc(o.name || '')}</p>
+        <p class="muted">${esc(t('waitOthers'))}</p>`, 'plain');
+      break;
+    }
+    case 'result': {
+      $('pScore').textContent = msg.score;
+      const s = msg.sender || {};
+      const head = !msg.answered ? t('timeUp') : msg.correct ? t('correct') : t('wrong');
+      pview(`<p class="big">${esc(head)}</p>${msg.points ? `<p class="pts" dir="ltr">+${msg.points}</p>` : ''}
+        <p class="who" style="--c:${okColor(s.color) ? s.color : '#8696a0'}" dir="auto">${esc(t('itWas', { n: s.name || '' }))}</p><p class="muted">${esc(t('rankOf', { r: msg.rank, n: msg.of }))}</p>`, msg.correct ? 'ok' : 'bad');
+      break;
+    }
+    case 'final':
+      $('pScore').textContent = msg.score;
+      $('pProg').textContent = '';
+      pview(`<p class="big">${msg.rank}</p><p>${esc(t('rankOf', { r: msg.rank, n: msg.of }))}</p><p class="pts" dir="ltr">${msg.score}</p>`, msg.rank === 1 ? 'ok' : 'plain');
+      break;
+  }
+}
+function renderPhoneQuestion(m) {
+  lastQ = m;
+  const lines = Array.isArray(m.lines) ? m.lines.slice(0, 40) : [];
+  const opts = Array.isArray(m.options) ? m.options : [];
+  $('pProg').textContent = t('qOf', { i: m.n, n: m.total });
+  pview(`<div class="pq">
+      ${chatHtml({ date: m.date, note: m.note, lines }, { small: true })}
+      <div class="opts">${opts.map((o, i) => `<button class="opt" onclick="answer(${i})">
+        ${avHtml(o, phonePics)}<span class="nm" dir="auto">${esc(o.name)}</span></button>`).join('')}</div>
+    </div>`);
+  const tgt = document.querySelector('#pview .b.target'); if (tgt && tgt.scrollIntoView) tgt.scrollIntoView({ block: 'center' });
+}
+function answer(i) {
+  if (!(myConn && myConn.open)) return;
+  myConn.send({ type: 'answer', choice: i });
+  document.querySelectorAll('#pview .opt').forEach(b => { b.disabled = true; });
+}
+
+/* =========================================================
+   sample groups (made up, so the public site shows no real chat)
+   ========================================================= */
+const SAMPLE_HE = { title: 'החבר\'ה מהשכונה (לדוגמה)', group: 'החבר\'ה מהשכונה', me: 'מאיה',
+  participants: [{ name: 'נועה' }, { name: 'תומר' }, { name: 'מאיה' }, { name: 'דניאל' }, { name: 'אורי' }],
+  questions: [
+    { date: '14/02/2025', category: '🍽️ אוכל', messages: [
+      { from: 'תומר', time: '19:02', text: 'מישהו יודע מה עושים עם 3 קילו חומוס' },
+      { from: 'דניאל', time: '19:03', text: 'למה יש לך 3 קילו חומוס' },
+      { from: 'תומר', time: '19:03', text: 'לחצתי פעם אחת יותר מדי באפליקציה' },
+      { from: 'נועה', time: '19:04', text: 'תפתח מסעדה. תקרא לה "פעם אחת יותר מדי"', answer: true },
+      { from: 'מאיה', time: '19:04', text: 'חחחחחחחחח', reaction: true }, { from: 'אורי', time: '19:05', text: 'מתתתת', reaction: true }] },
+    { date: '03/06/2025', category: '⏰ איחורים', messages: [
+      { from: 'מאיה', time: '21:10', text: 'אני בדרך, 5 דקות' },
+      { from: 'אורי', time: '21:50', text: 'היא אמרה 5 דקות לפני 40 דקות' },
+      { from: 'דניאל', time: '21:51', text: 'אצל מאיה דקה זאת יחידה של רגש, לא של זמן', answer: true },
+      { from: 'נועה', time: '21:51', text: 'חחחחחחחחחחח', reaction: true }, { from: 'תומר', time: '21:52', text: '😂😂😂', reaction: true }] },
+    { date: '21/08/2025', category: '🔥 עקיצות', messages: [
+      { from: 'נועה', time: '17:30', text: 'מי בא לים מחר?' },
+      { from: 'תומר', time: '17:41', text: 'תלוי במזג האוויר' },
+      { from: 'אורי', time: '17:41', text: 'תומר בודק תחזית כדי למצוא סיבה לא לבוא', answer: true },
+      { from: 'מאיה', time: '17:42', text: 'חחחחחחחח', reaction: true }, { from: 'דניאל', time: '17:42', text: '1', reaction: true }] },
+    { date: '10/11/2025', category: '🎭 דרמה', messages: [
+      { from: 'מאיה', time: '08:15', text: 'עדכון: השכן שוב מתאמן על החצוצרה', answer: true },
+      { from: 'מאיה', time: '08:15', text: 'הוא כבר יודע שני תווים. שניהם לא נכונים', answer: true },
+      { from: 'נועה', time: '08:20', text: 'חחחחחחחחחחחח', reaction: true }, { from: 'דניאל', time: '08:21', text: 'אני מת', reaction: true }] },
+    { date: '02/01/2026', category: '💪 חדר כושר', messages: [
+      { from: 'דניאל', time: '20:05', text: 'נרשמתי לחדר כושר' },
+      { from: 'אורי', time: '20:06', text: 'מזל טוב! כמה פעמים היית?' },
+      { from: 'דניאל', time: '20:07', text: 'מבחינה טכנית הייתי שם כשנרשמתי', answer: true },
+      { from: 'תומר', time: '20:07', text: 'חחחחחחחחחחחח', reaction: true }] },
+    { date: '17/03/2026', category: '🍞 בישולים', note: 'רקע: תומר אפה לחם בפעם הראשונה', messages: [
+      { from: 'תומר', time: '13:20', text: '📷 תמונה\nהלחם שלי יצא' },
+      { from: 'נועה', time: '13:21', text: 'יצא מה' },
+      { from: 'מאיה', time: '13:21', text: 'יצא מהתנור. זה כל מה שאפשר להגיד עליו', answer: true },
+      { from: 'אורי', time: '13:22', text: 'חחחחחחחחחחח', reaction: true }, { from: 'דניאל', time: '13:22', text: '💀', reaction: true }] }
+  ] };
+const SAMPLE_EN = { title: 'The flat (sample)', group: 'The flat', me: 'Priya',
+  participants: [{ name: 'Jess' }, { name: 'Tom' }, { name: 'Priya' }, { name: 'Dan' }, { name: 'Leo' }],
+  questions: [
+    { date: '14/02/2025', category: '🍽️ food', messages: [
+      { from: 'Tom', time: '19:02', text: 'does anyone know what to do with 3 kilos of hummus' },
+      { from: 'Dan', time: '19:03', text: 'why do you have 3 kilos of hummus' },
+      { from: 'Tom', time: '19:03', text: 'I pressed + one time too many' },
+      { from: 'Jess', time: '19:04', text: 'open a restaurant. call it "one time too many"', answer: true },
+      { from: 'Priya', time: '19:04', text: 'hahahahaha', reaction: true }, { from: 'Leo', time: '19:05', text: '💀', reaction: true }] },
+    { date: '03/06/2025', category: '⏰ always late', messages: [
+      { from: 'Priya', time: '21:10', text: 'on my way, 5 min' },
+      { from: 'Leo', time: '21:50', text: 'she said 5 min 40 min ago' },
+      { from: 'Dan', time: '21:51', text: 'Priya minutes are a unit of emotion, not time', answer: true },
+      { from: 'Jess', time: '21:51', text: '😂😂😂', reaction: true }, { from: 'Tom', time: '21:52', text: 'lmaooo', reaction: true }] },
+    { date: '21/08/2025', category: '🔥 roasts', messages: [
+      { from: 'Jess', time: '17:30', text: 'beach tomorrow?' },
+      { from: 'Tom', time: '17:41', text: 'depends on the weather' },
+      { from: 'Leo', time: '17:41', text: 'Tom checks the forecast to find a reason not to come', answer: true },
+      { from: 'Priya', time: '17:42', text: 'hahahaha', reaction: true }, { from: 'Dan', time: '17:42', text: '#1', reaction: true }] },
+    { date: '10/11/2025', category: '🎭 drama', messages: [
+      { from: 'Priya', time: '08:15', text: 'update: the neighbour is practising the trumpet again', answer: true },
+      { from: 'Priya', time: '08:15', text: 'he knows two notes now. both wrong', answer: true },
+      { from: 'Jess', time: '08:20', text: 'hahahahahaha', reaction: true }, { from: 'Dan', time: '08:21', text: 'I’m dead', reaction: true }] },
+    { date: '02/01/2026', category: '💪 gym', messages: [
+      { from: 'Dan', time: '20:05', text: 'I joined a gym' },
+      { from: 'Leo', time: '20:06', text: 'congrats! how many times have you been?' },
+      { from: 'Dan', time: '20:07', text: 'technically I was there when I signed up', answer: true },
+      { from: 'Tom', time: '20:07', text: 'hahahahahahaha', reaction: true }] },
+    { date: '17/03/2026', category: '🍞 baking', note: 'Context: Tom baked bread for the first time', messages: [
+      { from: 'Tom', time: '13:20', text: '📷 Photo\nmy bread came out' },
+      { from: 'Jess', time: '13:21', text: 'came out how' },
+      { from: 'Priya', time: '13:21', text: 'came out of the oven. that’s all we can say about it', answer: true },
+      { from: 'Leo', time: '13:22', text: 'hahahahaha', reaction: true }, { from: 'Dan', time: '13:22', text: '💀', reaction: true }] }
+  ] };
+
+/* =========================================================
+   start
+   ========================================================= */
+function showRejoinBanner() {
+  const s = savedSession();
+  $('rejoinBox').hidden = !s;
+  if (s) $('rejoinBtn').textContent = t('backToRoom', { c: s.code, n: s.name });
+}
+(function init() {
+  try { history.replaceState({ screen: 'home' }, '', location.pathname + location.search); } catch (e) {}
+  applyLang();
+  showRejoinBanner();
+  setTimeout(() => $('logo').classList.add('open'), 700);
+  const drop = $('drop'), input = $('fileInput');
+  input.addEventListener('change', () => { readFile(input.files[0]); input.value = ''; });
+  $('picInput').addEventListener('change', e => { readPic(e.target.files[0]); e.target.value = ''; });
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => readFile(e.dataTransfer.files[0]));
+  const pre = new URLSearchParams(location.search).get('join');
+  if (pre && /^\d{4}$/.test(pre)) { show('join'); $('codeInput').value = pre; $('nameInput').focus(); }
+})();
 </script>
 </body>
 </html>
