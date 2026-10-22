@@ -1,353 +1,808 @@
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Party Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מי שלח?</title>
+<meta name="description" content="Party game for your group chat: the funniest messages with the names hidden. Everyone guesses who sent it from their phone.">
+<meta name="theme-color" content="#0c0e13">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;800&family=JetBrains+Mono:wght@700&family=Karantina:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-  :root { --bg:#1b1140; --card:#2a1d5e; --accent:#ffcc00; --text:#fff; --muted:#b9b0e0;
-          --red:#e21b3c; --blue:#1368ce; --yellow:#d89e00; --green:#26890c; }
-  * { box-sizing:border-box; }
-  html, body { height:100%; }
-  body { margin:0; background:var(--bg); color:var(--text);
-         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .screen { display:none; min-height:100vh; padding:16px; text-align:center; }
-  .screen.active { display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  h1 { font-size:2.2rem; margin:0 0 20px; }
-  button { font-size:1.2rem; padding:16px 28px; border:0; border-radius:12px; cursor:pointer;
-           background:var(--accent); color:#1b1140; font-weight:700; margin:8px; }
-  button:disabled { opacity:.4; cursor:default; }
-  button.secondary { background:var(--card); color:var(--text); }
-  input { font-size:1.4rem; padding:14px; border-radius:10px; border:0; width:100%;
-          max-width:340px; margin:8px 0; text-align:center; }
-  .muted { color:var(--muted); }
+/* Layout: a dark after-hours stage. The group chat is the centrepiece; names are covered
+   with solid "redaction" bars until the reveal peels them off. */
+:root{
+  --ink:#0c0e13; --ink-2:#141821; --ink-3:#1c2230; --line:#2b3344;
+  --paper:#f4efe4; --mute:#9ba2b3; --hi:#ffd84d; --hi-ink:#1d1700;
+  --ok:#3ddc97; --bad:#ff5d6c;
+  --display:"Karantina","Assistant",system-ui,sans-serif;
+  --body:"Assistant",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --chat:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--ink);background-image:radial-gradient(1100px 540px at 50% -10%,#1b2131 0%,rgba(12,14,19,0) 65%);
+     background-attachment:fixed;color:var(--paper);font-family:var(--body);font-size:18px;line-height:1.45;
+     -webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--hi);text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--hi);outline-offset:3px}
+.muted{color:var(--mute)} .small{font-size:.9rem}
 
-  /* ---------- TV ---------- */
-  .wide { width:100%; max-width:1100px; }
-  .code { font-size:6rem; font-weight:800; letter-spacing:12px; color:var(--accent); margin:8px 0; }
-  .hostTop { display:flex; gap:32px; align-items:center; justify-content:center; flex-wrap:wrap; }
-  #qr { background:#fff; padding:12px; border-radius:12px; }
-  #players { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin:28px 0; min-height:70px; }
-  .chip { background:var(--card); padding:12px 22px; border-radius:40px; font-size:1.5rem;
-          font-weight:700; animation:pop .3s ease-out; }
-  @keyframes pop { from { transform:scale(.3); opacity:0; } to { transform:scale(1); opacity:1; } }
+.screen{display:none;min-height:100vh;min-height:100dvh;
+        padding-block:calc(20px + env(safe-area-inset-top,0px)) calc(28px + env(safe-area-inset-bottom,0px));
+        padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.screen.active{display:block}
+.wrap{max-width:900px;margin:0 auto}
+.wrap.wide{max-width:1440px}
 
-  .qtop { display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:16px; }
-  .timer { width:90px; height:90px; border-radius:50%; background:var(--card); display:flex;
-           align-items:center; justify-content:center; font-size:2.4rem; font-weight:800; }
-  .qtext { background:#fff; color:#222; font-size:2.4rem; font-weight:700; padding:28px;
-           border-radius:14px; width:100%; margin-bottom:20px; white-space:pre-line; }
-  .qtext.long { font-size:1.7rem; text-align:start; }
-  .answers { display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%; }
-  .ans { display:flex; align-items:center; gap:16px; padding:22px; border-radius:12px;
-         font-size:1.7rem; font-weight:700; text-align:left; transition:opacity .3s; }
-  .ans .shape { font-size:2rem; }
-  .ans .cnt { margin-left:auto; background:rgba(0,0,0,.25); padding:4px 14px; border-radius:20px; }
-  .ans.dim { opacity:.3; }
-  .c0 { background:var(--red); } .c1 { background:var(--blue); }
-  .c2 { background:var(--yellow); } .c3 { background:var(--green); }
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5em;min-height:48px;padding:.55em 1.35em;border:0;
+     border-radius:999px;background:var(--hi);color:var(--hi-ink);font-weight:800;font-size:1.05rem;transition:transform .12s,filter .12s}
+.btn:hover{filter:brightness(1.07)} .btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.35;cursor:default;transform:none;filter:none}
+.btn.ghost{background:transparent;color:var(--paper);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.ghost:hover{box-shadow:inset 0 0 0 1.5px var(--mute)}
+.btn.small{min-height:40px;font-size:.95rem;padding:.35em 1em}
+.btn.big{min-height:62px;font-size:1.35rem;padding:.5em 2em}
+.btn.danger{background:transparent;color:var(--bad);box-shadow:inset 0 0 0 1.5px rgba(255,93,108,.45)}
+.linkbtn{background:none;border:0;padding:0;color:var(--hi);text-decoration:underline;text-underline-offset:3px}
+.topbar{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.topbar h2{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(40px,6vw,64px);line-height:.95}
 
-  .board { width:100%; max-width:700px; margin:16px 0; }
-  .row { display:flex; justify-content:space-between; background:var(--card); padding:14px 22px;
-         border-radius:10px; margin:8px 0; font-size:1.5rem; font-weight:700; }
-  .row .plus { color:var(--accent); font-size:1.1rem; margin-left:10px; }
-  .row.gold { background:var(--accent); color:#1b1140; }
-  .row.gold .plus { color:#1b1140; }
+/* the redaction motif */
+.redact{position:relative;display:inline-block}
+.redact .bar{position:absolute;inset:.1em -.05em .04em;background:var(--paper);border-radius:3px;transform:scaleX(1);
+             transition:transform .5s cubic-bezier(.7,0,.2,1)}
+[dir=rtl] .redact .bar{transform-origin:right} [dir=ltr] .redact .bar{transform-origin:left}
+.logo.open .redact .bar{transform:scaleX(0)}
+.logo.open:hover .redact .bar{transform:scaleX(1)}
 
-  /* ---------- Phone ---------- */
-  #player { padding:0; justify-content:flex-start; }
-  .pbar { width:100%; display:flex; justify-content:space-between; padding:12px 16px;
-          background:var(--card); font-weight:700; }
-  #pview { flex:1; width:100%; display:flex; flex-direction:column; align-items:center;
-           justify-content:center; padding:16px; }
-  .pq { width:100%; height:calc(100vh - 80px); display:flex; flex-direction:column; gap:12px; }
-  .pqtext { background:#fff; color:#222; font-size:1.15rem; font-weight:700; padding:14px;
-            border-radius:12px; white-space:pre-line; max-height:45vh; overflow-y:auto; text-align:start; }
-  .pqnum { color:var(--muted); font-size:.95rem; }
-  .pgrid { flex:1; display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:12px; width:100%; }
-  .pbtn { border:0; border-radius:14px; color:#fff; margin:0; padding:10px; display:flex;
-          flex-direction:column; align-items:center; justify-content:center; gap:8px;
-          font-size:1.15rem; font-weight:700; line-height:1.25; word-break:break-word; }
-  .pbtn .shape { font-size:2rem; }
-  .pbtn:active { transform:scale(.96); }
-  .big { font-size:4rem; margin:0; }
-  .result-ok { background:var(--green); } .result-bad { background:var(--red); }
-  .full { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
-          justify-content:center; }
+/* home */
+.home{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:28px;padding-top:min(6vh,60px)}
+.langbar{display:flex;justify-content:flex-end}
+.logo{font-family:var(--display);font-weight:700;font-size:clamp(110px,24vw,280px);line-height:.82;margin:0;letter-spacing:-.005em}
+.tagline{font-size:clamp(19px,2.2vw,24px);max-width:36ch;margin:0;color:#d9d4c8;text-wrap:balance}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:820px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:start;padding:22px 24px 24px;border-radius:22px;border:0;
+      background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);color:var(--paper);transition:transform .15s,box-shadow .15s}
+.tile:hover{box-shadow:inset 0 0 0 1.5px var(--mute)} .tile:active{transform:scale(.98)}
+.tile svg{width:34px;height:34px;margin-bottom:8px}
+.tile b{font-family:var(--display);font-weight:700;font-size:clamp(40px,4.6vw,56px);line-height:.9}
+.tile span{color:var(--mute)}
+.tile.primary{background:var(--hi);color:var(--hi-ink);box-shadow:none}
+.tile.primary span{color:#5a4a00}
+.guideLink{font-weight:800;font-size:1.1rem}
+@media (max-width:560px){.tiles{grid-template-columns:1fr}}
 
-  /* ---------- Quiz editor ---------- */
-  .panel { width:100%; max-width:760px; text-align:left; }
-  .panel h1 { text-align:center; }
-  .small { font-size:.9rem; }
-  .qzRow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--card);
-           padding:12px 16px; border-radius:12px; margin:10px 0; }
-  .qzRow .t { flex:1; min-width:160px; font-size:1.2rem; font-weight:700; }
-  button.mini { font-size:1rem; padding:8px 12px; margin:2px; border-radius:8px; }
-  button.danger { background:#5b1f2e; color:#fff; }
-  .btnRow { display:flex; flex-wrap:wrap; justify-content:center; }
-  .edTop { display:flex; justify-content:space-between; align-items:center; position:sticky; top:0;
-           background:var(--bg); padding:6px 0; z-index:5; }
-  .edInput, .qcard textarea, .arow input.qa { width:100%; max-width:none; text-align:start; font-size:1.15rem;
-           padding:12px; border-radius:10px; border:0; margin:6px 0; font-family:inherit; }
-  .qcard { background:var(--card); border-radius:14px; padding:14px; margin:14px 0; }
-  .qcard.err { outline:3px solid var(--red); }
-  .qhead { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
-  .qhead select { font-size:1rem; padding:8px; border-radius:8px; border:0; }
-  .qans { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:6px 0; }
-  .arow { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; }
-  .arow .shape { font-size:1.3rem; color:#fff; }
-  .arow input.qa { margin:0; padding:10px; font-size:1rem; }
-  .arow input.qc { width:26px; height:26px; flex:none; margin:0; padding:0; accent-color:#fff; cursor:pointer; }
-  #edMsg { min-height:1.5em; color:#ffb3c0; font-weight:700; text-align:center; margin:8px 0; }
-  .quizPick { margin:8px 0 4px; font-size:1.2rem; }
-  .quizPick select { font-size:1.1rem; padding:10px; border-radius:10px; border:0; max-width:90vw; }
-  @media (max-width:560px) { .qans { grid-template-columns:1fr; } }
+/* setup */
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;min-height:150px;
+      border-radius:22px;border:2px dashed var(--line);padding:24px;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--hi);background:rgba(255,216,77,.05)}
+.drop strong{font-family:var(--display);font-weight:700;font-size:clamp(34px,4.5vw,48px);line-height:1}
+.msg{min-height:1.5em;margin:12px 2px;font-weight:600}
+.msg.err{color:var(--bad)} .msg.ok{color:var(--ok)}
+.setupFoot{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.games{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.gcard{border-radius:22px;background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);overflow:hidden}
+.gcard.sel{box-shadow:inset 0 0 0 2px var(--hi)}
+.gsum{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;width:100%;padding:18px 22px;background:none;border:0;text-align:start}
+.gtitle{font-family:var(--display);font-weight:700;font-size:clamp(34px,4vw,46px);line-height:1;flex:1 1 220px;min-width:0;overflow-wrap:anywhere}
+.gmeta{color:var(--mute);font-variant-numeric:tabular-nums}
+.faces{display:flex}
+.faces i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:.85rem;
+         color:#0c0e13;box-shadow:0 0 0 2px var(--ink-2);margin-inline-start:-6px}
+.gbody{padding:0 22px 22px;display:flex;flex-direction:column;gap:18px}
+.settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.85rem;color:var(--mute);font-weight:600;letter-spacing:.02em}
+select,.txt{width:100%;min-height:46px;border-radius:12px;border:0;background:var(--ink-3);box-shadow:inset 0 0 0 1.5px var(--line);padding:8px 12px}
+details summary{cursor:pointer;font-weight:700;color:var(--mute)}
+.qlist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:320px;overflow-y:auto}
+.qlist label{display:flex;gap:12px;align-items:baseline;padding:6px 4px;border-radius:8px;cursor:pointer}
+.qlist label:hover{background:var(--ink-3)}
+.qlist input{accent-color:var(--hi);width:18px;height:18px;flex:none;align-self:center}
+.qlist .qd{color:var(--mute);font-variant-numeric:tabular-nums;font-size:.9rem;flex:none}
+.qlist .qt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gact{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.gact .spacer{flex:1}
+@media (max-width:640px){.settings{grid-template-columns:1fr}}
 
-  /* ---------- WhatsApp-style chat questions ---------- */
-  .chatLayout { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:24px; width:100%; align-items:start; }
-  .chatLayout .answers { grid-template-columns:1fr; gap:10px; }
-  .chatLayout .ans { font-size:1.5rem; padding:14px 18px; }
-  .chatLayout .board { margin:16px 0 0 !important; }
-  .chatLayout .row { font-size:1.2rem; padding:10px 16px; margin:6px 0; }
-  .wa { background:#0b141a; border-radius:16px; overflow:hidden; text-align:right; display:flex; flex-direction:column;
-        font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
-  .wa-head { background:#202c33; color:#e9edef; padding:12px 18px; font-weight:600; font-size:1.25rem;
-             display:flex; gap:12px; align-items:center; }
-  .wa-avatar { width:40px; height:40px; border-radius:50%; background:#6b7c85; display:flex; align-items:center;
-               justify-content:center; flex:none; }
-  .wa-sub { font-size:.85rem; color:#8696a0; font-weight:400; }
-  .wa-body { padding:16px 20px 20px; display:flex; flex-direction:column; gap:5px; max-height:68vh; overflow-y:auto;
-             background-color:#0b0b0b; background-image:url("data:image/jpeg;base64,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VGcP5ph8+6NpBMmRnr2Nn/IyJFDSyh5S7G60jnMsbg58Dyyryy+Xyj5+peh/J3j6EvAi1nHRVI0K6X0Jjh+ROb0y8JsRTD8FwQ0seehW80j+wjAkyv6NlPNDJJKRd30P/oS81daEii6plD5EXCGEuPkaXryjJtfDHnmyLEWnIuG2qJ17EsDTARy8iaSGOU63st+Eh63d7EZfgei2K15eBoHaqq7MvI8EXN9vA04x/CsCyVs7uQTeJqVUbHjxStxpPHehuK46SRIcBPXQTImdDVLwKkq8ivlxcUuK7Hkg7oUykslbVy8jae9+DHCbPR/YvVJC2hGdMW6O7E3W5SFpsdFowS12xKqsO+h4aykv6YJPkwlVsTUeWvFE1HH0M9z/ACRtp7GkjleTp5yLeMrxwcAIrh4Hxmjbe2LCDxCq0VhT0yfYbZS9kFz/ALKczofBb7FRVqx8clxeVgxMQn2JX9jNJ1spJ2F0NXpeXRwvsik48f03kgkYb/2Nkl2JkahK2mUJt6GTw/Hp9DCMNehYqTjMG/wU6ktjOZTRA7F9FRvg5D4pxf0bb3lI2wEKsFbsVKm2NERtV9iTo2wslvYu2uxc3jow6kQyR+nkSbZLrIJUeA8pt/gifEun+IukPY1n7H1LA+Hg0GaRsI7+FkMlfGULLJ6pTZj1OKavr8N/giu9j26YvSQze2Lf2PV6NcV4+htvbYlll/hK16G2fD/wKY//2gAMAwEAAgADAAAAEIhstjupjpvrmrtgvCFDBJFJNDPEDPIIktmtlnlhtrklpkkpimlnntumjqjjpuojrjkniqtuvukgjithkktnoupgvsijqlqimtrnsuhtoknpmgghpmvpkglnhmhmnivpssjhsnookhrvnkimkthrlmjmsijskshrgjmgsuouvhoungosgtpgmnuusrtqhnjngqugjmvutvqokqlrhgijqppninuuttqngrojtjutvrvnrgllmikqouuogovvhvsusnhrlvtuqjrtkmjjgnnnpkgqipipsihghnupkithqioimqJDOABIAIFIPCHNAtrvgippurqurrhv/8QAFBEBAAAAAAAAAAAAAAAAAAAAgP/aAAgBAwEBPxAlf//EABQRAQAAAAAAAAAAAAAAAAAAAID/2gAIAQIBAT8QJX//xAAmEAEBAAICAgEDBQEBAAAAAAABEQAh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");
-             background-repeat:repeat; background-size:236px auto; }
-  .wa-date { align-self:center; background:#182229; color:#8696a0; font-size:.95rem; padding:5px 12px; border-radius:8px; margin-bottom:8px; }
-  .wa-b { max-width:82%; padding:6px 10px 7px; border-radius:8px; color:#e9edef; font-size:1.4rem; line-height:1.4;
-          white-space:pre-line; word-break:break-word; text-align:start; }
-  .wa-in { align-self:flex-start; background:#202c33; border-start-start-radius:0; }
-  .wa-out { align-self:flex-end; background:#005c4b; border-start-end-radius:0; }
-  .wa-name { font-size:1rem; font-weight:700; margin-bottom:1px; }
-  .wa-time { font-size:.78rem; color:#8696a0; float:left; margin:9px 12px 0 0; }
-  .wa-out .wa-time { color:#a3d4c8; }
-  .wa-note { align-self:center; max-width:90%; background:#2a2617; color:#ffd279; font-size:1.05rem; padding:7px 14px;
-             border-radius:8px; margin-bottom:8px; text-align:center; white-space:pre-line; }
-  .wa-sm .wa-note { font-size:.85rem; }
-  .wa-target { box-shadow:0 0 0 3px var(--accent), 0 0 18px rgba(255,204,0,.35); }
-  .wa-ask { align-self:flex-start; color:var(--accent); font-weight:700; font-size:1rem; margin:6px 4px 0; }
-  .wa-react { animation:waIn .45s ease-out both; }
-  .wa-react:nth-last-child(2) { animation-delay:.35s; } .wa-react:nth-last-child(1) { animation-delay:.7s; }
-  @keyframes waIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
-  .wa-sm .wa-head { display:none; }
-  .wa-sm .wa-body { padding:10px 12px; max-height:none; }
-  .wa-sm .wa-b { font-size:1rem; }
-  .wa-sm .wa-name { font-size:.8rem; }
-  .wa-sm .wa-date { font-size:.8rem; }
-  .pqchat { max-height:48vh; overflow-y:auto; border-radius:12px; }
-  @media (max-width:820px) { .chatLayout { grid-template-columns:1fr; } .wa-b { font-size:1.1rem; } }
-  .chip { display:inline-flex; align-items:center; gap:10px; }
-  .chip.off { opacity:.45; }
-  button.kick { font-size:.9rem; padding:4px 9px; margin:0; border-radius:20px; background:rgba(255,255,255,.12); color:var(--text); }
-  button.kick:hover, button.kick:focus-visible { background:var(--red); }
-  #playersBtn { position:fixed; right:calc(16px + env(safe-area-inset-right, 0px)); bottom:calc(16px + env(safe-area-inset-bottom, 0px));
-                font-size:1rem; padding:12px 18px; margin:0; z-index:40; }
-  #playersPanel { position:fixed; right:calc(16px + env(safe-area-inset-right, 0px)); bottom:calc(76px + env(safe-area-inset-bottom, 0px));
-                  width:min(360px, calc(100vw - 32px)); max-height:60vh; overflow-y:auto; background:var(--card); border-radius:14px;
-                  padding:12px; z-index:40; box-shadow:0 10px 40px rgba(0,0,0,.5); text-align:start; }
-  .prow { display:flex; align-items:center; gap:10px; padding:8px 6px; border-bottom:1px solid rgba(255,255,255,.08); }
-  .prow .nm { flex:1; font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; }
-  .dot { width:10px; height:10px; border-radius:50%; background:#3ddc84; flex:none; }
-  .dot.off { background:#8a83b0; }
-  .previewBar { position:fixed; left:16px; bottom:16px; display:flex; gap:8px; z-index:50; }
-  .previewBar button { font-size:1rem; padding:12px 18px; margin:0; }
+/* lobby */
+.lobbyMain{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:28px;align-items:center}
+.joinInfo{display:flex;flex-direction:column;gap:2px}
+.joinUrl{font-weight:800;font-size:clamp(24px,3vw,36px);direction:ltr;text-align:start;overflow-wrap:anywhere}
+[dir=rtl] .joinUrl{text-align:right}
+.code{font-family:var(--mono);font-weight:700;font-size:clamp(90px,14vw,200px);line-height:1;letter-spacing:.12em;color:var(--hi);direction:ltr}
+[dir=rtl] .code{text-align:right}
+.qrBox{background:#fff;padding:14px;border-radius:18px;display:flex;flex-direction:column;align-items:center;gap:6px;color:#0c0e13;font-weight:800}
+.players{display:flex;flex-wrap:wrap;gap:10px;margin:30px 0 22px;min-height:56px}
+.chip{display:inline-flex;align-items:center;gap:10px;padding:6px 8px 6px 14px;border-radius:999px;background:var(--ink-2);
+      box-shadow:inset 0 0 0 1.5px var(--line);font-weight:800;font-size:1.25rem;animation:pop .3s ease-out}
+[dir=rtl] .chip{padding:6px 14px 6px 8px}
+.chip.off{opacity:.45}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#0c0e13;flex:none;font-size:1rem}
+.kick{width:30px;height:30px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:var(--mute);font-size:.9rem;display:grid;place-items:center}
+.kick:hover,.kick:focus-visible{background:var(--bad);color:#fff}
+.lobbyFoot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+@media (max-width:760px){.lobbyMain{grid-template-columns:1fr}}
+
+/* game (TV) */
+#game{padding-top:calc(14px + env(safe-area-inset-top,0px))}
+.timebar{position:fixed;inset:0 0 auto;height:6px;background:var(--ink-3);z-index:20}
+.timebar i{display:block;height:100%;width:100%;background:var(--hi);transition:width .2s linear}
+.timebar.hurry i{background:var(--bad)}
+[dir=rtl] .timebar i{margin-inline-start:0}
+.ghead{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:6px 0 18px}
+.ghead .brand{font-family:var(--display);font-weight:700;font-size:40px;line-height:1}
+.ghead .prog{color:var(--mute);font-weight:700;font-variant-numeric:tabular-nums;font-size:1.1rem}
+.timer{font-family:var(--mono);font-weight:700;font-size:44px;min-width:2.2ch;text-align:center;font-variant-numeric:tabular-nums}
+.timer.hurry{color:var(--bad)}
+.qgrid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(330px,1fr);gap:28px;align-items:start}
+.side{display:flex;flex-direction:column;gap:18px}
+.side h2{font-family:var(--display);font-weight:700;font-size:clamp(46px,4.6vw,78px);line-height:.9;margin:0;text-wrap:balance}
+.cat{align-self:flex-start;font-weight:700;font-size:.95rem;padding:4px 12px;border-radius:999px;background:var(--ink-3);color:#d9d4c8}
+.suspects{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sus{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;border-radius:16px;background:var(--ink-2);
+     box-shadow:inset 0 0 0 1.5px var(--line);transition:opacity .4s,transform .4s,box-shadow .4s,background .4s}
+.sus .nm{font-weight:800;font-size:1.4rem;min-width:0;overflow-wrap:anywhere;flex:1}
+.sus .cnt{font-family:var(--mono);font-weight:700;color:var(--mute)}
+.sus .voters{flex-basis:100%;font-size:.9rem;color:var(--mute);min-height:0}
+.sus.win{background:var(--ink-3);box-shadow:inset 0 0 0 3px var(--c);transform:scale(1.03)}
+@supports (background:color-mix(in srgb,red 10%,blue)){.sus.win{background:color-mix(in srgb,var(--c) 24%,var(--ink-2))}}
+.sus.win .cnt{color:var(--paper)}
+.sus.dim{opacity:.35}
+.locked{display:flex;flex-direction:column;gap:10px}
+.locked .lc{font-weight:800;font-size:1.15rem;font-variant-numeric:tabular-nums}
+.lchips{display:flex;flex-wrap:wrap;gap:6px}
+.lchips span{padding:3px 12px;border-radius:999px;background:var(--ink-3);font-weight:700;font-size:.95rem;animation:pop .25s ease-out}
+.board{display:flex;flex-direction:column;gap:6px}
+.board h3{margin:0 0 4px;font-size:.9rem;letter-spacing:.06em;color:var(--mute);text-transform:uppercase}
+.row{display:flex;align-items:center;gap:12px;padding:9px 14px;border-radius:12px;background:var(--ink-2);font-weight:800;font-size:1.2rem}
+.row .rk{font-family:var(--mono);color:var(--mute);width:1.6em}
+.row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .sc{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.row .plus{font-family:var(--mono);font-size:.9rem;color:var(--ok)}
+.row.lead{background:var(--hi);color:var(--hi-ink)} .row.lead .rk,.row.lead .plus{color:#5a4a00}
+.sideFoot{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+@media (max-width:980px){.qgrid{grid-template-columns:1fr}}
+
+/* final */
+.final{display:flex;flex-direction:column;gap:26px;align-items:stretch;max-width:1100px;margin:0 auto}
+.final h2{font-family:var(--display);font-weight:700;font-size:clamp(56px,8vw,120px);line-height:.88;margin:0;text-wrap:balance}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:end}
+.pod{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.pod .nm{font-weight:800;font-size:clamp(22px,2.6vw,34px);overflow-wrap:anywhere}
+.pod .sc{font-family:var(--mono);color:var(--mute)}
+.pod .blk{width:100%;border-radius:18px 18px 6px 6px;background:var(--ink-3);display:grid;place-items:center;
+          font-family:var(--display);font-weight:700;font-size:clamp(60px,8vw,110px);line-height:1;color:var(--mute)}
+.pod.p1 .blk{height:220px;background:var(--hi);color:var(--hi-ink)} .pod.p2 .blk{height:160px} .pod.p3 .blk{height:120px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.fact{padding:18px 20px;border-radius:18px;background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);display:flex;flex-direction:column;gap:4px}
+.fact .k{font-size:.85rem;letter-spacing:.06em;color:var(--mute);font-weight:700;text-transform:uppercase}
+.fact .v{font-family:var(--display);font-weight:700;font-size:44px;line-height:1}
+.fact .s{color:var(--mute)}
+
+/* chat panel (WhatsApp-like) */
+.wa{background:#0b141a;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;font-family:var(--chat);
+    box-shadow:0 30px 80px rgba(0,0,0,.45);color:#e9edef}
+.wa-head{background:#202c33;padding:11px 16px;display:flex;gap:12px;align-items:center}
+.wa-gav{width:42px;height:42px;border-radius:50%;background:#6b7c85;display:grid;place-items:center;flex:none}
+.wa-gname{font-weight:600;font-size:1.15rem}
+.wa-sub{font-size:.85rem;color:#8696a0}
+.wa-body{padding:14px 18px 18px;display:flex;flex-direction:column;gap:3px;max-height:calc(100vh - 170px);overflow-y:auto;
+         background-color:#0b0b0b;background-image:url("data:image/jpeg;base64,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VGcP5ph8+6NpBMmRnr2Nn/IyJFDSyh5S7G60jnMsbg58Dyyryy+Xyj5+peh/J3j6EvAi1nHRVI0K6X0Jjh+ROb0y8JsRTD8FwQ0seehW80j+wjAkyv6NlPNDJJKRd30P/oS81daEii6plD5EXCGEuPkaXryjJtfDHnmyLEWnIuG2qJ17EsDTARy8iaSGOU63st+Eh63d7EZfgei2K15eBoHaqq7MvI8EXN9vA04x/CsCyVs7uQTeJqVUbHjxStxpPHehuK46SRIcBPXQTImdDVLwKkq8ivlxcUuK7Hkg7oUykslbVy8jae9+DHCbPR/YvVJC2hGdMW6O7E3W5SFpsdFowS12xKqsO+h4aykv6YJPkwlVsTUeWvFE1HH0M9z/ACRtp7GkjleTp5yLeMrxwcAIrh4Hxmjbe2LCDxCq0VhT0yfYbZS9kFz/ALKczofBb7FRVqx8clxeVgxMQn2JX9jNJ1spJ2F0NXpeXRwvsik48f03kgkYb/2Nkl2JkahK2mUJt6GTw/Hp9DCMNehYqTjMG/wU6ktjOZTRA7F9FRvg5D4pxf0bb3lI2wEKsFbsVKm2NERtV9iTo2wslvYu2uxc3jow6kQyR+nkSbZLrIJUeA8pt/gifEun+IukPY1n7H1LA+Hg0GaRsI7+FkMlfGULLJ6pTZj1OKavr8N/giu9j26YvSQze2Lf2PV6NcV4+htvbYlll/hK16G2fD/wKY//2gAMAwEAAgADAAAAEIhstjupjpvrmrtgvCFDBJFJNDPEDPIIktmtlnlhtrklpkkpimlnntumjqjjpuojrjkniqtuvukgjithkktnoupgvsijqlqimtrnsuhtoknpmgghpmvpkglnhmhmnivpssjhsnookhrvnkimkthrlmjmsijskshrgjmgsuouvhoungosgtpgmnuusrtqhnjngqugjmvutvqokqlrhgijqppninuuttqngrojtjutvrvnrgllmikqouuogovvhvsusnhrlvtuqjrtkmjjgnnnpkgqipipsihghnupkithqioimqJDOABIAIFIPCHNAtrvgippurqurrhv/8QAFBEBAAAAAAAAAAAAAAAAAAAAgP/aAAgBAwEBPxAlf//EABQRAQAAAAAAAAAAAAAAAAAAAID/2gAIAQIBAT8QJX//xAAmEAEBAAICAgEDBQEBAAAAAAABEQAh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");background-repeat:repeat;background-size:236px auto}
+.wa-date,.wa-sys{align-self:center;border-radius:8px;text-align:center;margin-bottom:6px}
+.wa-date{background:#182229;color:#8696a0;font-size:.85rem;padding:4px 12px}
+.wa-sys{max-width:90%;background:#2a2617;color:#ffd279;font-size:1rem;padding:6px 14px;white-space:pre-line}
+.b{position:relative;max-width:82%;align-self:flex-start;padding:6px 10px 7px;border-radius:9px;background:#202c33;
+   font-size:1.35rem;line-height:1.38;white-space:pre-line;overflow-wrap:anywhere}
+.b.first{margin-top:7px;border-start-start-radius:0}
+.b.out{align-self:flex-end;background:#005c4b}
+.b.out.first{border-start-start-radius:9px;border-start-end-radius:0}
+.b .nm{position:relative;display:block;width:fit-content;font-size:.9rem;font-weight:700;margin-bottom:1px;min-height:1.15em}
+.b .rb{display:inline-block;height:.82em;vertical-align:-.04em;background:#d6dade;border-radius:2px}
+.b .nm .cover{position:absolute;inset:.08em -2px .02em;background:#d6dade;border-radius:2px;animation:peel .55s cubic-bezier(.7,0,.2,1) both}
+[dir=rtl] .b .nm .cover{transform-origin:right} [dir=ltr] .b .nm .cover{transform-origin:left}
+@keyframes peel{to{transform:scaleX(0)}}
+.b .tm{font-size:.72rem;color:#8696a0;margin-top:8px;margin-inline-start:14px;float:left}
+[dir=ltr] .b .tm{float:right}
+.b.out .tm{color:#a3d4c8}
+.b.target{box-shadow:0 0 0 3px var(--hi),0 0 26px rgba(255,216,77,.35)}
+.b.react{animation:rise .45s ease-out both}
+.ask{align-self:flex-start;color:var(--hi);font-family:var(--body);font-weight:800;font-size:1.05rem;margin:10px 2px 0}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.wa.sm{border-radius:14px}
+.wa.sm .wa-body{max-height:40vh;padding:10px 12px 12px;background-size:180px auto}
+.wa.sm .b{font-size:1.02rem}
+.wa.sm .b .nm{font-size:.8rem}
+.wa.sm .wa-sys{font-size:.85rem}
+
+/* phone */
+#player{padding:0}
+.pbar{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:10px;
+      padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
+      background:var(--ink-2);font-weight:800}
+.pbar .sc{font-family:var(--mono);color:var(--hi)}
+.pview{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.pq{display:flex;flex-direction:column;gap:12px}
+.pq .lbl{font-weight:800;font-size:1.05rem;color:var(--hi)}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.opt{min-height:66px;border:0;border-radius:16px;background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);
+     display:flex;align-items:center;gap:10px;padding:10px 12px;font-weight:800;font-size:1.15rem;text-align:start}
+.opt:active{transform:scale(.97)}
+.opt .nm{min-width:0;overflow-wrap:anywhere}
+.state{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:20px}
+.state .big{font-family:var(--display);font-weight:700;font-size:clamp(64px,20vw,110px);line-height:.85;margin:0}
+.state .pts{font-family:var(--mono);font-size:2rem}
+.state.ok{background:linear-gradient(180deg,rgba(61,220,151,.18),rgba(61,220,151,0));border-radius:24px}
+.state.bad{background:linear-gradient(180deg,rgba(255,93,108,.16),rgba(255,93,108,0));border-radius:24px}
+.joinForm{max-width:420px;margin:0 auto;display:flex;flex-direction:column;gap:14px;padding-top:4vh}
+.joinForm h2{font-family:var(--display);font-weight:700;font-size:64px;line-height:.9;margin:0}
+.joinForm label{font-size:.9rem;color:var(--mute);font-weight:600}
+.joinForm .txt{min-height:58px;font-size:1.4rem;text-align:center}
+#codeInput{font-family:var(--mono);letter-spacing:.3em}
+
+/* floating host controls */
+#playersBtn{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));right:calc(16px + env(safe-area-inset-right,0px));z-index:30}
+#playersPanel{position:fixed;bottom:calc(76px + env(safe-area-inset-bottom,0px));right:calc(16px + env(safe-area-inset-right,0px));
+              width:min(380px,calc(100vw - 32px));max-height:60vh;overflow-y:auto;background:var(--ink-2);border-radius:18px;padding:12px;
+              z-index:30;box-shadow:0 14px 50px rgba(0,0,0,.55),inset 0 0 0 1.5px var(--line)}
+.prow{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--line)}
+.prow:last-child{border-bottom:0}
+.prow .nm{flex:1;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--ok);flex:none} .dot.off{background:var(--mute)}
+#previewBar{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:calc(16px + env(safe-area-inset-left,0px));
+            z-index:30;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#previewBar .tag{background:var(--ink-3);border-radius:999px;padding:8px 14px;font-weight:700;font-size:.9rem;color:var(--mute)}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;
+       background:var(--paper);color:var(--ink);font-weight:800;padding:10px 18px;border-radius:999px;max-width:calc(100vw - 32px)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}
+}
 </style>
 </head>
 <body>
 
 <!-- ================= Home ================= -->
-<div class="screen active" id="home">
-  <h1>🎉 Party Quiz</h1>
-  <button onclick="startHost()">📺 Host on TV</button>
-  <button class="secondary" onclick="show('join')">📱 Join with phone</button>
-  <button class="secondary" onclick="openQuizList()">✏️ My quizzes</button>
-  <div id="rejoinBox" hidden style="margin-top:18px">
-    <button id="rejoinBtn" onclick="rejoin()"></button>
-  </div>
-</div>
-
-<!-- ================= Quiz list ================= -->
-<div class="screen" id="quizzes">
-  <div class="panel">
-    <h1>✏️ My quizzes</h1>
-    <div id="quizList"></div>
-    <div class="btnRow">
-      <button onclick="newQuiz()">➕ New quiz</button>
-      <button class="secondary" onclick="document.getElementById('importFile').click()">📂 Import file</button>
-      <button class="secondary back" onclick="history.back()">⬅ Back</button>
+<section class="screen active" id="home">
+  <div class="home">
+    <div class="langbar"><button class="btn ghost small" onclick="toggleLang()" data-t="langSwitch">English</button></div>
+    <h1 class="logo" id="logo"><span data-t="logoA">מי </span><span class="redact"><span data-t="logoB">שלח</span><i class="bar"></i></span><span data-t="logoC">?</span></h1>
+    <p class="tagline" data-t="tagline"></p>
+    <div class="tiles">
+      <button class="tile primary" onclick="goSetup()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="19" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+        <b data-t="hostTitle"></b><span data-t="hostSub"></span>
+      </button>
+      <button class="tile" onclick="show('join')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"></rect><path d="M11 18.5h2"></path></svg>
+        <b data-t="joinTitle"></b><span data-t="joinSub"></span>
+      </button>
     </div>
-    <input type="file" id="importFile" accept=".json,application/json" hidden onchange="importQuiz(this)">
-    <p class="muted small" style="text-align:center">Quizzes are saved in this browser. Create them on the device
-      you'll host from, or use Export / Import to move them to another device.</p>
+    <div id="rejoinBox" hidden><button class="btn" id="rejoinBtn" onclick="rejoin()"></button></div>
+    <a class="guideLink" href="guide.html" data-t="howTo"></a>
   </div>
-</div>
+</section>
 
-<!-- ================= Quiz editor ================= -->
-<div class="screen" id="editor">
-  <div class="panel">
-    <div class="edTop">
-      <button class="secondary mini back" onclick="closeEditor()">⬅ Back</button>
-      <button class="mini" onclick="saveQuiz()">💾 Save</button>
+<!-- ================= TV: choose a game ================= -->
+<section class="screen" id="setup">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn ghost small back" onclick="history.back()" data-t="back"></button>
+      <h2 data-t="setupTitle"></h2>
     </div>
-    <input id="qzTitle" class="edInput" dir="auto" maxlength="60" placeholder="Quiz name">
-    <div id="qcards"></div>
-    <div class="btnRow"><button class="secondary" onclick="addQuestion()">➕ Add question</button></div>
-    <div id="edMsg"></div>
-    <div class="btnRow"><button onclick="saveQuiz()">💾 Save quiz</button></div>
+    <label class="drop" id="drop" for="fileInput">
+      <input type="file" id="fileInput" accept=".json,application/json" hidden>
+      <strong data-t="dropTitle"></strong>
+      <span class="muted" data-t="dropSub"></span>
+    </label>
+    <div id="loadMsg" class="msg" role="status" aria-live="polite"></div>
+    <div id="gamesList" class="games"></div>
+    <div class="setupFoot small">
+      <a href="guide.html" data-t="noFile"></a>
+      <button class="linkbtn" onclick="loadSample()" data-t="trySample"></button>
+      <span class="muted" data-t="privacy"></span>
+    </div>
   </div>
-</div>
+</section>
 
 <!-- ================= TV: lobby ================= -->
-<div class="screen" id="lobby">
-  <div class="wide">
-    <div style="text-align:start"><button class="secondary mini back" onclick="history.back()">⬅ Back</button></div>
-    <div class="hostTop">
-      <div>
-        <div class="muted">Open this site on your phone and enter:</div>
-        <div class="code" id="roomCode">····</div>
-        <div class="muted" id="hostStatus">Creating room…</div>
-      </div>
-      <div id="qr"></div>
+<section class="screen" id="lobby">
+  <div class="wrap wide">
+    <div class="topbar">
+      <button class="btn ghost small back" onclick="history.back()" data-t="back"></button>
+      <span class="muted" id="lobbyTitle" dir="auto"></span>
     </div>
-    <div id="players"></div>
-    <div class="muted" id="count">Waiting for players…</div>
-    <div class="quizPick"><span class="muted">Quiz:</span> <select id="quizSelect"></select></div>
-    <button id="startBtn" onclick="startGame()" disabled>▶ Start game</button>
+    <div class="lobbyMain">
+      <div class="joinInfo">
+        <span class="muted" data-t="joinAt"></span>
+        <span class="joinUrl" id="joinUrl"></span>
+        <span class="muted" data-t="andCode"></span>
+        <span class="code" id="roomCode">····</span>
+        <span class="muted small" id="hostStatus"></span>
+      </div>
+      <div class="qrBox"><div id="qr"></div><span data-t="orScan"></span></div>
+    </div>
+    <div id="players" class="players"></div>
+    <div class="lobbyFoot">
+      <span class="muted" id="count"></span>
+      <button class="btn big" id="startBtn" onclick="startGame()" disabled data-primary data-t="start"></button>
+    </div>
   </div>
-</div>
+</section>
 
-<!-- ================= TV: game (question / reveal / final) ================= -->
-<div class="screen" id="game"><div class="wide" id="gameView"></div></div>
-<button id="playersBtn" class="secondary back" hidden onclick="togglePlayers()">👥 Players</button>
-<div id="playersPanel" hidden></div>
-<div class="previewBar" id="previewBar" style="display:none">
-  <button onclick="endQuestion()">👁 Reveal</button>
-  <button class="secondary" onclick="location.reload()">✖ Exit preview</button>
-</div>
+<!-- ================= TV: game ================= -->
+<section class="screen" id="game">
+  <div class="timebar" id="timebar"><i id="timeFill"></i></div>
+  <div class="wrap wide">
+    <header class="ghead">
+      <span class="brand" data-t="docTitle"></span>
+      <span class="prog" id="prog"></span>
+      <span class="timer" id="timer"></span>
+    </header>
+    <div id="stage"></div>
+  </div>
+</section>
 
 <!-- ================= Phone: join ================= -->
-<div class="screen" id="join">
-  <h1>Join a room</h1>
-  <input id="codeInput" inputmode="numeric" maxlength="4" placeholder="Room code"><br>
-  <input id="nameInput" maxlength="16" placeholder="Your name"><br>
-  <button id="joinBtn" onclick="joinRoom()">Join</button>
-  <button class="secondary back" onclick="history.back()">⬅ Back</button>
-  <div id="status" class="muted" style="margin-top:14px;min-height:1.4em"></div>
-</div>
+<section class="screen" id="join">
+  <div class="joinForm">
+    <div><button class="btn ghost small back" onclick="history.back()" data-t="back"></button></div>
+    <h2 data-t="joinHeading"></h2>
+    <label for="codeInput" data-t="codePh"></label>
+    <input class="txt" id="codeInput" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="1234">
+    <label for="nameInput" data-t="namePh"></label>
+    <input class="txt" id="nameInput" maxlength="16" autocomplete="nickname" dir="auto">
+    <button class="btn big" id="joinBtn" onclick="joinRoom()" data-t="joinBtn"></button>
+    <div id="status" class="msg" role="status" aria-live="polite"></div>
+  </div>
+</section>
 
 <!-- ================= Phone: in game ================= -->
-<div class="screen" id="player">
-  <div class="pbar"><span id="pName"></span><span id="pScore">0</span></div>
-  <div id="pview"></div>
+<section class="screen" id="player">
+  <div class="pbar"><span id="pName" dir="auto"></span><span class="sc" id="pScore">0</span></div>
+  <div class="pview" id="pview"></div>
+</section>
+
+<button id="playersBtn" class="btn ghost small" hidden onclick="togglePlayers()" data-t="playersBtn"></button>
+<div id="playersPanel" hidden></div>
+<div id="previewBar" hidden>
+  <span class="tag" data-t="previewOn"></span>
+  <button class="btn ghost small" onclick="location.reload()" data-t="exitPreview"></button>
 </div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
 
 <script>
+'use strict';
 /* =========================================================
-   Built-in demo quiz (always available, can't be deleted).
-   Your own quizzes are made in "✏️ My quizzes".
-   correct = index of the right answer (0 = first)
+   small helpers
    ========================================================= */
-const DEMO_QUIZ = { id: 'demo', title: 'Demo quiz', questions: [
-  { q: "What is the capital of Australia?",      a: ["Sydney", "Canberra", "Melbourne", "Perth"], correct: 1, time: 20 },
-  { q: "How many bits are in a byte?",            a: ["4", "8", "16", "32"],                       correct: 1, time: 20 },
-  { q: "Which planet is called the Red Planet?",  a: ["Venus", "Jupiter", "Mars", "Saturn"],       correct: 2, time: 20 },
-  { q: "What does CPU stand for?",                a: ["Central Processing Unit", "Computer Power Unit",
-                                                      "Core Process Utility", "Central Program Uploader"], correct: 0, time: 20 },
-  { q: "At sea level, water boils at…",           a: ["90 °C", "100 °C", "110 °C", "120 °C"],     correct: 1, time: 20 },
-]};
-let QUESTIONS = [];           // filled from the chosen quiz when a game starts
-const DURATION = 20;          // default seconds per question
-let qDur = DURATION;
-const MAX_POINTS = 1000;      // fast correct answer ≈ 1000, slow correct ≈ 500
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function newId() { return 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function initial(n) { return [...String(n || '?').trim()][0] || '?'; }
+function okColor(c) { return /^#[0-9a-f]{3,8}$/i.test(String(c || '')); }
+function $(id) { return document.getElementById(id); }
+let toastTimer = null;
+function toast(msg) { const el = $('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 2600); }
 
-const PREFIX = "partyquiz-demo-g7k2-";   // keeps our room IDs unique on the free PeerJS server
-const SHAPES = ["▲", "◆", "●", "■"];
+/* =========================================================
+   language
+   ========================================================= */
+const STR = {
+  he: {
+    docTitle: 'מי שלח?', langSwitch: 'English', logoA: 'מי ', logoB: 'שלח', logoC: '?',
+    tagline: 'משחק ניחושים על הקבוצה שלכם: ההודעות הכי מצחיקות מהצ\'אט, עם השמות מוסתרים. כולם מנחשים מהטלפון מי כתב מה.',
+    hostTitle: 'לפתוח חדר', hostSub: 'על המסך הגדול, עם קובץ המשחק', joinTitle: 'להצטרף', joinSub: 'מהטלפון, עם קוד בן 4 ספרות',
+    howTo: 'איך מכינים משחק מהצ\'אט שלכם ←', back: 'חזרה',
+    setupTitle: 'איזה צ\'אט משחקים?', dropTitle: 'גררו לכאן את קובץ המשחק', dropSub: 'או לחצו כדי לבחור את קובץ ה־JSON שקיבלתם מ־Claude',
+    noFile: 'אין לכם קובץ? ככה מכינים אחד', trySample: 'או נסו קבוצה לדוגמה', privacy: 'הקובץ נשמר רק בדפדפן הזה ולא עולה לשום שרת.',
+    metaQ: '{n} שאלות', metaP: '{n} בקבוצה', openRoom: 'לפתוח חדר', preview: 'תצוגה מקדימה', del: 'מחיקה',
+    delConfirm: 'למחוק את "{t}" מהדפדפן הזה?', settingCount: 'כמה שאלות', all: 'כולן ({n})', settingOrder: 'סדר',
+    orderShuffle: 'מעורבב', orderDate: 'לפי תאריך', settingPace: 'קצב', paceRelaxed: 'רגוע', paceNormal: 'רגיל', paceFast: 'מהיר',
+    questionsList: 'השאלות בקובץ ({a} מתוך {n} פעילות)', loaded: 'נטען: {t}', skipped: ' ({n} שאלות דולגו כי חסר בהן מידע)',
+    errNotGame: 'זה לא נראה כמו קובץ משחק.', errNoQuestions: 'אין בקובץ שאלות.', errNoValid: 'לא מצאנו בקובץ אף שאלה תקינה.',
+    errRead: 'לא הצלחנו לקרוא את הקובץ. ודאו שזה קובץ ה־JSON שקיבלתם מ־Claude.', errBig: 'הקובץ גדול מדי (מעל 8MB).',
+    notSaved: 'הדפדפן לא מאפשר לשמור (אולי גלישה בסתר). המשחק יישאר רק עד שתסגרו את הדף.', untitled: 'הקבוצה',
+    joinAt: 'נכנסים מהטלפון ל־', andCode: 'ומקלידים את הקוד', orScan: 'או סורקים',
+    creating: 'פותחים חדר…', roomOpen: 'החדר פתוח', roomErr: 'בעיה בחיבור ({e}). נסו לרענן את הדף.',
+    noPeer: 'רכיב החיבור לא נטען. בדקו את האינטרנט ורעננו.', waiting: 'מחכים לשחקנים…', nPlayers: '{n} מחוברים', start: 'להתחיל',
+    removeConfirm: 'להוציא את {n} מהחדר?', removed: '{n} הוצא/ה מהחדר', playersBtn: 'שחקנים', noPlayers: 'אין שחקנים עדיין',
+    offline: 'מנותק', removeAria: 'להוציא את {n}',
+    qOf: 'שאלה {i} מתוך {n}', whoSentMarked: 'מי שלח את ההודעה המסומנת?', whoSent: 'מי שלח את זה?', namesHidden: 'השמות מוסתרים',
+    lockedN: '{a} מתוך {n} ננעלו', revealNow: 'לחשוף עכשיו', next: 'לשאלה הבאה', toFinal: 'לתוצאות',
+    nobody: 'אף אחד לא זיהה', everybody: 'כולם זיהו', board: 'הטבלה',
+    finalTitle: 'מי מכיר את הקבוצה הכי טוב?', hardest: 'הכי קשה לזיהוי', hardestSub: 'רק {p}% זיהו נכון',
+    easiest: 'הכי צפוי/ה', easiestSub: '{p}% זיהו נכון', fastest: 'הכי מהיר/ה', fastestSub: '{s} שניות לתשובה נכונה, בממוצע',
+    playAgain: 'עוד סיבוב, אותם שחקנים', otherGame: 'לבחור משחק אחר', leaveConfirm: 'לצאת מהמשחק? החדר ייסגר לכולם.',
+    previewOn: 'תצוגה מקדימה, עם 3 שחקנים מדומים', exitPreview: 'יציאה',
+    joinHeading: 'הצטרפות', codePh: 'קוד החדר', namePh: 'השם שלכם', joinBtn: 'להיכנס',
+    enterCode: 'צריך קוד של 4 ספרות', enterName: 'צריך שם', connecting: 'מתחברים…',
+    roomNotFound: 'אין חדר עם הקוד הזה. בדקו את המספר על המסך.', connProblem: 'בעיה בחיבור ({e})', nameTaken: 'השם הזה כבר תפוס בחדר',
+    inLobby: 'אתם בפנים', inLobbySub: 'המשחק יתחיל עוד רגע. העיניים על המסך.',
+    pickSender: 'מי שלח את ההודעה המסומנת?', lockedOn: 'ננעלתם על', waitOthers: 'מחכים לשאר השחקנים',
+    correct: 'צדקתם', wrong: 'לא הפעם', timeUp: 'נגמר הזמן', itWas: 'זה היה {n}', rankOf: 'מקום {r} מתוך {n}',
+    getReady: 'השאלה הבאה בדרך', reconnecting: 'מתחברים מחדש…', tryN: 'ניסיון {i} מתוך {n}', disconnected: 'החיבור נותק',
+    roomClosed: 'החדר נסגר', scoreKept: 'הניקוד שלכם נשמר.', rejoinAs: 'לחזור בתור {n}', backToRoom: 'לחזור לחדר {c} בתור {n}',
+    kicked: 'הוציאו אתכם מהחדר', leaveGame: 'לצאת מהמשחק?', fake: ['נועם', 'שירה', 'גל']
+  },
+  en: {
+    docTitle: 'Who sent it?', langSwitch: 'עברית', logoA: 'Who ', logoB: 'sent', logoC: ' it?',
+    tagline: 'A guessing game about your group chat: its funniest messages with the names hidden. Everyone guesses who wrote what from their phone.',
+    hostTitle: 'Host a room', hostSub: 'On the big screen, with your game file', joinTitle: 'Join', joinSub: 'From your phone, with a 4-digit code',
+    howTo: 'How to make a game from your chat →', back: 'Back',
+    setupTitle: 'Which chat are we playing?', dropTitle: 'Drop your game file here', dropSub: 'or click to pick the JSON file you got from Claude',
+    noFile: 'No file yet? Here’s how to make one', trySample: 'or try a sample group', privacy: 'The file stays in this browser. It is never uploaded to a server.',
+    metaQ: '{n} questions', metaP: '{n} in the chat', openRoom: 'Open the room', preview: 'Preview', del: 'Delete',
+    delConfirm: 'Delete "{t}" from this browser?', settingCount: 'Questions', all: 'All ({n})', settingOrder: 'Order',
+    orderShuffle: 'Shuffled', orderDate: 'By date', settingPace: 'Pace', paceRelaxed: 'Relaxed', paceNormal: 'Normal', paceFast: 'Fast',
+    questionsList: 'Questions in the file ({a} of {n} on)', loaded: 'Loaded: {t}', skipped: ' ({n} questions skipped because they were incomplete)',
+    errNotGame: 'This doesn’t look like a game file.', errNoQuestions: 'The file has no questions.', errNoValid: 'No usable questions in this file.',
+    errRead: 'Couldn’t read the file. Make sure it’s the JSON file you got from Claude.', errBig: 'The file is too big (over 8 MB).',
+    notSaved: 'This browser won’t save files (private mode?). The game stays only until you close the page.', untitled: 'The group',
+    joinAt: 'On your phone, go to', andCode: 'and enter the code', orScan: 'or scan',
+    creating: 'Opening the room…', roomOpen: 'The room is open', roomErr: 'Connection problem ({e}). Try refreshing the page.',
+    noPeer: 'The connection library didn’t load. Check the internet and refresh.', waiting: 'Waiting for players…', nPlayers: '{n} connected', start: 'Start',
+    removeConfirm: 'Remove {n} from the room?', removed: '{n} was removed', playersBtn: 'Players', noPlayers: 'No players yet',
+    offline: 'offline', removeAria: 'Remove {n}',
+    qOf: 'Question {i} of {n}', whoSentMarked: 'Who sent the highlighted message?', whoSent: 'Who sent this?', namesHidden: 'Names hidden',
+    lockedN: '{a} of {n} locked in', revealNow: 'Reveal now', next: 'Next question', toFinal: 'Results',
+    nobody: 'Nobody got it', everybody: 'Everyone got it', board: 'Scores',
+    finalTitle: 'Who knows the group best?', hardest: 'Hardest to spot', hardestSub: 'only {p}% guessed right',
+    easiest: 'Most predictable', easiestSub: '{p}% guessed right', fastest: 'Fastest', fastestSub: '{s} s per correct answer, on average',
+    playAgain: 'Another round, same players', otherGame: 'Pick another game', leaveConfirm: 'Leave the game? The room closes for everyone.',
+    previewOn: 'Preview with 3 pretend players', exitPreview: 'Exit',
+    joinHeading: 'Join', codePh: 'Room code', namePh: 'Your name', joinBtn: 'Join',
+    enterCode: 'Enter the 4-digit code', enterName: 'Enter your name', connecting: 'Connecting…',
+    roomNotFound: 'No room with that code. Check the number on the screen.', connProblem: 'Connection problem ({e})', nameTaken: 'That name is already taken in this room',
+    inLobby: 'You’re in', inLobbySub: 'The game starts soon. Eyes on the screen.',
+    pickSender: 'Who sent the highlighted message?', lockedOn: 'You locked in', waitOthers: 'Waiting for the others',
+    correct: 'Correct', wrong: 'Not this time', timeUp: 'Time’s up', itWas: 'It was {n}', rankOf: '{r} of {n}',
+    getReady: 'Next question coming up', reconnecting: 'Reconnecting…', tryN: 'Try {i} of {n}', disconnected: 'Disconnected',
+    roomClosed: 'The room is closed', scoreKept: 'Your score is kept.', rejoinAs: 'Rejoin as {n}', backToRoom: 'Back to room {c} as {n}',
+    kicked: 'You were removed from the room', leaveGame: 'Leave the game?', fake: ['Sam', 'Alex', 'Robin']
+  }
+};
+let LANG = lsGet('wst.lang') || ((navigator.language || '').toLowerCase().startsWith('he') ? 'he' : 'en');
+if (!STR[LANG]) LANG = 'en';
+function t(k, v) {
+  let s = STR[LANG][k] ?? STR.en[k] ?? k;
+  if (v && typeof s === 'string') s = s.replace(/\{(\w+)\}/g, (m, x) => (v[x] ?? m));
+  return s;
+}
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG === 'he' ? 'rtl' : 'ltr';
+  document.title = t('docTitle');
+  document.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
+  if (current === 'setup') renderGames();
+  if (current === 'home') showRejoinBanner();
+}
+function toggleLang() { LANG = LANG === 'he' ? 'en' : 'he'; lsSet('wst.lang', LANG); applyLang(); }
 
+/* =========================================================
+   screens + browser Back
+   ========================================================= */
 let current = 'home';
-// every screen change is a browser history step, so the browser's Back button works
 function show(id, push = true) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  $(id).classList.add('active');
   if (push && id !== current) { try { history.pushState({ screen: id }, '', '#' + id); } catch (e) {} }
   current = id;
+  window.scrollTo(0, 0);
 }
-let hostPeer = null;
+function replaceScreen(id) { try { history.replaceState({ screen: id }, '', '#' + id); } catch (e) {} }
 window.addEventListener('popstate', e => {
-  const target = (e.state && e.state.screen) || 'home';
+  let target = (e.state && e.state.screen) || 'home';
   const stay = () => { try { history.pushState({ screen: current }, '', '#' + current); } catch (err) {} };
-  if (current === 'lobby' || current === 'game') {          // leaving the TV: close the room
-    const mid = !previewMode && (phase === 'question' || phase === 'reveal');
-    if (mid && !confirm('Leave the game? The room will close for everyone.')) { stay(); return; }
-    location.href = location.pathname; return;
+  if (current === 'lobby' || current === 'game') {
+    const mid = roomActive && !previewMode && (phase === 'question' || phase === 'reveal');
+    if (mid && !confirm(t('leaveConfirm'))) { stay(); return; }
+    closeRoom();
+    target = 'setup'; replaceScreen('setup');
+  } else if (current === 'player') {
+    if (!kicked && myConn && !confirm(t('leaveGame'))) { stay(); return; }
+    leaveAsPlayer();
+    target = 'home'; replaceScreen('home');
   }
-  if (current === 'player') {                                // phone leaving a game
-    if (!confirm('Leave the game?')) { stay(); return; }
-    location.href = location.pathname; return;
-  }
-  if (current === 'editor' && dirty && !confirm('Leave without saving?')) { stay(); return; }
-  if (target === 'quizzes') renderQuizList();
+  if ((target === 'lobby' || target === 'game') && !roomActive) { target = 'setup'; replaceScreen('setup'); }
+  if (target === 'player' && !myConn) { target = 'home'; replaceScreen('home'); }
+  if (target === 'setup') renderGames();
+  if (target === 'home') showRejoinBanner();
   show(target, false);
 });
-function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* =========================================================
+   game files
+   Format: { title, group, me, participants:[{name,color}],
+             questions:[{ date, category, note, time, messages:[{from,text,time,answer,reaction}] }] }
+   Also reads the older party-quiz files (questions with chat.lines).
+   ========================================================= */
+const PALETTE = ['#53bdeb', '#ffbc38', '#06cf9c', '#fc9775', '#e542a3', '#a5b337', '#9b8cff', '#ff7a59', '#00a5f4', '#d3b56b', '#25d366', '#ff5d8f'];
+function normalizeGame(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error(t('errNotGame'));
+  const qs = Array.isArray(raw.questions) ? raw.questions : null;
+  if (!qs || !qs.length) throw new Error(t('errNoQuestions'));
+  const names = [], colorOf = {};
+  const addName = n => { n = String(n ?? '').trim().slice(0, 30); if (n && !names.includes(n)) names.push(n); return n; };
+  if (Array.isArray(raw.participants)) raw.participants.forEach(p => {
+    const n = addName(typeof p === 'string' ? p : p && p.name);
+    if (n && p && okColor(p.color)) colorOf[n] = p.color;
+  });
+  const out = []; let skipped = 0;
+  qs.slice(0, 500).forEach(q => {
+    try {
+      if (!q || typeof q !== 'object') throw 0;
+      let msgs, date, note, cat, time;
+      if (q.chat && Array.isArray(q.chat.lines)) {           // older party-quiz file
+        msgs = q.chat.lines.map(l => ({ from: l.who, text: l.text, time: l.time, answer: l.target, reaction: l.react }));
+        date = q.chat.date; note = q.chat.note; cat = q.cat; time = q.time;
+        if (Array.isArray(q.a)) q.a.forEach(addName);
+      } else { msgs = q.messages; date = q.date; note = q.note; cat = q.category; time = q.time; }
+      if (!Array.isArray(msgs) || !msgs.length) throw 0;
+      msgs = msgs.slice(0, 40).map(m => ({
+        from: addName(m && m.from), text: String((m && m.text) ?? '').slice(0, 3000), time: String((m && m.time) || '').slice(0, 8),
+        answer: !!(m && m.answer), reaction: !!(m && m.reaction && !m.answer)
+      }));
+      const ans = msgs.filter(m => m.answer);
+      if (!ans.length || !ans[0].from || !ans.every(m => m.from === ans[0].from)) throw 0;
+      const tm = Number(time);
+      out.push({ id: out.length, date: String(date || '').slice(0, 20), note: note ? String(note).slice(0, 240) : '',
+        category: cat ? String(cat).slice(0, 40) : '', time: Number.isFinite(tm) && tm >= 5 && tm <= 180 ? Math.round(tm) : 0,
+        messages: msgs, sender: ans[0].from });
+    } catch (e) { skipped++; }
+  });
+  if (!out.length) throw new Error(t('errNoValid'));
+  return {
+    title: String(raw.title || raw.group || t('untitled')).slice(0, 60),
+    group: String(raw.group || raw.title || t('untitled')).slice(0, 60),
+    me: String(raw.me || '').trim(),
+    participants: names.map((n, i) => ({ name: n, color: colorOf[n] || PALETTE[i % PALETTE.length] })),
+    questions: out, skipped
+  };
+}
+
+/* saved games (this browser only) */
+const GAMES_KEY = 'wst.games';
+let games = [], canSave = true, selectedId = null;
+try { const a = JSON.parse(lsGet(GAMES_KEY)); if (Array.isArray(a)) games = a.filter(r => r && r.game && Array.isArray(r.game.questions)); } catch (e) {}
+function saveGames() { canSave = lsSet(GAMES_KEY, JSON.stringify(games.filter(r => !r.sample))); return canSave; }
+function currentRec() { return games.find(r => r.id === selectedId) || null; }
+function addGame(raw, sample) {
+  const g = normalizeGame(raw);
+  const rec = { id: newId(), addedAt: Date.now(), game: g, off: [], sample: !!sample,
+    settings: { count: 'all', order: 'shuffle', pace: 'normal' } };
+  games = games.filter(r => !(sample && r.sample));
+  games.unshift(rec); selectedId = rec.id;
+  if (!sample) saveGames();
+  return rec;
+}
+function setMsg(text, kind) { const el = $('loadMsg'); el.textContent = text || ''; el.className = 'msg' + (kind ? ' ' + kind : ''); }
+function readFile(file) {
+  if (!file) return;
+  if (file.size > 8e6) { setMsg(t('errBig'), 'err'); return; }
+  const r = new FileReader();
+  r.onload = () => {
+    let raw;
+    try { raw = JSON.parse(String(r.result).replace(/^﻿/, '')); } catch (e) { setMsg(t('errRead'), 'err'); return; }
+    try {
+      const rec = addGame(raw);
+      setMsg(t('loaded', { t: rec.game.title }) + (rec.game.skipped ? t('skipped', { n: rec.game.skipped }) : ''), 'ok');
+      if (!canSave) setMsg(t('notSaved'), 'err');
+      renderGames();
+    } catch (e) { setMsg(e.message || t('errRead'), 'err'); }
+  };
+  r.onerror = () => setMsg(t('errRead'), 'err');
+  r.readAsText(file);
+}
+function loadSample() {
+  addGame(LANG === 'he' ? SAMPLE_HE : SAMPLE_EN, true);
+  setMsg('', ''); renderGames();
+}
+function selectGame(id) { selectedId = selectedId === id ? null : id; renderGames(); }
+function deleteGame(id) {
+  const rec = games.find(r => r.id === id);
+  if (!rec || !confirm(t('delConfirm', { t: rec.game.title }))) return;
+  games = games.filter(r => r.id !== id); if (selectedId === id) selectedId = null;
+  saveGames(); renderGames();
+}
+function setSetting(key, val) { const rec = currentRec(); if (!rec) return; rec.settings[key] = val; if (!rec.sample) saveGames(); }
+function toggleQ(qid, on) {
+  const rec = currentRec(); if (!rec) return;
+  const off = new Set(rec.off || []); on ? off.delete(qid) : off.add(qid); rec.off = [...off];
+  if (!rec.sample) saveGames();
+  const sum = $('qsum'); if (sum) sum.textContent = t('questionsList', { a: rec.game.questions.length - off.size, n: rec.game.questions.length });
+}
+function renderGames() {
+  const box = $('gamesList');
+  if (!games.length) { box.innerHTML = ''; return; }
+  if (!selectedId) selectedId = games[0].id;
+  box.innerHTML = games.map(rec => {
+    const g = rec.game, sel = rec.id === selectedId, off = new Set(rec.off || []), s = rec.settings;
+    const active = g.questions.length - off.size;
+    const faces = g.participants.slice(0, 10).map(p => `<i style="background:${p.color}">${esc(initial(p.name))}</i>`).join('');
+    let body = '';
+    if (sel) {
+      const counts = [10, 15, 20, 30].filter(n => n < active);
+      const opt = (v, label, cur) => `<option value="${v}"${String(cur) === String(v) ? ' selected' : ''}>${esc(label)}</option>`;
+      body = `<div class="gbody">
+        <div class="settings">
+          <div class="field"><label for="set-count">${esc(t('settingCount'))}</label>
+            <select id="set-count" onchange="setSetting('count',this.value)">${opt('all', t('all', { n: active }), s.count)}${counts.map(n => opt(n, n, s.count)).join('')}</select></div>
+          <div class="field"><label for="set-order">${esc(t('settingOrder'))}</label>
+            <select id="set-order" onchange="setSetting('order',this.value)">${opt('shuffle', t('orderShuffle'), s.order)}${opt('date', t('orderDate'), s.order)}</select></div>
+          <div class="field"><label for="set-pace">${esc(t('settingPace'))}</label>
+            <select id="set-pace" onchange="setSetting('pace',this.value)">${opt('relaxed', t('paceRelaxed'), s.pace)}${opt('normal', t('paceNormal'), s.pace)}${opt('fast', t('paceFast'), s.pace)}</select></div>
+        </div>
+        <details><summary id="qsum">${esc(t('questionsList', { a: active, n: g.questions.length }))}</summary>
+          <ol class="qlist">${g.questions.map(q => {
+            const a = q.messages.find(m => m.answer);
+            return `<li><label><input type="checkbox" id="q-${q.id}"${off.has(q.id) ? '' : ' checked'} onchange="toggleQ(${q.id},this.checked)">
+              <span class="qd">${esc(q.date)}</span><span class="qt" dir="auto">${esc(a.text.replace(/\s+/g, ' '))}</span></label></li>`;
+          }).join('')}</ol></details>
+        <div class="gact">
+          <button class="btn big" data-primary onclick="openRoom()"${active ? '' : ' disabled'}>${esc(t('openRoom'))}</button>
+          <button class="btn ghost" onclick="startPreview()"${active ? '' : ' disabled'}>${esc(t('preview'))}</button>
+          <span class="spacer"></span>
+          ${rec.sample ? '' : `<button class="btn danger small" onclick="deleteGame('${rec.id}')">${esc(t('del'))}</button>`}
+        </div></div>`;
+    }
+    return `<article class="gcard${sel ? ' sel' : ''}">
+      <button class="gsum" onclick="selectGame('${rec.id}')" aria-expanded="${sel}">
+        <span class="gtitle" dir="auto">${esc(g.title)}</span>
+        <span class="gmeta">${esc(t('metaQ', { n: active }))} · ${esc(t('metaP', { n: g.participants.length }))}</span>
+        <span class="faces" aria-hidden="true">${faces}</span>
+      </button>${body}</article>`;
+  }).join('');
+}
+function goSetup() { renderGames(); show('setup'); }
+
+/* =========================================================
+   building a round
+   ========================================================= */
+let ROUND = null;   // { game, items:[{ q, options:[{name,color}], correct, dur }] }
+function autoTime(q) {
+  if (q.time) return q.time;
+  const chars = q.messages.filter(m => !m.reaction).reduce((s, m) => s + m.text.length, 0);
+  return clamp(Math.round((12 + chars / 30) / 5) * 5, 15, 60);
+}
+function optionsFor(q, g) {
+  const ps = g.participants;
+  let list = ps;
+  if (ps.length > 8) {
+    const others = shuffle(ps.filter(p => p.name !== q.sender)).slice(0, 5);
+    const keep = new Set([q.sender, ...others.map(p => p.name)]);
+    list = ps.filter(p => keep.has(p.name));
+  }
+  return list.map(p => ({ name: p.name, color: p.color }));
+}
+function prepareRound(rec) {
+  const g = rec.game, s = rec.settings || {}, off = new Set(rec.off || []);
+  let qs = shuffle(g.questions.filter(q => !off.has(q.id)));
+  if (s.count && s.count !== 'all') qs = qs.slice(0, Number(s.count));
+  if (s.order === 'date') qs.sort((a, b) => a.id - b.id);
+  const pace = { relaxed: 1.4, normal: 1, fast: 0.7 }[s.pace] || 1;
+  ROUND = { game: g, colors: Object.fromEntries(g.participants.map(p => [p.name, p.color])),
+    items: qs.map(q => { const options = optionsFor(q, g);
+      return { q, options, correct: options.findIndex(o => o.name === q.sender), dur: Math.max(8, Math.round(autoTime(q) * pace)) }; }) };
+}
+
+/* =========================================================
+   the chat panel
+   lines: [{ from?, text, time, answer, reaction, first? }]
+   Before the reveal names are solid bars (their width does not depend on the name).
+   ========================================================= */
+const BAR_W = [3.4, 4.6, 2.8, 3.9, 5.1, 3.1, 4.2];
+const GROUP_ICON = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cfd8dc" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"></circle><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M16 13.6c2.9.2 5 2.2 5 5.4"></path></svg>';
+function hiddenLines(q) {   // what phones get: no names, no reactions, only where a new sender starts
+  const vis = q.messages.filter(m => !m.reaction);
+  return vis.map((m, i) => ({ text: m.text, time: m.time, answer: m.answer, first: i === 0 || vis[i - 1].from !== m.from }));
+}
+function chatHtml(c, o = {}) {
+  const reveal = !!o.reveal;
+  const lines = reveal ? c.lines : c.lines.filter(l => !l.reaction);
+  let run = -1, asked = false, ri = 0;
+  const body = lines.map((l, i) => {
+    const first = reveal ? (i === 0 || lines[i - 1].from !== l.from) : (l.first !== undefined ? l.first : true);
+    if (first) run++;
+    const out = reveal && o.me && l.from === o.me;
+    let nm = '';
+    if (first && !out) {
+      if (reveal) {
+        const col = (o.colors && o.colors[l.from]) || '#8696a0';
+        nm = `<span class="nm" style="color:${col}" dir="auto">${esc(l.from)}<i class="cover" style="animation-delay:${Math.min(run * 110, 1100)}ms"></i></span>`;
+      } else nm = `<span class="nm"><i class="rb" style="width:${BAR_W[run % BAR_W.length]}em"></i></span>`;
+    }
+    const ask = (!reveal && l.answer && !asked) ? (asked = true, `<div class="ask">${esc(t('whoSent'))}</div>`) : '';
+    const cls = ['b', out ? 'out' : '', first ? 'first' : '', l.answer ? 'target' : '', l.reaction ? 'react' : ''].join(' ');
+    const delay = l.reaction ? ` style="animation-delay:${900 + (ri++) * 450}ms"` : '';
+    return `${ask}<div class="${cls}"${delay}>${nm}<span dir="auto">${esc(l.text)}</span><span class="tm">${esc(l.time || '')}</span></div>`;
+  }).join('');
+  const head = o.small ? '' : `<div class="wa-head"><span class="wa-gav">${GROUP_ICON}</span><div>
+      <div class="wa-gname" dir="auto">${esc(c.group || '')}</div>
+      <div class="wa-sub">${reveal ? esc((o.names || []).join(', ')) : esc(t('namesHidden'))}</div></div></div>`;
+  return `<div class="wa${o.small ? ' sm' : ''}">${head}<div class="wa-body">
+      ${c.date ? `<div class="wa-date">${esc(c.date)}</div>` : ''}
+      ${c.note ? `<div class="wa-sys" dir="auto">${esc(c.note)}</div>` : ''}${body}</div></div>`;
+}
 
 /* =========================================================
    HOST (TV)
    ========================================================= */
-const players = new Map();   // key (lowercase name) -> { name, conn, connected, score, answer, elapsed, lastPoints }
-let phase = 'lobby';         // lobby | question | reveal | final
-let qIndex = -1, qStart = 0, timerId = null;
+const PREFIX = 'whosent-v1-';
+const players = new Map();      // key -> { name, token, conn, connected, score, answer, elapsed, lastPoints, hits:[] }
+const banned = new Set(), bannedTokens = new Set();
+let peer = null, roomActive = false, previewMode = false, phase = 'idle';
+let qIndex = -1, qStart = 0, qDur = 20, timerId = null, senderStats = {};
 
-function startHost() {
-  show('lobby');
+function openRoom() {
+  const rec = currentRec(); if (!rec) return;
+  prepareRound(rec);
+  if (!ROUND.items.length) return;
+  closeRoom();
+  roomActive = true; phase = 'lobby';
+  $('lobbyTitle').textContent = rec.game.title;
+  $('joinUrl').textContent = (location.host + location.pathname).replace(/index\.html$/, '').replace(/\/$/, '');
+  $('roomCode').textContent = '····'; $('qr').innerHTML = '';
+  $('hostStatus').textContent = t('creating');
+  show('lobby'); renderLobby(); createPeer();
+}
+function createPeer() {
+  if (typeof Peer === 'undefined') { $('hostStatus').textContent = t('noPeer'); return; }
   const code = String(Math.floor(1000 + Math.random() * 9000));
-  const peer = new Peer(PREFIX + code);
-  hostPeer = peer;
-
-  peer.on('open', () => {
-    document.getElementById('roomCode').textContent = code;
-    document.getElementById('hostStatus').textContent = 'Room is open';
-    const joinUrl = location.origin + location.pathname + '?join=' + code;
-    document.getElementById('qr').innerHTML = '';
-    new QRCode(document.getElementById('qr'), { text: joinUrl, width: 160, height: 160 });
+  const p = new Peer(PREFIX + code);
+  peer = p;
+  p.on('open', () => {
+    if (peer !== p) return;
+    $('roomCode').textContent = code;
+    $('hostStatus').textContent = t('roomOpen');
+    const url = location.origin + location.pathname + '?join=' + code;
+    $('qr').innerHTML = '';
+    if (typeof QRCode !== 'undefined') new QRCode($('qr'), { text: url, width: 180, height: 180, colorDark: '#0c0e13', colorLight: '#ffffff' });
   });
-  peer.on('error', err => {
-    if (err.type === 'unavailable-id') { peer.destroy(); startHost(); }
-    else document.getElementById('hostStatus').textContent = 'Error: ' + err.type;
+  p.on('error', err => {
+    if (peer !== p) return;
+    if (err.type === 'unavailable-id') { p.destroy(); createPeer(); }
+    else if (err.type !== 'peer-unavailable') $('hostStatus').textContent = t('roomErr', { e: err.type });
   });
-  peer.on('connection', handleConnection);
-  renderQuizSelect();
-
-  // Space / Enter presses the main button on the TV
-  document.addEventListener('keydown', e => {
-    if (e.code !== 'Space' && e.code !== 'Enter') return;
-    if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
-    const btn = document.querySelector('.screen.active button:not(:disabled):not(.back):not(.kick)');
-    if (btn) { e.preventDefault(); btn.click(); }
-  });
+  p.on('disconnected', () => { if (peer === p && !p.destroyed) { try { p.reconnect(); } catch (e) {} } });
+  p.on('connection', handleConnection);
+}
+function closeRoom() {
+  clearInterval(timerId);
+  players.forEach(pl => { try { pl.conn && pl.conn.close(); } catch (e) {} });
+  if (peer) { const p = peer; peer = null; try { p.destroy(); } catch (e) {} }
+  players.clear(); banned.clear(); bannedTokens.clear();
+  roomActive = false; previewMode = false; phase = 'idle';
+  $('playersBtn').hidden = true; $('playersPanel').hidden = true; $('previewBar').hidden = true;
 }
 
 function handleConnection(conn) {
   conn.on('data', msg => {
+    if (!msg || typeof msg !== 'object') return;
     if (msg.type === 'join') {
       const name = String(msg.name || '').trim().slice(0, 16);
       const key = name.toLowerCase();
+      const token = String(msg.token || '').slice(0, 40);
       if (!name) return;
-      const token = String(msg.token || '');
       if (banned.has(key) || (token && bannedTokens.has(token))) { conn.send({ type: 'kicked' }); return; }
       const existing = players.get(key);
-      // same name on a different phone that is still online = taken
-      if (existing && existing.connected && existing.token !== token) { conn.send({ type: 'error', text: 'That name is taken' }); return; }
-
-      // New player, or the same phone coming back (keeps the score, replaces the old connection)
-      const p = existing || { name, score: 0, answer: null, elapsed: 0, lastPoints: 0 };
+      if (existing && existing.connected && existing.token !== token) { conn.send({ type: 'error', code: 'taken' }); return; }
+      const p = existing || { name, score: 0, answer: null, elapsed: 0, lastPoints: 0, hits: [] };
       const old = p.conn;
       p.conn = conn; p.connected = true; p.token = token; conn._key = key;
       players.set(key, p);
@@ -355,8 +810,7 @@ function handleConnection(conn) {
       conn.send({ type: 'welcome', name: p.name, score: p.score });
       syncPlayer(p);
       refreshHost();
-    }
-    else if (msg.type === 'answer') {
+    } else if (msg.type === 'answer') {
       const p = players.get(conn._key);
       if (p && p.conn === conn) onAnswer(p, msg.choice);
     }
@@ -366,671 +820,463 @@ function handleConnection(conn) {
     if (!p || p.conn !== conn) return;
     p.connected = false;
     if (phase === 'lobby') players.delete(conn._key);
-    refreshHost();
-    maybeEndEarly();
+    refreshHost(); maybeEndEarly();
   });
 }
+function send(p, msg) { if (p.connected && p.conn && p.conn.open) { try { p.conn.send(msg); } catch (e) {} } }
+function broadcast(msg) { players.forEach(p => send(p, msg)); }
+function connectedPlayers() { return [...players.values()].filter(p => p.connected); }
+function ranking() { return [...players.values()].sort((a, b) => b.score - a.score); }
+function syncPlayer(p) {
+  if (phase === 'lobby') send(p, { type: 'lobby' });
+  else if (phase === 'question') send(p, p.answer === null ? questionMsg() : { type: 'locked', choice: ROUND.items[qIndex].options[p.answer] });
+  else if (phase === 'final') { const r = ranking(); send(p, { type: 'final', rank: r.indexOf(p) + 1, of: r.length, score: p.score }); }
+  else send(p, p.lastResult || { type: 'between' });
+}
+function refreshHost() {
+  if (phase === 'lobby') renderLobby();
+  if (phase === 'question') renderLocked();
+  renderPlayersPanel();
+}
+function renderLobby() {
+  const box = $('players'); box.innerHTML = '';
+  players.forEach((p, key) => {
+    const chip = document.createElement('div'); chip.className = 'chip' + (p.connected ? '' : ' off');
+    const av = document.createElement('span'); av.className = 'av'; av.style.background = PALETTE[[...key].reduce((s, c) => s + c.charCodeAt(0), 0) % PALETTE.length]; av.textContent = initial(p.name);
+    const nm = document.createElement('span'); nm.textContent = p.name; nm.dir = 'auto';
+    const b = document.createElement('button'); b.className = 'kick'; b.textContent = '✕';
+    b.setAttribute('aria-label', t('removeAria', { n: p.name })); b.onclick = () => kick(key);
+    chip.append(av, nm, b); box.appendChild(chip);
+  });
+  const n = connectedPlayers().length;
+  $('count').textContent = n ? t('nPlayers', { n }) : t('waiting');
+  $('startBtn').disabled = n === 0;
+}
 
-/* ---------- host controls: remove players ---------- */
-const banned = new Set(), bannedTokens = new Set();
+/* host controls */
 function kick(key) {
   const p = players.get(key);
-  if (!p || !confirm(`Remove ${p.name} from the room?`)) return;
+  if (!p || !confirm(t('removeConfirm', { n: p.name }))) return;
   banned.add(key); if (p.token) bannedTokens.add(p.token);
   send(p, { type: 'kicked' });
   const c = p.conn; setTimeout(() => { try { c && c.close(); } catch (e) {} }, 300);
   players.delete(key);
-  refreshHost();
-  maybeEndEarly();
+  toast(t('removed', { n: p.name }));
+  refreshHost(); maybeEndEarly();
+}
+function togglePlayers() { const pn = $('playersPanel'); pn.hidden = !pn.hidden; renderPlayersPanel(); }
+function renderPlayersPanel() {
+  const pn = $('playersPanel'); if (pn.hidden) return;
+  pn.innerHTML = '';
+  if (!players.size) { pn.textContent = t('noPlayers'); return; }
+  players.forEach((p, key) => {
+    const row = document.createElement('div'); row.className = 'prow';
+    const dot = document.createElement('span'); dot.className = 'dot' + (p.connected ? '' : ' off');
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.dir = 'auto'; nm.textContent = p.name;
+    const sc = document.createElement('span'); sc.className = 'muted'; sc.textContent = p.connected ? p.score : p.score + ' · ' + t('offline');
+    const b = document.createElement('button'); b.className = 'kick'; b.textContent = '✕';
+    b.setAttribute('aria-label', t('removeAria', { n: p.name })); b.onclick = () => kick(key);
+    row.append(dot, nm, sc, b); pn.appendChild(row);
+  });
+}
+
+/* game flow */
+function startGame() {
+  players.forEach((p, key) => { if (!p.connected) players.delete(key); });
+  players.forEach(p => { p.score = 0; p.hits = []; });
+  senderStats = {}; qIndex = -1;
+  show('game');
+  $('playersBtn').hidden = false;
+  nextQuestion();
+}
+function questionMsg() {
+  const it = ROUND.items[qIndex], q = it.q;
+  return { type: 'question', n: qIndex + 1, total: ROUND.items.length, date: q.date, note: q.note,
+           lines: hiddenLines(q), options: it.options };
+}
+function nextQuestion() {
+  qIndex++;
+  if (qIndex >= ROUND.items.length) { showFinal(); return; }
+  phase = 'question';
+  players.forEach(p => { p.answer = null; p.lastPoints = 0; p.elapsed = 0; p.lastResult = null; });
+  const it = ROUND.items[qIndex], q = it.q, g = ROUND.game;
+  qDur = it.dur;
+  $('prog').textContent = t('qOf', { i: qIndex + 1, n: ROUND.items.length });
+  $('stage').innerHTML = `<div class="qgrid">
+      <div id="chatBox">${chatHtml({ group: g.group, date: q.date, note: q.note, lines: hiddenLines(q) })}</div>
+      <aside class="side">
+        ${q.category ? `<span class="cat" dir="auto">${esc(q.category)}</span>` : ''}
+        <h2>${esc(t('whoSentMarked'))}</h2>
+        <div class="suspects">${it.options.map((o, i) => `<div class="sus" id="sus${i}" style="--c:${o.color}">
+            <span class="av" style="background:${o.color}">${esc(initial(o.name))}</span><span class="nm" dir="auto">${esc(o.name)}</span>
+            <span class="cnt" id="cnt${i}"></span><span class="voters" id="vot${i}"></span></div>`).join('')}</div>
+        <div class="locked"><span class="lc" id="lockedCount"></span><div class="lchips" id="lockedChips"></div></div>
+        <div class="sideFoot" id="sideFoot"><button class="btn ghost small" onclick="endQuestion()">${esc(t('revealNow'))}</button></div>
+      </aside></div>`;
+  renderLocked();
+  qStart = performance.now();
+  broadcast(questionMsg());
+  if (previewMode) setTimeout(() => { if (phase === 'question') fakeAnswers(); }, 1800);
+  clearInterval(timerId);
+  tick(); timerId = setInterval(tick, 200);
+}
+function tick() {
+  const left = Math.max(0, qDur - (performance.now() - qStart) / 1000);
+  $('timer').textContent = Math.ceil(left);
+  $('timeFill').style.width = (left / qDur * 100) + '%';
+  const hurry = left <= 5;
+  $('timer').classList.toggle('hurry', hurry); $('timebar').classList.toggle('hurry', hurry);
+  if (left <= 0) endQuestion();
+}
+function renderLocked() {
+  const all = [...players.values()].filter(p => p.connected || p.answer !== null);
+  const done = all.filter(p => p.answer !== null);
+  const lc = $('lockedCount'); if (!lc) return;
+  lc.textContent = t('lockedN', { a: done.length, n: all.length });
+  $('lockedChips').innerHTML = done.map(p => `<span dir="auto">${esc(p.name)}</span>`).join('');
+}
+function onAnswer(p, choice) {
+  if (phase !== 'question' || p.answer !== null) return;
+  const it = ROUND.items[qIndex];
+  if (!Number.isInteger(choice) || choice < 0 || choice >= it.options.length) return;
+  p.answer = choice;
+  p.elapsed = (performance.now() - qStart) / 1000;   // measured on the TV, so phone clocks don't matter
+  send(p, { type: 'locked', choice: it.options[choice] });
+  renderLocked(); maybeEndEarly();
 }
 function maybeEndEarly() {
   if (phase !== 'question') return;
   const online = connectedPlayers();
-  if (online.length > 0 && online.every(x => x.answer !== null)) endQuestion();
+  if (online.length && online.every(x => x.answer !== null)) setTimeout(() => endQuestion(), 600);
 }
-function togglePlayers() {
-  const panel = document.getElementById('playersPanel');
-  panel.hidden = !panel.hidden;
-  renderPlayersPanel();
-}
-function renderPlayersPanel() {
-  const panel = document.getElementById('playersPanel');
-  if (panel.hidden) return;
-  panel.innerHTML = '';
-  if (!players.size) { panel.textContent = 'No players'; return; }
-  players.forEach((p, key) => {
-    const row = document.createElement('div'); row.className = 'prow';
-    const dot = document.createElement('span'); dot.className = 'dot' + (p.connected ? '' : ' off');
-    dot.title = p.connected ? 'Online' : 'Offline — can rejoin with the same name';
-    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = p.name;
-    const sc = document.createElement('span'); sc.className = 'muted'; sc.textContent = p.connected ? p.score : p.score + ' · offline';
-    const b = document.createElement('button'); b.className = 'kick'; b.textContent = '✖ Remove';
-    b.onclick = () => kick(key);
-    row.append(dot, nm, sc, b); panel.appendChild(row);
-  });
-}
-
-// Tell a (re)joining phone what's going on right now
-function syncPlayer(p) {
-  if (phase === 'lobby') send(p, { type: 'wait', text: 'You\'re in! Watch the TV.' });
-  else if (phase === 'question' && p.answer === null) send(p, questionMsg());
-  else if (phase === 'question') send(p, { type: 'wait', text: 'Answer sent ⏳' });
-  else send(p, { type: 'wait', text: 'Get ready for the next question…' });
-}
-
-function send(p, msg) { if (p.connected && p.conn.open) p.conn.send(msg); }
-function broadcast(msg) { players.forEach(p => send(p, msg)); }
-function connectedPlayers() { return [...players.values()].filter(p => p.connected); }
-
-function refreshHost() {
-  if (phase === 'lobby') renderLobby();
-  else if (phase === 'question') updateAnsweredCount();
-  renderPlayersPanel();
-}
-
-function renderLobby() {
-  const box = document.getElementById('players');
-  box.innerHTML = '';
-  players.forEach((p, key) => {
-    const chip = document.createElement('div');
-    chip.className = 'chip' + (p.connected ? '' : ' off');
-    const nm = document.createElement('span'); nm.textContent = p.name;
-    const b = document.createElement('button'); b.className = 'kick'; b.textContent = '✖';
-    b.setAttribute('aria-label', 'Remove ' + p.name); b.onclick = () => kick(key);
-    chip.append(nm, b);
-    box.appendChild(chip);
-  });
-  const n = connectedPlayers().length;
-  document.getElementById('count').textContent =
-    n === 0 ? 'Waiting for players…' : n + (n === 1 ? ' player' : ' players') + ' connected';
-  document.getElementById('startBtn').disabled = n === 0;
-}
-
-/* ---------- game flow ---------- */
-function startGame() {
-  const id = document.getElementById('quizSelect').value;
-  const quiz = allQuizzes().find(z => z.id === id) || DEMO_QUIZ;
-  QUESTIONS = toPlayable(quiz);
-  lsSet(LAST_KEY, quiz.id);
-  players.forEach((p, key) => { if (!p.connected) players.delete(key); });
-  players.forEach(p => { p.score = 0; });
-  qIndex = -1;
-  show('game');
-  document.getElementById('playersBtn').hidden = false;
-  nextQuestion();
-}
-
-function questionMsg() {
-  const q = QUESTIONS[qIndex];
-  return { type: 'question', n: qIndex + 1, total: QUESTIONS.length, q: q.q, answers: q.a,
-           chat: q.chat ? chatForPhone(q.chat) : null };
-}
-
-function nextQuestion() {
-  qIndex++;
-  if (qIndex >= QUESTIONS.length) { showFinal(); return; }
-  phase = 'question';
-  players.forEach(p => { p.answer = null; p.lastPoints = 0; });
-
-  const q = QUESTIONS[qIndex];
-  qDur = q.time || DURATION;
-  document.getElementById('gameView').innerHTML = `
-    <div class="qtop">
-      <div class="muted">Question ${qIndex + 1} / ${QUESTIONS.length}</div>
-      <div class="timer" id="timer">${qDur}</div>
-      <div class="muted" id="answered">0 answers</div>
-    </div>
-    ${q.chat ? `<div class="chatLayout"><div id="chatBox">${chatHtml(q.chat, false)}</div><div id="sideBox">${answersHtml(q)}</div></div>`
-             : `<div class="qtext${q.q.length > 90 ? ' long' : ''}" dir="auto">${esc(q.q)}</div>${answersHtml(q)}`}`;
-
-  qStart = performance.now();
-  broadcast(questionMsg());
-  if (previewMode) setTimeout(() => { if (phase === 'question') fakeAnswers(); }, 1500);
-  clearInterval(timerId);
-  timerId = setInterval(() => {
-    const left = Math.max(0, qDur - (performance.now() - qStart) / 1000);
-    const el = document.getElementById('timer');
-    if (el) el.textContent = Math.ceil(left);
-    if (left <= 0) endQuestion();
-  }, 200);
-}
-
-/* ---------- preview: play a quiz on this screen with 3 fake players ---------- */
-let previewMode = false;
-function startPreview(id) {
-  const quiz = window.PREVIEW_QUIZ || allQuizzes().find(z => z.id === id) || DEMO_QUIZ;
-  QUESTIONS = toPlayable(quiz);
-  previewMode = true;
-  players.clear();
-  ['Player A', 'Player B', 'Player C'].forEach(n =>
-    players.set(n, { name: n, score: 0, answer: null, elapsed: 0, lastPoints: 0, connected: false, conn: null }));
-  qIndex = -1;
-  show('game');
-  document.getElementById('previewBar').style.display = 'flex';
-  nextQuestion();
-}
-function fakeAnswers() {
-  const q = QUESTIONS[qIndex];
-  players.forEach(p => {
-    p.answer = Math.random() < 0.55 ? q.correct : Math.floor(Math.random() * q.a.length);
-    p.elapsed = 2 + Math.random() * (qDur * 0.6);
-  });
-  updateAnsweredCount();
-}
-
-function answersHtml(q) {
-  return `<div class="answers">${q.a.map((t, i) => `<div class="ans c${i}" id="ans${i}">
-      <span class="shape">${SHAPES[i]}</span><span dir="auto">${esc(t)}</span></div>`).join('')}</div>`;
-}
-
-function onAnswer(p, choice) {
-  if (phase !== 'question' || p.answer !== null) return;
-  if (!Number.isInteger(choice) || choice < 0 || choice >= QUESTIONS[qIndex].a.length) return;
-  p.answer = choice;
-  p.elapsed = (performance.now() - qStart) / 1000;   // measured on the TV, so phone clocks don't matter
-  send(p, { type: 'wait', text: 'Answer sent ⏳' });
-  updateAnsweredCount();
-  maybeEndEarly();
-}
-
-function updateAnsweredCount() {
-  const n = [...players.values()].filter(p => p.answer !== null).length;
-  const el = document.getElementById('answered');
-  if (el) el.textContent = n + (n === 1 ? ' answer' : ' answers');
-}
-
-function ranking() { return [...players.values()].sort((a, b) => b.score - a.score); }
-
 function endQuestion() {
   if (phase !== 'question') return;
   phase = 'reveal';
   clearInterval(timerId);
-  const q = QUESTIONS[qIndex];
-
-  // score
+  $('timer').textContent = ''; $('timeFill').style.width = '0%';
+  const it = ROUND.items[qIndex], q = it.q, g = ROUND.game;
+  const st = senderStats[q.sender] || (senderStats[q.sender] = { answers: 0, right: 0 });
   players.forEach(p => {
-    const right = p.answer === q.correct;
-    p.lastPoints = right ? Math.round(MAX_POINTS * (1 - 0.5 * Math.min(1, p.elapsed / qDur))) : 0;
+    const right = p.answer === it.correct;
+    p.lastPoints = right ? Math.round(1000 * (1 - 0.5 * Math.min(1, p.elapsed / qDur))) : 0;
     p.score += p.lastPoints;
+    if (p.answer !== null) { st.answers++; if (right) { st.right++; p.hits.push(p.elapsed); } }
   });
   const ranked = ranking();
-  ranked.forEach((p, i) => send(p, {
-    type: 'result', answered: p.answer !== null, correct: p.answer === q.correct,
-    points: p.lastPoints, score: p.score, rank: i + 1, of: ranked.length
-  }));
-
-  // show correct answer + how many picked each
-  q.a.forEach((_, i) => {
-    const box = document.getElementById('ans' + i);
-    const cnt = [...players.values()].filter(p => p.answer === i).length;
-    box.insertAdjacentHTML('beforeend', `<span class="cnt">${cnt}</span>`);
-    if (i !== q.correct) box.classList.add('dim'); else box.insertAdjacentHTML('afterbegin', '✔');
+  ranked.forEach((p, i) => send(p, p.lastResult = { type: 'result', answered: p.answer !== null, correct: p.answer === it.correct, points: p.lastPoints,
+    score: p.score, rank: i + 1, of: ranked.length, sender: { name: q.sender, color: (ROUND.colors[q.sender] || '#8696a0') } }));
+  // chat with names, reactions, and the votes per suspect
+  $('chatBox').innerHTML = chatHtml({ group: g.group, date: q.date, note: q.note, lines: q.messages },
+    { reveal: true, me: g.me, colors: ROUND.colors, names: g.participants.map(p => p.name) });
+  it.options.forEach((o, i) => {
+    const voters = [...players.values()].filter(p => p.answer === i);
+    const el = $('sus' + i);
+    el.classList.add(i === it.correct ? 'win' : 'dim');
+    $('cnt' + i).textContent = voters.length || '';
+    $('vot' + i).textContent = voters.map(p => p.name).join(', ');
   });
-  document.getElementById('timer').textContent = '✓';
-  if (q.chat) document.getElementById('chatBox').innerHTML = chatHtml(q.chat, true);
-
-  const last = qIndex === QUESTIONS.length - 1;
-  (document.getElementById('sideBox') || document.getElementById('gameView')).insertAdjacentHTML('beforeend', `
-    <div class="board" style="margin:20px auto">
-      ${ranked.slice(0, 5).map((p, i) => `<div class="row ${i === 0 ? 'gold' : ''}">
-        <span>${i + 1}. ${esc(p.name)}</span>
-        <span>${p.score}${p.lastPoints ? `<span class="plus">+${p.lastPoints}</span>` : ''}</span></div>`).join('')}
+  const last = qIndex === ROUND.items.length - 1;
+  const rightN = [...players.values()].filter(p => p.answer === it.correct).length;
+  const verdict = players.size ? (rightN === 0 ? t('nobody') : rightN === players.size ? t('everybody') : '') : '';
+  $('lockedCount').textContent = verdict; $('lockedChips').innerHTML = '';
+  $('sideFoot').innerHTML = `<div class="board" style="flex:1">
+      <h3>${esc(t('board'))}</h3>
+      ${ranked.slice(0, 5).map((p, i) => `<div class="row${i === 0 && p.score > 0 ? ' lead' : ''}"><span class="rk">${i + 1}</span>
+        <span class="nm" dir="auto">${esc(p.name)}</span>${p.lastPoints ? `<span class="plus">+${p.lastPoints}</span>` : ''}<span class="sc">${p.score}</span></div>`).join('')}
     </div>
-    <button onclick="nextQuestion()">${last ? '🏆 Final results' : 'Next question ▶'}</button>`);
+    <button class="btn big" data-primary onclick="nextQuestion()">${esc(last ? t('toFinal') : t('next'))}</button>`;
+  renderPlayersPanel();
 }
-
 function showFinal() {
   phase = 'final';
-  const ranked = ranking();
-  const medals = ['🥇', '🥈', '🥉'];
-  document.getElementById('gameView').innerHTML = `
-    <h1>🏆 Final results</h1>
-    <div class="board" style="margin:0 auto 20px">
-      ${ranked.map((p, i) => `<div class="row ${i === 0 ? 'gold' : ''}">
-        <span>${medals[i] || (i + 1) + '.'} ${esc(p.name)}</span><span>${p.score}</span></div>`).join('')}
-    </div>
-    <button onclick="backToLobby()">🔁 Play again</button>`;
-  ranked.forEach((p, i) => send(p, { type: 'final', rank: i + 1, of: ranked.length, score: p.score }));
+  clearInterval(timerId);
+  $('timer').textContent = ''; $('prog').textContent = ''; $('timeFill').style.width = '0%';
+  const r = ranking();
+  r.forEach((p, i) => send(p, { type: 'final', rank: i + 1, of: r.length, score: p.score }));
+  const pod = (p, place) => p ? `<div class="pod p${place}"><span class="nm" dir="auto">${esc(p.name)}</span><span class="sc">${p.score}</span><div class="blk">${place}</div></div>` : '<div></div>';
+  const facts = [];
+  const ss = Object.entries(senderStats).filter(([, s]) => s.answers > 0).map(([n, s]) => ({ n, p: Math.round(100 * s.right / s.answers) }));
+  if (ss.length >= 2) {
+    ss.sort((a, b) => a.p - b.p);
+    facts.push({ k: t('hardest'), v: ss[0].n, s: t('hardestSub', { p: ss[0].p }) });
+    const top = ss[ss.length - 1];
+    if (top.p > ss[0].p) facts.push({ k: t('easiest'), v: top.n, s: t('easiestSub', { p: top.p }) });
+  }
+  const fast = r.filter(p => p.hits.length >= 2).map(p => ({ n: p.name, s: p.hits.reduce((a, b) => a + b, 0) / p.hits.length })).sort((a, b) => a.s - b.s)[0];
+  if (fast) facts.push({ k: t('fastest'), v: fast.n, s: t('fastestSub', { s: fast.s.toFixed(1) }) });
+  $('stage').innerHTML = `<div class="final">
+      <h2>${esc(t('finalTitle'))}</h2>
+      <div class="podium">${pod(r[1], 2)}${pod(r[0], 1)}${pod(r[2], 3)}</div>
+      ${r.length > 3 ? `<div class="board">${r.slice(3).map((p, i) => `<div class="row"><span class="rk">${i + 4}</span><span class="nm" dir="auto">${esc(p.name)}</span><span class="sc">${p.score}</span></div>`).join('')}</div>` : ''}
+      ${facts.length ? `<div class="facts">${facts.map(f => `<div class="fact"><span class="k">${esc(f.k)}</span><span class="v" dir="auto">${esc(f.v)}</span><span class="s">${esc(f.s)}</span></div>`).join('')}</div>` : ''}
+      <div class="gact"><button class="btn big" data-primary onclick="playAgain()">${esc(t('playAgain'))}</button>
+        <button class="btn ghost" onclick="otherGame()">${esc(t('otherGame'))}</button></div>
+    </div>`;
+}
+function playAgain() {
+  if (previewMode) { startPreview(); return; }
+  const rec = currentRec(); if (rec) prepareRound(rec);
+  phase = 'lobby';
+  players.forEach((p, key) => { if (!p.connected) players.delete(key); else { p.score = 0; p.hits = []; p.answer = null; } });
+  broadcast({ type: 'lobby' }); broadcast({ type: 'score', score: 0 });
+  $('playersBtn').hidden = true;
+  show('lobby'); renderLobby();
+}
+function otherGame() { closeRoom(); renderGames(); show('setup', false); replaceScreen('setup'); }
+
+/* preview: the game on this screen with pretend players */
+function startPreview() {
+  const rec = currentRec(); if (!rec) return;
+  closeRoom();
+  prepareRound(rec);
+  roomActive = true; previewMode = true;
+  t('fake').forEach(n => players.set(n, { name: n, score: 0, answer: null, elapsed: 0, lastPoints: 0, hits: [], connected: false, conn: null }));
+  senderStats = {}; qIndex = -1;
+  $('previewBar').hidden = false;
+  show('game');
+  nextQuestion();
+}
+function fakeAnswers() {
+  const it = ROUND.items[qIndex];
+  players.forEach(p => {
+    p.answer = Math.random() < 0.5 ? it.correct : Math.floor(Math.random() * it.options.length);
+    p.elapsed = 2 + Math.random() * qDur * 0.6;
+  });
+  renderLocked();
 }
 
-function backToLobby() {
-  if (previewMode) { location.reload(); return; }
-  phase = 'lobby';
-  players.forEach((p, key) => { if (!p.connected) players.delete(key); else p.score = 0; });
-  broadcast({ type: 'wait', text: 'New game soon! Watch the TV.' });
-  broadcast({ type: 'score', score: 0 });
-  show('lobby');
-  renderLobby();
-}
+/* Space / Enter presses the main button on the TV */
+document.addEventListener('keydown', e => {
+  if (e.code !== 'Space' && e.code !== 'Enter') return;
+  if (/^(INPUT|SELECT|TEXTAREA|BUTTON|A|SUMMARY)$/.test(e.target.tagName)) return;
+  const btn = document.querySelector('.screen.active [data-primary]:not(:disabled)');
+  if (btn) { e.preventDefault(); btn.click(); }
+});
 
 /* =========================================================
    PLAYER (phone)
    ========================================================= */
-let myConn = null, myPeer = null, session = null, kicked = false, retries = 0, retryTimer = null;
-const SESSION_KEY = 'partyquiz.session';
-const MAX_RETRIES = 15;          // about 30 seconds of automatic reconnecting
-
-// a random id for this phone, so the TV knows it's the same player coming back
-function deviceToken() {
-  let t = lsGet('partyquiz.device');
-  if (!t) { t = newId(); lsSet('partyquiz.device', t); }
-  return t;
-}
-function savedSession() {
-  try { const s = JSON.parse(lsGet(SESSION_KEY)); return s && Date.now() - s.at < 6 * 3600e3 ? s : null; } catch (e) { return null; }
-}
+let myConn = null, myPeer = null, session = null, kicked = false, retries = 0, retryTimer = null, lastQ = null;
+const SESSION_KEY = 'wst.session', MAX_RETRIES = 15;
+function deviceToken() { let tk = lsGet('wst.device'); if (!tk) { tk = newId(); lsSet('wst.device', tk); } return tk; }
+function savedSession() { try { const s = JSON.parse(lsGet(SESSION_KEY)); return s && Date.now() - s.at < 6 * 3600e3 ? s : null; } catch (e) { return null; } }
+function pview(html, cls) { const v = $('pview'); v.className = 'pview'; v.innerHTML = cls ? `<div class="state ${cls}">${html}</div>` : html; }
 
 function joinRoom() {
-  const code = document.getElementById('codeInput').value.trim();
-  const name = document.getElementById('nameInput').value.trim();
-  const status = document.getElementById('status');
-  if (!/^\d{4}$/.test(code)) { status.textContent = 'Enter the 4-digit code'; return; }
-  if (!name) { status.textContent = 'Enter your name'; return; }
-  status.textContent = 'Connecting…';
-  document.getElementById('joinBtn').disabled = true;
+  const code = $('codeInput').value.trim(), name = $('nameInput').value.trim(), st = $('status');
+  st.className = 'msg err';
+  if (!/^\d{4}$/.test(code)) { st.textContent = t('enterCode'); return; }
+  if (!name) { st.textContent = t('enterName'); return; }
+  st.className = 'msg'; st.textContent = t('connecting');
+  $('joinBtn').disabled = true;
+  kicked = false; retries = 0;
   connectTo(code, name, true);
 }
-
 function connectTo(code, name, fromForm) {
   clearTimeout(retryTimer);
+  if (typeof Peer === 'undefined') { $('status').textContent = t('noPeer'); $('joinBtn').disabled = false; return; }
   if (myPeer) { try { myPeer.destroy(); } catch (e) {} }
-  const peer = new Peer();
-  myPeer = peer;
+  const peerP = new Peer(); myPeer = peerP;
   const fail = (text, roomGone) => {
-    if (peer !== myPeer) return;
+    if (peerP !== myPeer) return;
     if (fromForm && !myConn) {
-      document.getElementById('status').textContent = text;
-      document.getElementById('joinBtn').disabled = false;
-      try { peer.destroy(); } catch (e) {}
-    } else lost(roomGone ? 'The room is closed' : text, roomGone);
+      const st = $('status'); st.className = 'msg err'; st.textContent = text;
+      $('joinBtn').disabled = false; try { peerP.destroy(); } catch (e) {}
+    } else lost(roomGone ? t('roomClosed') : text, roomGone);
   };
-  peer.on('open', () => {
-    const conn = peer.connect(PREFIX + code, { reliable: true });
+  peerP.on('open', () => {
+    const conn = peerP.connect(PREFIX + code, { reliable: true });
     conn.on('open', () => conn.send({ type: 'join', name, token: deviceToken() }));
     conn.on('data', msg => onHostMessage(msg, conn, fail, code));
     conn.on('close', () => { if (myConn === conn) lost(); });
   });
-  peer.on('error', err => fail(err.type === 'peer-unavailable' ? 'Room not found — check the code' : 'Connection problem (' + err.type + ')',
-                               err.type === 'peer-unavailable'));
+  peerP.on('error', err => fail(err.type === 'peer-unavailable' ? t('roomNotFound') : t('connProblem', { e: err.type }), err.type === 'peer-unavailable'));
 }
-
-// connection dropped (phone slept, Wi-Fi blinked…): keep trying with the same name
 function lost(reason, stop) {
   if (kicked || !session) return;
   myConn = null;
   if (stop || retries >= MAX_RETRIES) {
-    pview(`<p class="big">📴</p><h2>${esc(reason || 'Disconnected')}</h2>
-      <p class="muted">Your score is kept. Tap to come back.</p>
-      <button onclick="rejoin()">↩ Rejoin as ${esc(session.name)}</button>`);
+    pview(`<p class="big">${esc(reason || t('disconnected'))}</p><p class="muted">${esc(t('scoreKept'))}</p>
+      <button class="btn big" onclick="rejoin()">${esc(t('rejoinAs', { n: session.name }))}</button>`, 'bad');
     return;
   }
   retries++;
-  pview(`<p class="big">🔄</p><h2>Reconnecting…</h2><p class="muted">Try ${retries} of ${MAX_RETRIES}</p>`);
+  pview(`<p class="big">${esc(t('reconnecting'))}</p><p class="muted">${esc(t('tryN', { i: retries, n: MAX_RETRIES }))}</p>`, 'plain');
   retryTimer = setTimeout(() => connectTo(session.code, session.name, false), 2000);
 }
 function rejoin() {
   session = session || savedSession();
   if (!session) { show('join'); return; }
   retries = 0; kicked = false;
-  show('player');
-  document.getElementById('pName').textContent = session.name;
-  pview('<h2>Connecting…</h2>');
+  $('pName').textContent = session.name;
+  if (current !== 'player') show('player');
+  pview(`<p class="big">${esc(t('connecting'))}</p>`, 'plain');
   connectTo(session.code, session.name, false);
+}
+function leaveAsPlayer() {
+  clearTimeout(retryTimer);
+  const p = myPeer; myPeer = null; myConn = null; session = null;
+  if (p) { try { p.destroy(); } catch (e) {} }
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && current === 'player' && session && !kicked && !(myConn && myConn.open)) {
     retries = 0; connectTo(session.code, session.name, false);
   }
 });
-
-function pview(html, cls = '') {
-  const v = document.getElementById('pview');
-  v.className = cls;
-  v.innerHTML = html;
-}
-
 function onHostMessage(msg, conn, fail, code) {
+  if (!msg || typeof msg !== 'object') return;
   switch (msg.type) {
-    case 'error':
-      fail(msg.text, true); break;
-
+    case 'error': fail(msg.code === 'taken' ? t('nameTaken') : t('connProblem', { e: msg.code }), msg.code === 'taken'); break;
     case 'kicked':
-      kicked = true; myConn = null;
-      try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
-      show('player');
-      pview('<p class="big">🚫</p><h2>You were removed from the room</h2>');
+      kicked = true; myConn = null; lsDel(SESSION_KEY);
+      if (current !== 'player') show('player');
+      pview(`<p class="big">${esc(t('kicked'))}</p>`, 'bad');
       try { myPeer && myPeer.destroy(); } catch (e) {}
       break;
-
     case 'welcome':
       myConn = conn; retries = 0;
       session = { code, name: msg.name, at: Date.now() };
       lsSet(SESSION_KEY, JSON.stringify(session));
-      document.getElementById('pName').textContent = msg.name;
-      document.getElementById('pScore').textContent = msg.score;
-      show('player'); break;
-
-    case 'wait':
-      pview(`<h2>${esc(msg.text)}</h2>`); break;
-
-    case 'score':
-      document.getElementById('pScore').textContent = msg.score; break;
-
-    case 'question': {
-      const btns = msg.answers.map((t, i) =>
-        `<button class="pbtn c${i}" onclick="answer(${i})">
-           <span class="shape">${SHAPES[i]}</span><span dir="auto">${esc(t)}</span></button>`).join('');
-      pview(`<div class="pq">
-        ${msg.chat ? `<div class="pqchat">${chatHtml(msg.chat, false, true)}</div>`
-          : `<div class="pqtext"><div class="pqnum">Question ${msg.n} / ${msg.total}</div><div dir="auto">${esc(msg.q)}</div></div>`}
-        <div class="pgrid">${btns}</div></div>`);
+      $('pName').textContent = msg.name; $('pScore').textContent = msg.score;
+      $('status').textContent = ''; $('joinBtn').disabled = false;
+      if (current !== 'player') show('player');
+      break;
+    case 'lobby': pview(`<p class="big">${esc(t('inLobby'))}</p><p class="muted">${esc(t('inLobbySub'))}</p>`, 'plain'); break;
+    case 'between': pview(`<p class="big">${esc(t('getReady'))}</p>`, 'plain'); break;
+    case 'score': $('pScore').textContent = msg.score; break;
+    case 'question': renderPhoneQuestion(msg); break;
+    case 'locked': {
+      const o = msg.choice || {};
+      pview(`<p class="muted">${esc(t('lockedOn'))}</p><p class="big" dir="auto" style="color:${okColor(o.color) ? o.color : 'inherit'}">${esc(o.name || '')}</p>
+        <p class="muted">${esc(t('waitOthers'))}</p>`, 'plain');
       break;
     }
-
-    case 'result':
-      document.getElementById('pScore').textContent = msg.score;
-      if (!msg.answered) pview(`<p class="big">⏰</p><h2>Time's up!</h2><p>You're #${msg.rank} of ${msg.of}</p>`, 'full result-bad');
-      else if (msg.correct) pview(`<p class="big">✅</p><h2>Correct! +${msg.points}</h2><p>You're #${msg.rank} of ${msg.of}</p>`, 'full result-ok');
-      else pview(`<p class="big">❌</p><h2>Wrong</h2><p>You're #${msg.rank} of ${msg.of}</p>`, 'full result-bad');
-      break;
-
-    case 'final': {
-      const medal = ['🥇', '🥈', '🥉'][msg.rank - 1] || '🎉';
-      pview(`<p class="big">${medal}</p><h2>You finished #${msg.rank} of ${msg.of}</h2><p>${msg.score} points</p>`);
+    case 'result': {
+      $('pScore').textContent = msg.score;
+      const s = msg.sender || {};
+      const head = !msg.answered ? t('timeUp') : msg.correct ? t('correct') : t('wrong');
+      pview(`<p class="big">${esc(head)}</p>${msg.points ? `<p class="pts">+${msg.points}</p>` : ''}
+        <p>${esc(t('itWas', { n: s.name || '' }))}</p><p class="muted">${esc(t('rankOf', { r: msg.rank, n: msg.of }))}</p>`, msg.correct ? 'ok' : 'bad');
       break;
     }
+    case 'final':
+      $('pScore').textContent = msg.score;
+      pview(`<p class="big">${msg.rank}</p><p>${esc(t('rankOf', { r: msg.rank, n: msg.of }))}</p><p class="pts">${msg.score}</p>`, msg.rank === 1 ? 'ok' : 'plain');
+      break;
   }
 }
-
+function renderPhoneQuestion(m) {
+  lastQ = m;
+  const lines = Array.isArray(m.lines) ? m.lines.slice(0, 40) : [];
+  const opts = Array.isArray(m.options) ? m.options : [];
+  pview(`<div class="pq">
+      <span class="lbl">${esc(t('qOf', { i: m.n, n: m.total }))}</span>
+      ${chatHtml({ date: m.date, note: m.note, lines }, { small: true })}
+      <span class="lbl">${esc(t('pickSender'))}</span>
+      <div class="opts">${opts.map((o, i) => `<button class="opt" onclick="answer(${i})">
+        <span class="av" style="background:${okColor(o.color) ? o.color : '#8696a0'}">${esc(initial(o.name))}</span><span class="nm" dir="auto">${esc(o.name)}</span></button>`).join('')}</div>
+    </div>`);
+  const body = document.querySelector('#pview .wa-body'); if (body) body.scrollTop = body.scrollHeight;
+}
 function answer(i) {
-  if (myConn && myConn.open) myConn.send({ type: 'answer', choice: i });
-  pview('<h2>Answer sent ⏳</h2>');
+  if (!(myConn && myConn.open)) return;
+  myConn.send({ type: 'answer', choice: i });
+  document.querySelectorAll('#pview .opt').forEach(b => { b.disabled = true; });
 }
 
 /* =========================================================
-   WHATSAPP-STYLE CHAT QUESTIONS
-   q.chat = { date, lines: [{ who, text, time, target?, react? }] }
-   target = the message to guess, react = laughs shown only on reveal
+   sample groups (made up, so the public site shows no real chat)
    ========================================================= */
-const WA_GROUP = 'הבאפ וחבר ועודד';
-const WA_ME = 'יונתן';     // the chat was exported from this phone: his bubbles are green on reveal
-const WA_COLORS = { 'איתי': '#53bdeb', 'עודד': '#ffbc38', 'שגיא': '#06cf9c', 'ירדן': '#fc9775', 'ירין': '#e542a3', 'יונתן': '#a5b337' };
-const WA_AVATAR = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cfd8dc" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"></circle><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M16 13.6c2.9.2 5 2.2 5 5.4"></path></svg>';
-
-function chatHtml(chat, reveal, small) {
-  const lines = chat.lines.filter(l => reveal || !l.react);
-  let asked = false;
-  const body = lines.map(l => {
-    const out = reveal && l.who === WA_ME;
-    const name = !reveal ? '<div class="wa-name" style="color:#8696a0">???</div>'
-               : out ? '' : `<div class="wa-name" style="color:${WA_COLORS[l.who] || '#8696a0'}">${esc(l.who)}</div>`;
-    const ask = l.target && !reveal && !asked ? (asked = true, '<div class="wa-ask">מי שלח את זה? 👇</div>') : '';
-    return `${ask}<div class="wa-b ${out ? 'wa-out' : 'wa-in'}${l.target ? ' wa-target' : ''}${l.react ? ' wa-react' : ''}">`
-         + `${name}<span dir="auto">${esc(l.text)}</span><span class="wa-time">${esc(l.time || '')}</span></div>`;
-  }).join('');
-  return `<div class="wa${small ? ' wa-sm' : ''}" dir="rtl">
-    <div class="wa-head"><span class="wa-avatar">${WA_AVATAR}</span>
-      <div><div>${WA_GROUP}</div><div class="wa-sub">${reveal ? 'איתי, ירדן, ירין, עודד, שגיא, את/ה' : 'השמות מוסתרים 🤫'}</div></div></div>
-    <div class="wa-body"><div class="wa-date">${esc(chat.date || '')}</div>
-      ${chat.note ? `<div class="wa-note" dir="auto">💡 ${esc(chat.note)}</div>` : ''}${body}</div></div>`;
-}
-// what the phones get: no names, no reactions
-function chatForPhone(chat) {
-  return { date: chat.date, note: chat.note, lines: chat.lines.filter(l => !l.react).map(l => ({ text: l.text, time: l.time, target: !!l.target })) };
-}
+const SAMPLE_HE = { title: 'החבר\'ה מהשכונה (לדוגמה)', group: 'החבר\'ה מהשכונה', me: 'מאיה',
+  participants: [{ name: 'נועה' }, { name: 'תומר' }, { name: 'מאיה' }, { name: 'דניאל' }, { name: 'אורי' }],
+  questions: [
+    { date: '14/02/2025', category: '🍽️ אוכל', messages: [
+      { from: 'תומר', time: '19:02', text: 'מישהו יודע מה עושים עם 3 קילו חומוס' },
+      { from: 'דניאל', time: '19:03', text: 'למה יש לך 3 קילו חומוס' },
+      { from: 'תומר', time: '19:03', text: 'לחצתי פעם אחת יותר מדי באפליקציה' },
+      { from: 'נועה', time: '19:04', text: 'תפתח מסעדה. תקרא לה "פעם אחת יותר מדי"', answer: true },
+      { from: 'מאיה', time: '19:04', text: 'חחחחחחחחח', reaction: true }, { from: 'אורי', time: '19:05', text: 'מתתתת', reaction: true }] },
+    { date: '03/06/2025', category: '⏰ איחורים', messages: [
+      { from: 'מאיה', time: '21:10', text: 'אני בדרך, 5 דקות' },
+      { from: 'אורי', time: '21:50', text: 'היא אמרה 5 דקות לפני 40 דקות' },
+      { from: 'דניאל', time: '21:51', text: 'אצל מאיה דקה זאת יחידה של רגש, לא של זמן', answer: true },
+      { from: 'נועה', time: '21:51', text: 'חחחחחחחחחחח', reaction: true }, { from: 'תומר', time: '21:52', text: '😂😂😂', reaction: true }] },
+    { date: '21/08/2025', category: '🔥 עקיצות', messages: [
+      { from: 'נועה', time: '17:30', text: 'מי בא לים מחר?' },
+      { from: 'תומר', time: '17:41', text: 'תלוי במזג האוויר' },
+      { from: 'אורי', time: '17:41', text: 'תומר בודק תחזית כדי למצוא סיבה לא לבוא', answer: true },
+      { from: 'מאיה', time: '17:42', text: 'חחחחחחחח', reaction: true }, { from: 'דניאל', time: '17:42', text: '1', reaction: true }] },
+    { date: '10/11/2025', category: '🎭 דרמה', messages: [
+      { from: 'מאיה', time: '08:15', text: 'עדכון: השכן שוב מתאמן על החצוצרה', answer: true },
+      { from: 'מאיה', time: '08:15', text: 'הוא כבר יודע שני תווים. שניהם לא נכונים', answer: true },
+      { from: 'נועה', time: '08:20', text: 'חחחחחחחחחחחח', reaction: true }, { from: 'דניאל', time: '08:21', text: 'אני מת', reaction: true }] },
+    { date: '02/01/2026', category: '💪 חדר כושר', messages: [
+      { from: 'דניאל', time: '20:05', text: 'נרשמתי לחדר כושר' },
+      { from: 'אורי', time: '20:06', text: 'מזל טוב! כמה פעמים היית?' },
+      { from: 'דניאל', time: '20:07', text: 'מבחינה טכנית הייתי שם כשנרשמתי', answer: true },
+      { from: 'תומר', time: '20:07', text: 'חחחחחחחחחחחח', reaction: true }] },
+    { date: '17/03/2026', category: '🍞 בישולים', note: 'רקע: תומר אפה לחם בפעם הראשונה', messages: [
+      { from: 'תומר', time: '13:20', text: '📷 תמונה\nהלחם שלי יצא' },
+      { from: 'נועה', time: '13:21', text: 'יצא מה' },
+      { from: 'מאיה', time: '13:21', text: 'יצא מהתנור. זה כל מה שאפשר להגיד עליו', answer: true },
+      { from: 'אורי', time: '13:22', text: 'חחחחחחחחחחח', reaction: true }, { from: 'דניאל', time: '13:22', text: '💀', reaction: true }] }
+  ] };
+const SAMPLE_EN = { title: 'The flat (sample)', group: 'The flat', me: 'Priya',
+  participants: [{ name: 'Jess' }, { name: 'Tom' }, { name: 'Priya' }, { name: 'Dan' }, { name: 'Leo' }],
+  questions: [
+    { date: '14/02/2025', category: '🍽️ food', messages: [
+      { from: 'Tom', time: '19:02', text: 'does anyone know what to do with 3 kilos of hummus' },
+      { from: 'Dan', time: '19:03', text: 'why do you have 3 kilos of hummus' },
+      { from: 'Tom', time: '19:03', text: 'I pressed + one time too many' },
+      { from: 'Jess', time: '19:04', text: 'open a restaurant. call it "one time too many"', answer: true },
+      { from: 'Priya', time: '19:04', text: 'hahahahaha', reaction: true }, { from: 'Leo', time: '19:05', text: '💀', reaction: true }] },
+    { date: '03/06/2025', category: '⏰ always late', messages: [
+      { from: 'Priya', time: '21:10', text: 'on my way, 5 min' },
+      { from: 'Leo', time: '21:50', text: 'she said 5 min 40 min ago' },
+      { from: 'Dan', time: '21:51', text: 'Priya minutes are a unit of emotion, not time', answer: true },
+      { from: 'Jess', time: '21:51', text: '😂😂😂', reaction: true }, { from: 'Tom', time: '21:52', text: 'lmaooo', reaction: true }] },
+    { date: '21/08/2025', category: '🔥 roasts', messages: [
+      { from: 'Jess', time: '17:30', text: 'beach tomorrow?' },
+      { from: 'Tom', time: '17:41', text: 'depends on the weather' },
+      { from: 'Leo', time: '17:41', text: 'Tom checks the forecast to find a reason not to come', answer: true },
+      { from: 'Priya', time: '17:42', text: 'hahahaha', reaction: true }, { from: 'Dan', time: '17:42', text: '#1', reaction: true }] },
+    { date: '10/11/2025', category: '🎭 drama', messages: [
+      { from: 'Priya', time: '08:15', text: 'update: the neighbour is practising the trumpet again', answer: true },
+      { from: 'Priya', time: '08:15', text: 'he knows two notes now. both wrong', answer: true },
+      { from: 'Jess', time: '08:20', text: 'hahahahahaha', reaction: true }, { from: 'Dan', time: '08:21', text: 'I’m dead', reaction: true }] },
+    { date: '02/01/2026', category: '💪 gym', messages: [
+      { from: 'Dan', time: '20:05', text: 'I joined a gym' },
+      { from: 'Leo', time: '20:06', text: 'congrats! how many times have you been?' },
+      { from: 'Dan', time: '20:07', text: 'technically I was there when I signed up', answer: true },
+      { from: 'Tom', time: '20:07', text: 'hahahahahahaha', reaction: true }] },
+    { date: '17/03/2026', category: '🍞 baking', note: 'Context: Tom baked bread for the first time', messages: [
+      { from: 'Tom', time: '13:20', text: '📷 Photo\nmy bread came out' },
+      { from: 'Jess', time: '13:21', text: 'came out how' },
+      { from: 'Priya', time: '13:21', text: 'came out of the oven. that’s all we can say about it', answer: true },
+      { from: 'Leo', time: '13:22', text: 'hahahahaha', reaction: true }, { from: 'Dan', time: '13:22', text: '💀', reaction: true }] }
+  ] };
 
 /* =========================================================
-   QUIZ STORAGE + EDITOR
-   Saved in this browser's localStorage.
+   start
    ========================================================= */
-const LS_KEY = 'partyquiz.quizzes';
-const LAST_KEY = 'partyquiz.lastQuiz';
-const TIMES = [10, 20, 30, 60];
-let editing = null;      // quiz being edited
-let dirty = false;
-
-function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
-function loadQuizzes() { try { return JSON.parse(lsGet(LS_KEY)) || []; } catch (e) { return []; } }
-function storeQuizzes(list) {
-  if (!lsSet(LS_KEY, JSON.stringify(list))) { alert('Could not save in this browser (private mode?)'); return false; }
-  return true;
-}
-function allQuizzes() { return [DEMO_QUIZ, ...loadQuizzes()]; }
-function newId() { return 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-function blankQuestion() { return { q: '', a: ['', '', '', ''], correct: -1, time: DURATION }; }
-
-// Editor format (always 4 answer slots) -> game format (only filled answers)
-function toPlayable(quiz) {
-  return quiz.questions.map(x => {
-    const a = [], idx = [];
-    x.a.forEach((t, j) => { if (String(t).trim()) { idx.push(j); a.push(String(t).trim()); } });
-    return { q: String(x.q).trim(), a, correct: idx.indexOf(x.correct), time: x.time || DURATION, chat: x.chat };
-  });
-}
-
-function renderQuizSelect() {
-  const sel = document.getElementById('quizSelect');
-  const last = lsGet(LAST_KEY);
-  sel.innerHTML = allQuizzes().map(z =>
-    `<option value="${esc(z.id)}" ${z.id === last ? 'selected' : ''}>${esc(z.title)} (${z.questions.length})</option>`).join('');
-}
-
-/* ---------- list ---------- */
-function openQuizList() { renderQuizList(); show('quizzes'); }
-
-function renderQuizList() {
-  const mine = loadQuizzes();
-  const row = (z, buttons) => `<div class="qzRow"><span class="t" dir="auto">${esc(z.title)}</span>
-      <span class="muted small">${z.questions.length} questions</span>${buttons}</div>`;
-  document.getElementById('quizList').innerHTML =
-    row(DEMO_QUIZ, `<button class="mini secondary" onclick="copyQuiz('demo')">📄 Copy & edit</button>`) +
-    (mine.length ? mine.map(z => row(z, `
-      <button class="mini" onclick="startPreview('${z.id}')">👁 Preview</button>
-      <button class="mini" onclick="editQuiz('${z.id}')">✏️ Edit</button>
-      <button class="mini secondary" onclick="copyQuiz('${z.id}')">📄 Copy</button>
-      <button class="mini secondary" onclick="exportQuiz('${z.id}')">⬇ Export</button>
-      <button class="mini danger" onclick="deleteQuiz('${z.id}')">🗑</button>`)).join('')
-      : '<p class="muted" style="text-align:center">No quizzes of your own yet — tap “New quiz”.</p>');
-}
-
-function newQuiz() { openEditor({ id: newId(), title: '', questions: [blankQuestion()] }); }
-function editQuiz(id) {
-  const z = loadQuizzes().find(x => x.id === id);
-  if (z) openEditor(JSON.parse(JSON.stringify(z)));
-}
-function copyQuiz(id) {
-  const z = allQuizzes().find(x => x.id === id);
-  if (!z) return;
-  const c = JSON.parse(JSON.stringify(z));
-  c.id = newId(); c.title = z.title + ' (copy)';
-  openEditor(c);
-}
-function deleteQuiz(id) {
-  const z = loadQuizzes().find(x => x.id === id);
-  if (!z || !confirm(`Delete “${z.title}”?`)) return;
-  storeQuizzes(loadQuizzes().filter(x => x.id !== id));
-  renderQuizList();
-}
-function exportQuiz(id) {
-  const z = loadQuizzes().find(x => x.id === id);
-  if (!z) return;
-  const blob = new Blob([JSON.stringify({ title: z.title, questions: z.questions }, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = (z.title.replace(/[\\/:*?"<>|]+/g, '').trim() || 'quiz') + '.json';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
-function importQuiz(input) {
-  const file = input.files[0];
-  input.value = '';
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const d = JSON.parse(reader.result);
-      if (!Array.isArray(d.questions)) throw new Error('no questions');
-      const quiz = {
-        id: newId(),
-        title: String(d.title || 'Imported quiz').slice(0, 60),
-        questions: d.questions.map(x => ({
-          q: String(x.q || ''),
-          a: [0, 1, 2, 3].map(j => String((x.a || [])[j] || '')),
-          correct: Number.isInteger(x.correct) ? x.correct : -1,
-          time: TIMES.includes(x.time) ? x.time : DURATION,
-          chat: (x.chat && Array.isArray(x.chat.lines)) ? {
-            date: String(x.chat.date || ''),
-            note: x.chat.note ? String(x.chat.note).slice(0, 140) : undefined,
-            lines: x.chat.lines.slice(0, 40).map(l => ({ who: String(l.who || ''), text: String(l.text || ''),
-              time: String(l.time || ''), target: !!l.target, react: !!l.react }))
-          } : undefined
-        }))
-      };
-      const list = loadQuizzes(); list.push(quiz);
-      if (storeQuizzes(list)) renderQuizList();
-    } catch (e) { alert('That file is not a quiz file.'); }
-  };
-  reader.readAsText(file);
-}
-
-/* ---------- editor ---------- */
-function openEditor(quiz) {
-  editing = quiz; dirty = false;
-  document.getElementById('qzTitle').value = quiz.title;
-  document.getElementById('edMsg').textContent = '';
-  renderCards();
-  show('editor');
-  window.scrollTo(0, 0);
-}
-
-function renderCards() {
-  const n = editing.questions.length;
-  document.getElementById('qcards').innerHTML = editing.questions.map((q, i) => `
-    <div class="qcard" id="qcard${i}">
-      <div class="qhead">
-        <b>Question ${i + 1}</b>
-        <span>
-          <select class="qt" title="Time to answer">
-            ${TIMES.map(t => `<option value="${t}" ${t === (q.time || DURATION) ? 'selected' : ''}>⏱ ${t}s</option>`).join('')}
-          </select>
-          <button class="mini secondary" onclick="moveQ(${i},-1)" ${i === 0 ? 'disabled' : ''} title="Move up">↑</button>
-          <button class="mini secondary" onclick="moveQ(${i},1)" ${i === n - 1 ? 'disabled' : ''} title="Move down">↓</button>
-          <button class="mini danger" onclick="delQ(${i})" title="Delete question">🗑</button>
-        </span>
-      </div>
-      ${q.chat ? `<input class="qnote edInput" dir="auto" maxlength="140" value="${esc(q.chat.note || '')}"
-         placeholder="💡 Note shown above the chat (optional), e.g. who someone is">` : ''}
-      <textarea class="qq" rows="2" dir="auto" maxlength="1000" placeholder="Type the question">${esc(q.q)}</textarea>
-      <div class="qans">
-        ${[0, 1, 2, 3].map(j => `
-          <div class="arow c${j}">
-            <span class="shape">${SHAPES[j]}</span>
-            <input class="qa" dir="auto" maxlength="80" value="${esc(q.a[j] || '')}"
-                   placeholder="Answer ${j + 1}${j >= 2 ? ' (optional)' : ''}">
-            <input type="radio" class="qc" name="correct${i}" value="${j}" ${q.correct === j ? 'checked' : ''} title="This is the correct answer">
-          </div>`).join('')}
-      </div>
-      <div class="muted small">Tick the circle next to the correct answer.${q.chat ? ' · 💬 WhatsApp-style question: the chat itself comes from the imported file.' : ''}</div>
-    </div>`).join('');
-}
-
-// read what's typed on screen back into `editing`
-function collectEditor() {
-  editing.title = document.getElementById('qzTitle').value.trim();
-  const prev = editing.questions;
-  editing.questions = [...document.querySelectorAll('.qcard')].map((card, i) => {
-    const c = card.querySelector('.qc:checked');
-    return {
-      chat: prev[i] && prev[i].chat
-        ? Object.assign({}, prev[i].chat, { note: (card.querySelector('.qnote') || {}).value?.trim() || undefined })
-        : undefined,
-      q: card.querySelector('.qq').value.trim(),
-      a: [...card.querySelectorAll('.qa')].map(inp => inp.value.trim()),
-      correct: c ? Number(c.value) : -1,
-      time: Number(card.querySelector('.qt').value)
-    };
-  });
-}
-
-function addQuestion() {
-  collectEditor();
-  editing.questions.push(blankQuestion());
-  dirty = true;
-  renderCards();
-  const last = document.getElementById('qcard' + (editing.questions.length - 1));
-  last.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  last.querySelector('.qq').focus();
-}
-function delQ(i) {
-  collectEditor();
-  if (editing.questions[i].q && !confirm('Delete this question?')) return;
-  editing.questions.splice(i, 1);
-  dirty = true;
-  renderCards();
-}
-function moveQ(i, d) {
-  collectEditor();
-  const qs = editing.questions;
-  [qs[i], qs[i + d]] = [qs[i + d], qs[i]];
-  dirty = true;
-  renderCards();
-}
-
-function validateQuiz(z) {
-  if (!z.title) return { msg: 'Give your quiz a name' };
-  if (!z.questions.length) return { msg: 'Add at least one question' };
-  for (let i = 0; i < z.questions.length; i++) {
-    const x = z.questions[i];
-    if (!x.q) return { i, msg: `Question ${i + 1}: type the question` };
-    if (x.a.filter(Boolean).length < 2) return { i, msg: `Question ${i + 1}: needs at least 2 answers` };
-    if (x.correct < 0 || !x.a[x.correct]) return { i, msg: `Question ${i + 1}: tick the correct answer` };
-  }
-  return null;
-}
-
-function saveQuiz() {
-  collectEditor();
-  document.querySelectorAll('.qcard.err').forEach(c => c.classList.remove('err'));
-  const err = validateQuiz(editing);
-  const msg = document.getElementById('edMsg');
-  if (err) {
-    msg.textContent = '⚠ ' + err.msg;
-    const target = err.i !== undefined ? document.getElementById('qcard' + err.i) : document.getElementById('qzTitle');
-    if (err.i !== undefined) target.classList.add('err');
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-  const list = loadQuizzes();
-  const at = list.findIndex(x => x.id === editing.id);
-  if (at >= 0) list[at] = editing; else list.push(editing);
-  if (!storeQuizzes(list)) return;
-  dirty = false;
-  history.back();
-}
-
-function closeEditor() {
-  if (dirty && !confirm('Leave without saving?')) return;
-  dirty = false;
-  history.back();
-}
-document.getElementById('editor').addEventListener('input', () => { dirty = true; });
-document.getElementById('editor').addEventListener('change', () => { dirty = true; });
-
-/* QR code opens ?join=1234 → join screen with the code filled in */
-try { history.replaceState({ screen: 'home' }, '', location.pathname + location.search); } catch (e) {}
-(function () {           // this phone was in a game in the last few hours: offer to go back
+function showRejoinBanner() {
   const s = savedSession();
-  if (!s) return;
-  document.getElementById('rejoinBtn').textContent = `↩ Back to room ${s.code} as ${s.name}`;
-  document.getElementById('rejoinBox').hidden = false;
-})();
-const preCode = new URLSearchParams(location.search).get('join');
-if (preCode) {
-  show('join');
-  document.getElementById('codeInput').value = preCode;
-  document.getElementById('nameInput').focus();
+  $('rejoinBox').hidden = !s;
+  if (s) $('rejoinBtn').textContent = t('backToRoom', { c: s.code, n: s.name });
 }
+(function init() {
+  try { history.replaceState({ screen: 'home' }, '', location.pathname + location.search); } catch (e) {}
+  applyLang();
+  showRejoinBanner();
+  setTimeout(() => $('logo').classList.add('open'), 700);
+  const drop = $('drop'), input = $('fileInput');
+  input.addEventListener('change', () => { readFile(input.files[0]); input.value = ''; });
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => readFile(e.dataTransfer.files[0]));
+  const pre = new URLSearchParams(location.search).get('join');
+  if (pre && /^\d{4}$/.test(pre)) { show('join'); $('codeInput').value = pre; $('nameInput').focus(); }
+})();
 </script>
 </body>
 </html>
