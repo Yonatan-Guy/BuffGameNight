@@ -1,0 +1,7 @@
+# Never publish chat exports or game files
+*.json
+*.txt
+*.zip
+.idea/
+# Local-only copy with private photos and game data
+local/

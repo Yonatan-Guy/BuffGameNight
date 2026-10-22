@@ -1,4 +1,0 @@
-# Never publish chat exports or game files
-*.json
-*.txt
-*.zip
