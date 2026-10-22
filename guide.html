@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מי שלח? איך מכינים משחק</title>
+<meta name="description" content="How to turn your WhatsApp group chat into a 'Who sent it?' party game with Claude.">
+<meta name="theme-color" content="#0c0e13">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;800&family=JetBrains+Mono:wght@500;700&family=Karantina:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column; each step is a numbered band with the real file or screen it produces. */
+:root{
+  --ink:#0c0e13; --ink-2:#141821; --ink-3:#1c2230; --line:#2b3344;
+  --paper:#f4efe4; --mute:#9ba2b3; --hi:#ffd84d; --hi-ink:#1d1700; --ok:#3ddc97;
+  --display:"Karantina","Assistant",system-ui,sans-serif;
+  --body:"Assistant",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--ink);background-image:radial-gradient(1000px 500px at 50% -10%,#1b2131 0%,rgba(12,14,19,0) 65%);background-attachment:fixed;
+     color:var(--paper);font-family:var(--body);font-size:19px;line-height:1.6;-webkit-font-smoothing:antialiased;
+     padding-block:calc(18px + env(safe-area-inset-top,0px)) calc(48px + env(safe-area-inset-bottom,0px));
+     padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+[hidden]{display:none!important}
+a{color:var(--hi);text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--hi);outline-offset:3px}
+main{max-width:860px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:860px;margin:0 auto 28px}
+.btn{display:inline-flex;align-items:center;gap:.5em;min-height:44px;padding:.45em 1.2em;border:0;border-radius:999px;font:inherit;font-weight:800;
+     background:var(--hi);color:var(--hi-ink);cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--paper);box-shadow:inset 0 0 0 1.5px var(--line)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(64px,11vw,128px);line-height:.86;margin:0 0 18px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:clamp(42px,6vw,64px);line-height:.92;margin:0 0 12px;text-wrap:balance}
+h3{font-size:1.1rem;margin:0 0 6px}
+p{margin:0 0 12px;max-width:62ch}
+.lede{font-size:clamp(20px,2.4vw,24px);color:#d9d4c8;max-width:40ch}
+.muted{color:var(--mute)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:var(--ink-3);padding:1px 7px;border-radius:6px;direction:ltr;unicode-bidi:isolate}
+
+/* the three files that carry the game */
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:10px;margin:34px 0 46px}
+.fx{background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.fx b{font-family:var(--mono);font-size:.95rem;direction:ltr;text-align:start;overflow-wrap:anywhere}
+.fx span{color:var(--mute);font-size:.9rem}
+.fx.code b{font-size:1.6rem;color:var(--hi);letter-spacing:.12em}
+.arrow{color:var(--mute);font-size:1.4rem}
+[dir=rtl] .arrow{transform:scaleX(-1)}
+@media (max-width:640px){.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg)!important;justify-self:center}}
+
+/* steps */
+.step{display:grid;grid-template-columns:64px minmax(0,1fr);gap:4px 18px;padding:30px 0;border-top:1px solid var(--line)}
+.num{font-family:var(--display);font-weight:700;font-size:72px;line-height:.8;color:var(--hi)}
+.step > div{min-width:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.card{background:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line);border-radius:16px;padding:16px 18px}
+.card ol{margin:6px 0 0;padding-inline-start:1.2em}
+.card li{margin:2px 0}
+.path{font-weight:700}
+@media (max-width:640px){.step{grid-template-columns:1fr}.num{font-size:56px}.cols{grid-template-columns:1fr}}
+
+/* the prompt */
+.prompt{position:relative;margin:14px 0}
+.prompt pre{margin:0;max-height:300px;overflow:auto;background:#07090d;border-radius:16px;box-shadow:inset 0 0 0 1.5px var(--line);
+            padding:18px 18px 18px;font-family:var(--mono);font-size:.8rem;line-height:1.55;white-space:pre-wrap;direction:ltr;text-align:left;color:#d6d2c8}
+.prompt .copy{position:absolute;top:10px;right:10px}
+.reply{display:inline-block;background:#005c4b;color:#e9edef;border-radius:10px;padding:6px 12px;margin:4px 0 10px;font-family:"Segoe UI",system-ui,sans-serif}
+.tip{background:rgba(255,216,77,.08);border-radius:14px;padding:12px 16px;margin:12px 0}
+
+/* privacy + faq */
+.priv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.priv .card b{display:block;margin-bottom:4px}
+@media (max-width:760px){.priv{grid-template-columns:1fr}}
+details{border-top:1px solid var(--line);padding:14px 0}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:800;font-size:1.1rem}
+details p,details pre{margin-top:10px}
+details pre{background:#07090d;border-radius:12px;padding:14px;overflow:auto;font-family:var(--mono);font-size:.8rem;direction:ltr;text-align:left;color:#d6d2c8}
+.section{padding:34px 0;border-top:1px solid var(--line)}
+.cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="top">
+  <a class="btn ghost" href="./" id="toGame">← למשחק</a>
+  <button class="btn ghost" id="langBtn" onclick="toggleLang()">English</button>
+</div>
+
+<!-- ======================= HEBREW ======================= -->
+<main data-lang="he" dir="rtl" lang="he">
+  <h1>איך מכינים משחק מהצ'אט שלכם</h1>
+  <p class="lede">מייצאים את הקבוצה מוואטסאפ, בוחרים עם Claude את ההודעות הכי מצחיקות, ומקבלים קובץ אחד שהמשחק קורא. בערך עשרים דקות, ומשחקים בו כמה פעמים שרוצים.</p>
+
+  <div class="flow" aria-label="שלושה שלבים">
+    <div class="fx"><b>_chat.txt</b><span>הצ'אט מוואטסאפ, בלי מדיה</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="fx"><b>who-sent-that.json</b><span>הקובץ ש־Claude בונה איתכם</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="fx code"><b>4821</b><span>קוד החדר על הטלוויזיה</span></div>
+  </div>
+
+  <section class="step"><span class="num">1</span><div>
+    <h2>מייצאים את הצ'אט</h2>
+    <p>מהטלפון של אחד מחברי הקבוצה. בוחרים <b>בלי מדיה</b>: אין צורך בתמונות, והקובץ יוצא קטן.</p>
+    <div class="cols">
+      <div class="card"><h3>אייפון</h3><ol>
+        <li>פותחים את הקבוצה ולוחצים על השם שלה למעלה</li>
+        <li>גוללים למטה: <span class="path">ייצוא צ'אט</span></li>
+        <li><span class="path">ללא מדיה</span></li>
+        <li>שומרים בקבצים או שולחים לעצמכם</li></ol>
+        <p class="muted" style="margin-top:8px">יוצא קובץ ‎.zip. אפשר להעלות אותו כמו שהוא, או לפתוח אותו ולהעלות את <code>_chat.txt</code> שבתוכו.</p></div>
+      <div class="card"><h3>אנדרואיד</h3><ol>
+        <li>פותחים את הקבוצה</li>
+        <li>שלוש הנקודות ⋮ ← <span class="path">עוד</span> ← <span class="path">ייצוא צ'אט</span></li>
+        <li><span class="path">ללא מדיה</span></li>
+        <li>שומרים או שולחים לעצמכם</li></ol>
+        <p class="muted" style="margin-top:8px">יוצא קובץ טקסט בשם בסגנון <code>WhatsApp Chat with…txt</code>.</p></div>
+    </div>
+    <p class="muted">שמות התפריטים יכולים להשתנות קצת בין גרסאות של וואטסאפ.</p>
+  </div></section>
+
+  <section class="step"><span class="num">2</span><div>
+    <h2>פותחים שיחה חדשה עם Claude</h2>
+    <p>ב־<a href="https://claude.ai" target="_blank" rel="noopener">claude.ai</a> או באפליקציה. מעלים את קובץ הצ'אט, מעתיקים את ההוראות האלה ושולחים אותן יחד איתו. ההוראות באנגלית, אבל Claude יענה לכם בשפה שתכתבו בה.</p>
+    <div class="prompt"><pre class="promptText"></pre><button class="btn copy" onclick="copyPrompt(this)">להעתיק</button></div>
+    <p class="muted">צ'אט ארוך? Claude עובר עליו עם קוד, וזה עובד גם על שנים של הודעות. אם הוא אומר שהקובץ גדול מדי, בקשו ממנו להתמקד בשנה האחרונה.</p>
+  </div></section>
+
+  <section class="step"><span class="num">3</span><div>
+    <h2>בוחרים את ההודעות</h2>
+    <p>Claude מוצא הודעות שמישהו אחר צחק עליהן: "חחחח", 😂, "אני מת", או דירוג כמו "1" ו־"#5". הוא מראה לכם אותן בסבבים של 15, כל אחת עם השיחה שלפניה. אתם עונים מה להשאיר, למשל:</p>
+    <span class="reply">4, 11 טוב, 15, 16 בינוני. ב־8 תוסיף עוד הקשר</span>
+    <div class="tip"><b>טיפים מהמשחק הראשון שלנו:</b> רוב ההודעות "מצחיקות" רק בחצי. שמרו את הטובות באמת. בדיחה שתלויה בתמונה לא תעבוד. ואם משהו אישי מדי, פשוט אל תכניסו אותו.</div>
+    <p>בסוף Claude ישאל אתכם איך לקרוא לכל אחד, מי מכם ייצא את הצ'אט, ואיך לקרוא למשחק. 15 עד 30 שאלות זה ערב טוב.</p>
+  </div></section>
+
+  <section class="step"><span class="num">4</span><div>
+    <h2>מקבלים את הקובץ</h2>
+    <p>כותבים ל־Claude <b>build</b>, והוא נותן קובץ להורדה בשם <code>who-sent-that.json</code>. שומרים אותו במחשב שיחובר לטלוויזיה, למשל בהורדות.</p>
+    <p class="muted">רוצים לשנות משהו אחר כך? חוזרים לאותה שיחה עם Claude, מבקשים, ומורידים קובץ חדש.</p>
+  </div></section>
+
+  <section class="step"><span class="num">5</span><div>
+    <h2>משחקים</h2>
+    <p>במחשב שמחובר לטלוויזיה פותחים את האתר ← <b>לפתוח חדר</b> ← גוררים את הקובץ ← <b>לפתוח חדר</b>. כל אחד סורק את הקוד על המסך מהטלפון ומקליד שם. אין מה להתקין.</p>
+    <p>בכל שאלה רואים קטע מהשיחה עם השמות מוסתרים. כל אחד בוחר מהטלפון מי שלח את ההודעה המסומנת, ובחשיפה השמות מתגלים יחד עם הצחוקים שבאו אחרי. תשובה נכונה ומהירה שווה עד 1,000 נקודות.</p>
+    <div class="cta"><a class="btn" href="./">למשחק</a><span class="muted">אפשר לנסות קודם עם קבוצה לדוגמה, בלי קובץ.</span></div>
+  </div></section>
+
+  <section class="section">
+    <h2>מה קורה עם הצ'אט</h2>
+    <div class="priv">
+      <div class="card"><b>אצל Claude</b>הצ'אט עובר דרך Claude כדי למצוא את ההודעות. העלו רק צ'אט שאתם והקבוצה בסדר לשתף, ואם יש ספק, תשאלו אותם קודם.</div>
+      <div class="card"><b>במשחק</b>הקובץ נשמר רק בדפדפן שבו פתחתם אותו. האתר לא מעלה אותו לשום שרת.</div>
+      <div class="card"><b>בטלפונים</b>כל שאלה נשלחת ישר מהטלוויזיה לטלפונים שבחדר, בלי שמות, ונעלמת בסוף המשחק.</div>
+    </div>
+    <p class="muted">אם אתם שומרים את האתר ב־GitHub, אל תשימו את קובץ ה־JSON או את הצ'אט בתיקייה של האתר. מה שבתיקייה עולה לאינטרנט.</p>
+  </section>
+
+  <section class="section">
+    <h2>שאלות</h2>
+    <details><summary>חייבים להיות באותה רשת וויי־פיי?</summary><p>לא, החיבור עובר דרך האינטרנט. אבל אם טלפון נתקע על "מתחברים…", חיבור לוויי־פיי של הבית בדרך כלל פותר את זה.</p></details>
+    <details><summary>מה קורה אם טלפון מתנתק באמצע?</summary><p>הוא מתחבר מחדש לבד תוך כמה שניות, עם אותו שם ואותו ניקוד. אם סגרו את הדפדפן, נכנסים שוב לאתר ולוחצים "לחזור לחדר".</p></details>
+    <details><summary>אפשר להוציא מישהו מהחדר?</summary><p>כן. בלובי יש ✕ ליד כל שם, ובאמצע המשחק יש כפתור "שחקנים" בפינה.</p></details>
+    <details><summary>אפשר לשחק בלי לשתף את הצ'אט עם Claude?</summary><p>אפשר לכתוב את הקובץ ביד לפי הפורמט שלמטה, אבל זה הרבה עבודה. החלק של Claude הוא למצוא את ההודעות בין אלפי שורות.</p></details>
+    <details><summary>הפורמט של הקובץ (למי שרוצה לערוך ביד)</summary><pre class="formatText"></pre></details>
+  </section>
+</main>
+
+<!-- ======================= ENGLISH ======================= -->
+<main data-lang="en" dir="ltr" lang="en" hidden>
+  <h1>How to make a game from your chat</h1>
+  <p class="lede">Export your group from WhatsApp, pick the funniest messages together with Claude, and get one file the game reads. About twenty minutes, and you can play it as often as you like.</p>
+
+  <div class="flow" aria-label="Three stages">
+    <div class="fx"><b>_chat.txt</b><span>The WhatsApp chat, without media</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="fx"><b>who-sent-that.json</b><span>The file Claude builds with you</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="fx code"><b>4821</b><span>The room code on the TV</span></div>
+  </div>
+
+  <section class="step"><span class="num">1</span><div>
+    <h2>Export the chat</h2>
+    <p>From any group member’s phone. Choose <b>Without media</b>: photos aren’t needed and the file stays small.</p>
+    <div class="cols">
+      <div class="card"><h3>iPhone</h3><ol>
+        <li>Open the group and tap its name at the top</li>
+        <li>Scroll down: <span class="path">Export Chat</span></li>
+        <li><span class="path">Without Media</span></li>
+        <li>Save to Files or send it to yourself</li></ol>
+        <p class="muted" style="margin-top:8px">You get a .zip. Upload it as is, or open it and upload the <code>_chat.txt</code> inside.</p></div>
+      <div class="card"><h3>Android</h3><ol>
+        <li>Open the group</li>
+        <li>⋮ → <span class="path">More</span> → <span class="path">Export chat</span></li>
+        <li><span class="path">Without media</span></li>
+        <li>Save it or send it to yourself</li></ol>
+        <p class="muted" style="margin-top:8px">You get a text file named like <code>WhatsApp Chat with…txt</code>.</p></div>
+    </div>
+    <p class="muted">Menu names can differ slightly between WhatsApp versions.</p>
+  </div></section>
+
+  <section class="step"><span class="num">2</span><div>
+    <h2>Start a new chat with Claude</h2>
+    <p>On <a href="https://claude.ai" target="_blank" rel="noopener">claude.ai</a> or in the app. Upload the chat file, copy these instructions, and send them with it.</p>
+    <div class="prompt"><pre class="promptText"></pre><button class="btn copy" onclick="copyPrompt(this)">Copy</button></div>
+    <p class="muted">Long chat? Claude goes through it with code, so years of messages are fine. If it says the file is too big, ask it to focus on the last year.</p>
+  </div></section>
+
+  <section class="step"><span class="num">3</span><div>
+    <h2>Pick the messages</h2>
+    <p>Claude finds messages that someone else laughed at: "hahaha", 😂, "I’m dead", or a rating like "1" or "#5". It shows them in rounds of 15, each with the conversation before it. You reply with what to keep, for example:</p>
+    <span class="reply">4, 11 good, 15, 16 ok. Add more context to 8</span>
+    <div class="tip"><b>Tips from our first game:</b> most messages are only half funny, so keep the really good ones. A joke that needs a photo won’t work. If something is too personal, just leave it out.</div>
+    <p>At the end Claude asks what to call each person, which of you exported the chat, and what to call the game. 15 to 30 questions makes a good evening.</p>
+  </div></section>
+
+  <section class="step"><span class="num">4</span><div>
+    <h2>Get the file</h2>
+    <p>Tell Claude <b>build</b> and it gives you a download called <code>who-sent-that.json</code>. Keep it on the computer you’ll connect to the TV, for example in Downloads.</p>
+    <p class="muted">Want changes later? Go back to the same chat with Claude, ask, and download a new file.</p>
+  </div></section>
+
+  <section class="step"><span class="num">5</span><div>
+    <h2>Play</h2>
+    <p>On the computer connected to the TV, open the site → <b>Host a room</b> → drop in the file → <b>Open the room</b>. Everyone scans the code on the screen with their phone and types a name. Nothing to install.</p>
+    <p>Each question shows a piece of the conversation with the names hidden. Everyone picks on their phone who sent the highlighted message. The reveal uncovers the names and the laughs that followed. A fast correct answer is worth up to 1,000 points.</p>
+    <div class="cta"><a class="btn" href="./">To the game</a><span class="muted">You can try a sample group first, no file needed.</span></div>
+  </div></section>
+
+  <section class="section">
+    <h2>Where your chat goes</h2>
+    <div class="priv">
+      <div class="card"><b>With Claude</b>The chat goes through Claude so it can find the messages. Only upload a chat you and your group are fine sharing; if in doubt, ask them first.</div>
+      <div class="card"><b>In the game</b>The file is saved only in the browser where you opened it. The site never uploads it to a server.</div>
+      <div class="card"><b>On the phones</b>Each question goes straight from the TV to the phones in the room, without names, and is gone when the game ends.</div>
+    </div>
+    <p class="muted">If you keep the site on GitHub, don’t put the JSON file or the chat in the site folder. Whatever is in that folder goes online.</p>
+  </section>
+
+  <section class="section">
+    <h2>Questions</h2>
+    <details><summary>Do we need to be on the same Wi-Fi?</summary><p>No, it connects over the internet. If a phone gets stuck on "Connecting…", switching it to the home Wi-Fi usually fixes it.</p></details>
+    <details><summary>What if a phone disconnects mid-game?</summary><p>It reconnects by itself within seconds, with the same name and score. If the browser was closed, open the site again and tap "Back to room".</p></details>
+    <details><summary>Can I remove someone from the room?</summary><p>Yes. In the lobby there’s a ✕ next to each name; during the game there’s a "Players" button in the corner.</p></details>
+    <details><summary>Can we play without sharing the chat with Claude?</summary><p>You can write the file by hand using the format below, but it’s a lot of work. Claude’s part is finding the messages among thousands of lines.</p></details>
+    <details><summary>The file format (for editing by hand)</summary><pre class="formatText"></pre></details>
+  </section>
+</main>
+
+<template id="promptTpl">I want to make a "Who Sent That?" party game from my WhatsApp group chat. The exported chat is attached (a .txt file, or a .zip with _chat.txt inside). Please work through it with me like this:
+
+1. READ THE WHOLE CHAT WITH CODE. It can be long, so parse it with code instead of reading it by eye. Message lines look like "[DD/MM/YYYY, HH:MM:SS] Name: text" (iPhone) or "DD/MM/YYYY, HH:MM - Name: text" (Android); the date order may be M/D on some phones. A line without a timestamp continues the previous message. Skip system lines (joined, left, changed the name, deleted messages).
+
+2. FIND CANDIDATES. A message is a candidate when, within about 15 minutes, someone OTHER than its sender reacts with laughter, for example:
+   - laughing: חחחח / ההההה / haha / lol / lmao / xD, 😂 🤣 💀
+   - "dying": מת / אני מת / מתתתת / קרסתי / dead / I'm dying
+   - rating the joke: "1", "#5", "top 3", "6/10", "solid 4", "מקום 1"
+   (Watch out: in Hebrew "מתי" means "when", and lone numbers are often times like "22?". Only count them when they react to a joke.)
+   Score each candidate by how many different people laughed and how hard. Messages that only work with a photo, video or voice note go on a separate list; don't make them questions.
+
+3. SHOW ME ROUNDS OF 15, best first. For each candidate show: a number, the date, the sender, the conversation just before it (the continuous run of messages, usually 2 to 8, with names visible to me), the message itself, and the reactions after it. Suggest a short category with an emoji (for example 🔥 roasts, 🍺 nights out, 💸 money, ⏰ always late).
+
+4. I REPLY with the numbers to keep, maybe with "good" or "ok", plus fixes like "add more context to 12". Keep a running tally of what I kept. Never invent, merge or rewrite messages: copy text exactly as written, typos included.
+
+5. BEFORE BUILDING THE FILE, ASK ME: a short display name for each person (first names; some exports show phone numbers), which person is me (whose phone exported the chat), and a title for the game.
+
+6. WHEN I SAY "build", create a downloadable file called who-sent-that.json in exactly this format:
+
+{
+  "format": "who-sent-that",
+  "version": 1,
+  "title": "Game title",
+  "group": "Group chat name",
+  "me": "Display name of the person who exported",
+  "participants": [
+    { "name": "Dana", "color": "#53bdeb" },
+    { "name": "Tom" }
+  ],
+  "questions": [
+    {
+      "date": "31/01/2023",
+      "category": "💸 money",
+      "note": "optional one-line background shown above the chat",
+      "messages": [
+        { "from": "Tom", "time": "16:35", "text": "context message" },
+        { "from": "Dana", "time": "16:36", "text": "the funny message", "answer": true },
+        { "from": "Dana", "time": "16:36", "text": "its second line, if she sent it as two messages", "answer": true },
+        { "from": "Tom", "time": "16:37", "text": "חחחחחחח", "reaction": true }
+      ]
+    }
+  ]
+}
+
+Rules for the file:
+- Every "from" is exactly one of the participant names.
+- In each question, the messages marked "answer": true all have the same sender. That sender is the right answer.
+- Order inside a question: the context before (no flags), then the answer message(s), then up to 3 laughs marked "reaction": true. Reactions stay hidden until the reveal.
+- A photo, video or voice note inside the context becomes a text line like "📷 Photo".
+- "time" is HH:MM, "date" is DD/MM/YYYY. "category", "note" and "color" are optional.
+- Check that the JSON is valid before giving it to me.
+
+Talk to me in the language I write to you in.</template>
+<template id="formatTpl">{
+  "format": "who-sent-that",
+  "version": 1,
+  "title": "Game title",
+  "group": "Group chat name",
+  "me": "Display name of the person who exported",
+  "participants": [
+    { "name": "Dana", "color": "#53bdeb" },
+    { "name": "Tom" }
+  ],
+  "questions": [
+    {
+      "date": "31/01/2023",
+      "category": "💸 money",
+      "note": "optional one-line background shown above the chat",
+      "messages": [
+        { "from": "Tom", "time": "16:35", "text": "context message" },
+        { "from": "Dana", "time": "16:36", "text": "the funny message", "answer": true },
+        { "from": "Dana", "time": "16:36", "text": "its second line, if she sent it as two messages", "answer": true },
+        { "from": "Tom", "time": "16:37", "text": "חחחחחחח", "reaction": true }
+      ]
+    }
+  ]
+}
+
+Rules for the file:
+- Every "from" is exactly one of the participant names.
+- In each question, the messages marked "answer": true all have the same sender. That sender is the right answer.
+- Order inside a question: the context before (no flags), then the answer message(s), then up to 3 laughs marked "reaction": true. Reactions stay hidden until the reveal.
+- A photo, video or voice note inside the context becomes a text line like "📷 Photo".
+- "time" is HH:MM, "date" is DD/MM/YYYY. "category", "note" and "color" are optional.
+- Check that the JSON is valid before giving it to me.</template>
+<script>
+'use strict';
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+let LANG = lsGet('wst.lang') || ((navigator.language || '').toLowerCase().startsWith('he') ? 'he' : 'en');
+function applyLang() {
+  document.querySelectorAll('main[data-lang]').forEach(m => { m.hidden = m.dataset.lang !== LANG; });
+  document.documentElement.lang = LANG; document.documentElement.dir = LANG === 'he' ? 'rtl' : 'ltr';
+  document.getElementById('langBtn').textContent = LANG === 'he' ? 'English' : 'עברית';
+  document.getElementById('toGame').textContent = LANG === 'he' ? '→ למשחק' : '← To the game';
+  document.title = LANG === 'he' ? 'מי שלח? איך מכינים משחק' : 'Who sent it? Making a game';
+}
+function toggleLang() { LANG = LANG === 'he' ? 'en' : 'he'; lsSet('wst.lang', LANG); applyLang(); }
+const PROMPT = document.getElementById('promptTpl').content.textContent.trim();
+const FORMAT = document.getElementById('formatTpl').content.textContent.trim();
+document.querySelectorAll('.promptText').forEach(p => { p.textContent = PROMPT; });
+document.querySelectorAll('.formatText').forEach(p => { p.textContent = FORMAT; });
+function copyPrompt(btn) {
+  const label = btn.textContent, done = LANG === 'he' ? 'הועתק' : 'Copied';
+  const fallback = () => {
+    const pre = btn.parentElement.querySelector('pre'), r = document.createRange();
+    r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    btn.textContent = LANG === 'he' ? 'מסומן, העתיקו' : 'Selected, copy it';
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(PROMPT).then(() => { btn.textContent = done; setTimeout(() => { btn.textContent = label; }, 1800); }, fallback);
+  } else fallback();
+}
+applyLang();
+</script>
+</body>
+</html>
