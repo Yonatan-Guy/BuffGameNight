@@ -285,6 +285,13 @@ img.av{object-fit:cover;background:#3b4a54}
 .state .who{font-weight:800;font-size:1.3rem;color:var(--c)}
 .state.ok{background:linear-gradient(180deg,rgba(61,220,151,.18),rgba(61,220,151,0));border-radius:24px}
 .state.bad{background:linear-gradient(180deg,rgba(255,93,108,.16),rgba(255,93,108,0));border-radius:24px}
+/* phone: the final standings */
+.pfinal{display:flex;flex-direction:column;gap:16px;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+.pfinal .state{min-height:0;padding:26px 16px}
+.pfinal .facts{grid-template-columns:1fr}
+.pfinal .fact .v{font-size:34px}
+.pfinal .row.me{background:var(--hi);color:var(--hi-ink)}
+.pfinal .row.me .rk{color:inherit}
 .joinForm{max-width:420px;margin:0 auto;display:flex;flex-direction:column;gap:14px;padding-top:4vh}
 .joinForm h2{font-family:var(--display);font-weight:700;font-size:clamp(48px,14vw,64px);line-height:.9;margin:0}
 .joinForm label{font-size:.9rem;color:var(--mute);font-weight:600}

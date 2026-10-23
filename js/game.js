@@ -542,7 +542,7 @@ function ranking() { return [...players.values()].sort((a, b) => b.score - a.sco
 function syncPlayer(p) {
   if (phase === 'lobby') send(p, { type: 'lobby' });
   else if (phase === 'question') send(p, p.answer === null ? questionMsg() : { type: 'locked', choice: ROUND.items[qIndex].options[p.answer] });
-  else if (phase === 'final') { const r = ranking(); send(p, { type: 'final', rank: r.indexOf(p) + 1, of: r.length, score: p.score }); }
+  else if (phase === 'final') send(p, finalMsg(p));
   else send(p, p.lastResult || { type: 'between' });
 }
 function refreshHost() {
@@ -762,12 +762,18 @@ function endQuestion() {
     <button class="btn big" data-primary onclick="nextQuestion()">${esc(last ? t('toFinal') : t('next'))}</button>`;
   renderPlayersPanel();
 }
+/* what a phone shows at the end: its place, everyone's scores, and the same facts as the TV */
+let finalFacts = [];
+function finalMsg(p) {
+  const r = ranking();
+  return { type: 'final', rank: r.indexOf(p) + 1, of: r.length, score: p.score,
+           board: r.map(x => ({ name: x.name, score: x.score, me: x === p })), facts: finalFacts };
+}
 function showFinal() {
   phase = 'final';
   clearInterval(timerId);
   $('timer').textContent = ''; $('prog').textContent = ''; $('timeFill').style.width = '0%';
   const r = ranking();
-  r.forEach((p, i) => send(p, { type: 'final', rank: i + 1, of: r.length, score: p.score }));
   const pod = (p, place) => p ? `<div class="pod p${place}"><span class="nm" dir="auto">${esc(p.name)}</span><span class="sc">${p.score}</span><div class="blk">${place}</div></div>` : '<div></div>';
   const facts = [];
   const ss = Object.entries(senderStats).filter(([, s]) => s.answers > 0).map(([n, s]) => ({ n, p: Math.round(100 * s.right / s.answers) }));
@@ -779,6 +785,8 @@ function showFinal() {
   }
   const fast = r.filter(p => p.hits.length >= 2).map(p => ({ n: p.name, s: p.hits.reduce((a, b) => a + b, 0) / p.hits.length })).sort((a, b) => a.s - b.s)[0];
   if (fast) facts.push({ k: t('fastest'), v: fast.n, s: t('fastestSub', { s: fast.s.toFixed(1) }) });
+  finalFacts = facts;
+  r.forEach(p => send(p, finalMsg(p)));
   $('stage').innerHTML = `<div class="final">
       <h2>${esc(t('finalTitle'))}</h2>
       <div class="podium">${pod(r[1], 2)}${pod(r[0], 1)}${pod(r[2], 3)}</div>
@@ -945,9 +953,22 @@ function onHostMessage(msg, conn, fail, code) {
     case 'final':
       $('pScore').textContent = msg.score;
       $('pProg').textContent = '';
-      pview(`<p class="big">${msg.rank}</p><p>${esc(t('rankOf', { r: msg.rank, n: msg.of }))}</p><p class="pts" dir="ltr">${msg.score}</p>`, msg.rank === 1 ? 'ok' : 'plain');
+      phoneFinal(msg);
       break;
   }
+}
+function phoneFinal(msg) {
+  const board = Array.isArray(msg.board) ? msg.board.slice(0, 40) : [];
+  const facts = Array.isArray(msg.facts) ? msg.facts.slice(0, 4) : [];
+  const medal = ['🥇', '🥈', '🥉'];
+  pview(`<div class="pfinal">
+      <div class="state ${msg.rank === 1 ? 'ok' : 'plain'}"><p class="big">${medal[msg.rank - 1] || msg.rank}</p>
+        <p>${esc(t('rankOf', { r: msg.rank, n: msg.of }))}</p><p class="pts" dir="ltr">${Number(msg.score) || 0}</p></div>
+      ${board.length ? `<div class="board"><h3>${esc(t('board'))}</h3>${board.map((b, i) => `<div class="row${b.me ? ' me' : ''}">
+        <span class="rk">${medal[i] || i + 1}</span><span class="nm" dir="auto">${esc(b.name)}</span><span class="sc">${Number(b.score) || 0}</span></div>`).join('')}</div>` : ''}
+      ${facts.length ? `<div class="facts">${facts.map(f => `<div class="fact"><span class="k">${esc(f.k)}</span>
+        <span class="v" dir="auto">${esc(f.v)}</span><span class="s">${esc(f.s)}</span></div>`).join('')}</div>` : ''}
+    </div>`);  window.scrollTo(0, 0);   // the last question may have left the page scrolled down
 }
 function renderPhoneQuestion(m) {
   lastQ = m;
