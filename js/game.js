@@ -29,7 +29,7 @@ const STR = {
     noFile: 'אין לכם קובץ? ככה מכינים אחד', trySample: 'או נסו קבוצה לדוגמה', privacy: 'הקובץ נשמר רק בדפדפן הזה ולא עולה לשום שרת.',
     metaQ: '{n} שאלות', metaP: '{n} בקבוצה', openRoom: 'לפתוח חדר', preview: 'תצוגה מקדימה', del: 'מחיקה',
     delConfirm: 'למחוק את "{t}" מהדפדפן הזה?', settingCount: 'כמה שאלות', all: 'כולן ({n})', settingOrder: 'סדר',
-    orderShuffle: 'מעורבב', orderDate: 'לפי תאריך', settingPace: 'קצב', paceRelaxed: 'רגוע', paceNormal: 'רגיל', paceFast: 'מהיר',
+    orderShuffle: 'מעורבב', orderDate: 'לפי תאריך', settingPace: 'קצב', paceRelaxed: 'רגוע', paceNormal: 'רגיל', paceFast: 'מהיר', paceNone: 'בלי הגבלת זמן',
     questionsList: 'השאלות בקובץ ({a} מתוך {n} פעילות)', loaded: 'נטען: {t}', skipped: ' ({n} שאלות דולגו כי חסר בהן מידע)',
     errNotGame: 'זה לא נראה כמו קובץ משחק.', errNoQuestions: 'אין בקובץ שאלות.', errNoValid: 'לא מצאנו בקובץ אף שאלה תקינה.',
     errRead: 'לא הצלחנו לקרוא את הקובץ. ודאו שזה קובץ ה־JSON שקיבלתם מ־Claude.', errBig: 'הקובץ גדול מדי (מעל 8MB).',
@@ -67,7 +67,7 @@ const STR = {
     noFile: 'No file yet? Here’s how to make one', trySample: 'or try a sample group', privacy: 'The file stays in this browser. It is never uploaded to a server.',
     metaQ: '{n} questions', metaP: '{n} in the chat', openRoom: 'Open the room', preview: 'Preview', del: 'Delete',
     delConfirm: 'Delete "{t}" from this browser?', settingCount: 'Questions', all: 'All ({n})', settingOrder: 'Order',
-    orderShuffle: 'Shuffled', orderDate: 'By date', settingPace: 'Pace', paceRelaxed: 'Relaxed', paceNormal: 'Normal', paceFast: 'Fast',
+    orderShuffle: 'Shuffled', orderDate: 'By date', settingPace: 'Pace', paceRelaxed: 'Relaxed', paceNormal: 'Normal', paceFast: 'Fast', paceNone: 'No time limit',
     questionsList: 'Questions in the file ({a} of {n} on)', loaded: 'Loaded: {t}', skipped: ' ({n} questions skipped because they were incomplete)',
     errNotGame: 'This doesn’t look like a game file.', errNoQuestions: 'The file has no questions.', errNoValid: 'No usable questions in this file.',
     errRead: 'Couldn’t read the file. Make sure it’s the JSON file you got from Claude.', errBig: 'The file is too big (over 8 MB).',
@@ -298,7 +298,7 @@ function renderGames() {
           <div class="field"><label for="set-order">${esc(t('settingOrder'))}</label>
             <select id="set-order" onchange="setSetting('order',this.value)">${opt('shuffle', t('orderShuffle'), s.order)}${opt('date', t('orderDate'), s.order)}</select></div>
           <div class="field"><label for="set-pace">${esc(t('settingPace'))}</label>
-            <select id="set-pace" onchange="setSetting('pace',this.value)">${opt('relaxed', t('paceRelaxed'), s.pace)}${opt('normal', t('paceNormal'), s.pace)}${opt('fast', t('paceFast'), s.pace)}</select></div>
+            <select id="set-pace" onchange="setSetting('pace',this.value)">${opt('relaxed', t('paceRelaxed'), s.pace)}${opt('normal', t('paceNormal'), s.pace)}${opt('fast', t('paceFast'), s.pace)}${opt('none', t('paceNone'), s.pace)}</select></div>
         </div>
         <div class="pics">
           <span class="picsLabel">${esc(t('picsLabel'))}</span>
@@ -387,7 +387,8 @@ function prepareRound(rec) {
   if (s.order === 'date') qs.sort((a, b) => a.id - b.id);
   const pace = { relaxed: 1.4, normal: 1, fast: 0.7 }[s.pace] || 1;
   const pics = (rec.pics && rec.pics.people) || {};
-  ROUND = { game: g, colors: Object.fromEntries(g.participants.map(p => [p.name, p.color])), pics, groupPic: (rec.pics && rec.pics.group) || '',
+  // 'none': no clock at all; a question waits for the last player (dur still sets how fast answers score)
+  ROUND = { noLimit: s.pace === 'none', game: g, colors: Object.fromEntries(g.participants.map(p => [p.name, p.color])), pics, groupPic: (rec.pics && rec.pics.group) || '',
     items: qs.map(q => { const options = optionsFor(q, g);
       return { q, options, correct: options.findIndex(o => o.name === q.sender), dur: Math.max(8, Math.round(autoTime(q) * pace)) }; }) };
 }
@@ -613,6 +614,7 @@ function nextQuestion() {
   players.forEach(p => { p.answer = null; p.lastPoints = 0; p.elapsed = 0; p.lastResult = null; });
   const it = ROUND.items[qIndex], q = it.q, g = ROUND.game;
   qDur = it.dur;
+  $('timebar').hidden = ROUND.noLimit;
   $('prog').textContent = t('qOf', { i: qIndex + 1, n: ROUND.items.length });
   $('stage').innerHTML = `<div class="qgrid">
       <div id="chatBox">${chatHtml({ group: g.group, date: q.date, note: q.note, lines: hiddenLines(q) }, { groupPic: ROUND.groupPic })}</div>
@@ -693,6 +695,7 @@ function scrollToTarget() {
   if (tg) body.scrollTop += tg.getBoundingClientRect().top - body.getBoundingClientRect().top - body.clientHeight * 0.3;
 }
 function tick() {
+  if (ROUND.noLimit) { if (!pausedAt) $('timer').textContent = ''; return; }
   const left = Math.max(0, qDur - (clockNow() - qStart) / 1000);
   $('timer').textContent = Math.ceil(left);
   $('timeFill').style.width = (left / qDur * 100) + '%';
@@ -826,6 +829,7 @@ function fakeAnswers() {
     p.elapsed = 2 + Math.random() * qDur * 0.6;
   });
   renderLocked();
+  if (ROUND.noLimit) setTimeout(() => { if (phase === 'question' && previewMode) endQuestion(); }, 1500);   // pretend players are "everyone"
 }
 
 /* Space / Enter presses the main button on the TV */
