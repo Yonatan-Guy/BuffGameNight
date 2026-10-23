@@ -11,8 +11,9 @@ function applyLang() {
   setSkin(SKIN);
 }
 function toggleLang() { LANG = LANG === 'he' ? 'en' : 'he'; lsSet('wst.lang', LANG); applyLang(); }
+const SKINS = ['night', 'retro'];
 let SKIN = new URLSearchParams(location.search).get('skin') || lsGet('wst.skin') || 'night';
-if (SKIN !== 'retro') SKIN = 'night';
+if (!SKINS.includes(SKIN)) SKIN = 'night';
 let fonts = false;
 function setSkin(sk) {
   SKIN = sk; document.documentElement.dataset.skin = sk;
@@ -20,10 +21,10 @@ function setSkin(sk) {
     fonts = true; const l = document.createElement('link'); l.rel = 'stylesheet';
     l.href = 'https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;900&family=VT323&display=swap'; document.head.appendChild(l);
   }
-  const name = LANG === 'he' ? (sk === 'retro' ? 'רטרו' : 'לילה') : (sk === 'retro' ? 'Retro' : 'Night');
-  document.getElementById('skinBtn').textContent = (LANG === 'he' ? 'סגנון: ' : 'Look: ') + name;
+  const NAMES = { he: { title: 'סגנון', night: 'לילה', retro: 'רטרו' }, en: { title: 'Look', night: 'Night', retro: 'Retro' } };
+  renderSkinSliders(SKINS, sk, k => NAMES[LANG][k] || k);
 }
-function toggleSkin() { setSkin(SKIN === 'retro' ? 'night' : 'retro'); lsSet('wst.skin', SKIN); }
+function pickSkin(sk) { setSkin(sk); lsSet('wst.skin', SKIN); }
 const PROMPT = document.getElementById('promptTpl').content.textContent.trim();
 const FORMAT = document.getElementById('formatTpl').content.textContent.trim();
 document.querySelectorAll('.promptText').forEach(p => { p.textContent = PROMPT; });

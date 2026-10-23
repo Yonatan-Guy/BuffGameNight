@@ -20,7 +20,7 @@ function toast(msg) { const el = $('toast'); el.textContent = msg; el.hidden = f
    ========================================================= */
 const STR = {
   he: {
-    docTitle: 'מי שלח?', langSwitch: 'English', skinLabel: 'סגנון: {s}', skinNight: 'לילה', skinRetro: 'רטרו',
+    docTitle: 'מי שלח?', langSwitch: 'English', skinLabel: 'סגנון: {s}', skinTitle: 'סגנון', skinNight: 'לילה', skinRetro: 'רטרו',
     picsLabel: 'תמונות פרופיל (לא חובה): מופיעות בחשיפה', groupPic: 'הקבוצה', addPic: 'להוסיף תמונה ל{n}', removePic: 'להסיר', errPic: 'לא הצלחנו לקרוא את התמונה.', logoA: 'מי ', logoB: 'שלח', logoC: '?',
     tagline: 'משחק ניחושים על הקבוצה שלכם: ההודעות הכי מצחיקות מהצ\'אט, עם השמות מוסתרים. כולם מנחשים מהטלפון מי כתב מה.',
     hostTitle: 'לפתוח חדר', hostSub: 'על המסך הגדול, עם קובץ המשחק', joinTitle: 'להצטרף', joinSub: 'מהטלפון, עם קוד בן 4 ספרות',
@@ -54,10 +54,11 @@ const STR = {
     correct: 'צדקתם', wrong: 'לא הפעם', timeUp: 'נגמר הזמן', itWas: 'זה היה {n}', rankOf: 'מקום {r} מתוך {n}',
     getReady: 'השאלה הבאה בדרך', reconnecting: 'מתחברים מחדש…', tryN: 'ניסיון {i} מתוך {n}', disconnected: 'החיבור נותק',
     roomClosed: 'החדר נסגר', scoreKept: 'הניקוד שלכם נשמר.', rejoinAs: 'לחזור בתור {n}', backToRoom: 'לחזור לחדר {c} בתור {n}',
-    kicked: 'הוציאו אתכם מהחדר', leaveGame: 'לצאת מהמשחק?', fake: ['נועם', 'שירה', 'גל']
+    kicked: 'הוציאו אתכם מהחדר', leaveGame: 'לצאת מהמשחק?', fake: ['נועם', 'שירה', 'גל'],
+    fullChat: '⤢ שיחה מלאה', backToBoard: '⤡ חזרה לטבלה', closeView: 'סגירה'
   },
   en: {
-    docTitle: 'Who sent it?', langSwitch: 'עברית', skinLabel: 'Look: {s}', skinNight: 'Night', skinRetro: 'Retro',
+    docTitle: 'Who sent it?', langSwitch: 'עברית', skinLabel: 'Look: {s}', skinTitle: 'Look', skinNight: 'Night', skinRetro: 'Retro',
     picsLabel: 'Profile pictures (optional): shown at the reveal', groupPic: 'Group', addPic: 'Add a picture for {n}', removePic: 'Remove', errPic: 'Couldn’t read that image.', logoA: 'Who ', logoB: 'sent', logoC: ' it?',
     tagline: 'A guessing game about your group chat: its funniest messages with the names hidden. Everyone guesses who wrote what from their phone.',
     hostTitle: 'Host a room', hostSub: 'On the big screen, with your game file', joinTitle: 'Join', joinSub: 'From your phone, with a 4-digit code',
@@ -91,7 +92,8 @@ const STR = {
     correct: 'Correct', wrong: 'Not this time', timeUp: 'Time’s up', itWas: 'It was {n}', rankOf: '{r} of {n}',
     getReady: 'Next question coming up', reconnecting: 'Reconnecting…', tryN: 'Try {i} of {n}', disconnected: 'Disconnected',
     roomClosed: 'The room is closed', scoreKept: 'Your score is kept.', rejoinAs: 'Rejoin as {n}', backToRoom: 'Back to room {c} as {n}',
-    kicked: 'You were removed from the room', leaveGame: 'Leave the game?', fake: ['Sam', 'Alex', 'Robin']
+    kicked: 'You were removed from the room', leaveGame: 'Leave the game?', fake: ['Sam', 'Alex', 'Robin'],
+    fullChat: '⤢ Full chat', backToBoard: '⤡ Back to scores', closeView: 'Close'
   }
 };
 let LANG = lsGet('wst.lang') || ((navigator.language || '').toLowerCase().startsWith('he') ? 'he' : 'en');
@@ -128,8 +130,9 @@ function setSkin(sk, save) {
     l.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@500;700;900&family=VT323&display=swap';
     document.head.appendChild(l);
   }
-  const b = $('skinBtn'); if (b) b.textContent = t('skinLabel', { s: t(sk === 'retro' ? 'skinRetro' : 'skinNight') });
+  renderSkinSliders(SKINS, sk, k => t('skin' + k[0].toUpperCase() + k.slice(1)));
 }
+function pickSkin(sk) { setSkin(sk, true); broadcast({ type: 'skin', skin: SKIN }); }
 function toggleSkin() { setSkin(SKIN === 'retro' ? 'night' : 'retro', true); broadcast({ type: 'skin', skin: SKIN }); }
 
 /* =========================================================
@@ -172,6 +175,7 @@ window.addEventListener('popstate', e => {
              questions:[{ date, category, note, time, messages:[{from,text,time,answer,reaction}] }] }
    Also reads the older party-quiz files (questions with chat.lines).
    ========================================================= */
+const MEDIA_KINDS = ['image', 'gif', 'video', 'audio'];
 const PALETTE = ['#53bdeb', '#ffbc38', '#06cf9c', '#fc9775', '#e542a3', '#a5b337', '#9b8cff', '#ff7a59', '#00a5f4', '#d3b56b', '#25d366', '#ff5d8f'];
 function normalizeGame(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error(t('errNotGame'));
@@ -196,8 +200,13 @@ function normalizeGame(raw) {
       if (!Array.isArray(msgs) || !msgs.length) throw 0;
       msgs = msgs.slice(0, 40).map(m => ({
         from: addName(m && m.from), text: String((m && m.text) ?? '').slice(0, 3000), time: String((m && m.time) || '').slice(0, 8),
-        answer: !!(m && m.answer), reaction: !!(m && m.reaction && !m.answer)
+        answer: !!(m && m.answer), reaction: !!(m && m.reaction && !m.answer),
+        replyTo: Number.isInteger(m && m.replyTo) ? m.replyTo : -1,
+        media: m && typeof m.media === 'string' && /^media\/[\w.-]+$/.test(m.media) ? m.media : '',
+        mediaKind: m && MEDIA_KINDS.includes(m.mediaKind) ? m.mediaKind : ''
       }));
+      // "replyTo" is the index of the quoted message in the same question, shown like a WhatsApp reply
+      msgs.forEach(m => { const r = msgs[m.replyTo]; if (r && r !== m) m.quote = { from: r.from, text: r.text.slice(0, 200) }; delete m.replyTo; });
       const ans = msgs.filter(m => m.answer);
       if (!ans.length || !ans[0].from || !ans.every(m => m.from === ans[0].from)) throw 0;
       const tm = Number(time);
@@ -391,7 +400,18 @@ const DEFAULT_PERSON = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDA
 const GROUP_ICON = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cfd8dc" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"></circle><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M16 13.6c2.9.2 5 2.2 5 5.4"></path></svg>';
 function hiddenLines(q) {   // what phones get: no names, no reactions, only where a new sender starts
   const vis = q.messages.filter(m => !m.reaction);
-  return vis.map((m, i) => ({ text: m.text, time: m.time, answer: m.answer, first: i === 0 || vis[i - 1].from !== m.from }));
+  return vis.map((m, i) => ({ text: m.text, time: m.time, answer: m.answer, first: i === 0 || vis[i - 1].from !== m.from,
+    quote: m.quote ? { text: m.quote.text } : undefined, media: m.media, mediaKind: m.mediaKind }));
+}
+function mediaHtml(l) {
+  const src = esc(l.media), k = l.mediaKind || (/\.(mp4|mov|webm|m4v)$/i.test(l.media) ? 'video' : /\.(opus|ogg|mp3|m4a|aac|wav)$/i.test(l.media) ? 'audio' : 'image');
+  // a file that can't be loaded turns back into its "📷 תמונה" line instead of leaving an empty bubble
+  const label = (l.text.match(/(📷 תמונה|🎥 סרטון|🎤 הקלטה|GIF|סטיקר)$/) || ['📷 תמונה'])[0];
+  const fail = ` onerror="this.replaceWith('${label}')"`;
+  if (k === 'gif') return `<video class="wmedia" src="${src}" autoplay loop muted playsinline${fail}></video>`;
+  if (k === 'video') return `<video class="wmedia" src="${src}" controls playsinline preload="metadata"${fail}></video>`;
+  if (k === 'audio') return `<audio class="waudio" src="${src}" controls preload="metadata"${fail}></audio>`;
+  return `<img class="wmedia" src="${src}" alt=""${fail}>`;
 }
 function chatHtml(c, o = {}) {
   const reveal = !!o.reveal;
@@ -408,13 +428,18 @@ function chatHtml(c, o = {}) {
         nm = `<span class="nm" style="color:${col}" dir="auto">${esc(l.from)}<i class="cover" style="animation-delay:${Math.min(run * 110, 1100)}ms"></i></span>`;
       } else nm = `<span class="nm"><i class="rb" style="width:${BAR_W[run % BAR_W.length]}em"></i></span>`;
     }
+    const qf = l.quote && reveal ? l.quote.from : '';
+    const quote = l.quote ? `<span class="q"${qf ? ` style="--qc:${(o.colors && o.colors[qf]) || '#8696a0'}"` : ''}><span class="qn">${qf ? esc(qf) : '<i class="rb"></i>'}</span><span class="qt" dir="auto">${esc(l.quote.text)}</span></span>` : '';
+    // a photo / GIF / video / voice note next to the game file; phones keep the "📷 תמונה" line instead
+    const med = l.media && !o.small ? mediaHtml(l) : '';
+    const text = med ? l.text.replace(/\n?(📷 תמונה|🎥 סרטון|🎤 הקלטה|GIF|סטיקר)$/, '') : l.text;
     const ask = (!reveal && l.answer && !asked) ? (asked = true, `<div class="ask">${esc(t('whoSent'))}</div>`) : '';
     const cls = ['b', out ? 'out' : '', first ? 'first' : '', l.answer ? 'target' : ''].join(' ');
     const delay = l.reaction ? ` style="animation-delay:${900 + (ri++) * 450}ms"` : '';
     // avatar beside the first message of each run; everyone is the grey silhouette until the reveal
     const src = reveal && o.pics && o.pics[l.from] ? o.pics[l.from] : DEFAULT_PERSON;
     const ava = out ? '' : `<img class="ava${first ? '' : ' sp'}${reveal ? ' shown' : ''}" src="${src}" alt="">`;
-    return `${ask}<div class="msg${out ? ' out' : ''}${l.reaction ? ' react' : ''}"${delay}>${ava}<div class="${cls}">${nm}<span dir="auto">${esc(l.text)}</span><span class="tm">${esc(l.time || '')}</span></div></div>`;
+    return `${ask}<div class="msg${out ? ' out' : ''}${l.reaction ? ' react' : ''}"${delay}>${ava}<div class="${cls}">${nm}${quote}${med}${text ? `<span dir="auto">${esc(text)}</span>` : ''}<span class="tm">${esc(l.time || '')}</span></div></div>`;
   }).join('');
   const head = o.small ? '' : `<div class="wa-head"><img class="wa-gav" src="${o.groupPic || DEFAULT_GROUP}" alt=""><div>
       <div class="wa-gname" dir="auto">${esc(c.group || '')}</div>
@@ -431,7 +456,7 @@ const PREFIX = 'whosent-v1-';
 const players = new Map();      // key -> { name, token, conn, connected, score, answer, elapsed, lastPoints, hits:[] }
 const banned = new Set(), bannedTokens = new Set();
 let peer = null, roomActive = false, previewMode = false, phase = 'idle';
-let qIndex = -1, qStart = 0, qDur = 20, timerId = null, senderStats = {};
+let qIndex = -1, qStart = 0, qDur = 20, timerId = null, senderStats = {}, pausedAt = 0;
 
 function openRoom() {
   const rec = currentRec(); if (!rec) return;
@@ -598,7 +623,8 @@ function nextQuestion() {
         <div class="sideFoot" id="sideFoot"><button class="btn ghost small" onclick="endQuestion()">${esc(t('revealNow'))}</button></div>
       </aside></div>`;
   renderLocked();
-  qStart = performance.now();
+  qStart = performance.now(); pausedAt = 0; clockHolds.clear(); closeView();
+  scrollToTarget(); setTimeout(scrollToTarget, 400);   // again once photos have their size
   broadcast(questionMsg());
   if (previewMode) setTimeout(() => { if (phase === 'question') fakeAnswers(); }, 1800);
   clearInterval(timerId);
@@ -608,8 +634,63 @@ function avHtml(o, pics) {
   const pic = pics && pics[o.name];
   return pic ? `<img class="av pic" src="${pic}" alt="">` : `<span class="av" style="background:${okColor(o.color) ? o.color : '#8696a0'}">${esc(initial(o.name))}</span>`;
 }
+/* The clock stops while a video / voice note plays or a photo is open full screen,
+   and runs again once nothing holds it. */
+const clockHolds = new Set();
+function clockNow() { return pausedAt || performance.now(); }
+function pauseClock(why) {
+  if (phase !== 'question') return;
+  clockHolds.add(why);
+  if (pausedAt) return;
+  pausedAt = performance.now(); clearInterval(timerId);
+  $('timer').textContent = '⏸';
+}
+function resumeClock(why) {
+  clockHolds.delete(why);
+  if (!pausedAt || clockHolds.size) return;
+  qStart += performance.now() - pausedAt; pausedAt = 0;
+  if (phase === 'question') { clearInterval(timerId); tick(); timerId = setInterval(tick, 200); }
+}
+const clip = e => e.target.controls && e.target.closest && e.target.closest('#chatBox');
+document.addEventListener('play', e => { if (clip(e)) pauseClock('clip'); }, true);
+['pause', 'ended'].forEach(ev => document.addEventListener(ev, e => {
+  if (clip(e) && ![...document.querySelectorAll('#chatBox video[controls], #chatBox audio')].some(m => !m.paused)) resumeClock('clip');
+}, true));
+
+/* a photo or GIF in the chat opens full screen */
+function openView(el) {
+  closeView();
+  const v = document.createElement('div'); v.id = 'viewer'; v.setAttribute('role', 'dialog');
+  const big = el.tagName === 'VIDEO'
+    ? Object.assign(document.createElement('video'), { src: el.getAttribute('src'), autoplay: true, loop: true, muted: true, playsInline: true })
+    : Object.assign(document.createElement('img'), { src: el.getAttribute('src'), alt: '' });
+  const x = Object.assign(document.createElement('button'), { className: 'x', textContent: '✕' });
+  x.setAttribute('aria-label', t('closeView'));
+  v.append(big, x); v.onclick = closeView;
+  document.body.appendChild(v);
+  pauseClock('view');
+}
+function closeView() { const v = $('viewer'); if (!v) return; v.remove(); resumeClock('view'); }
+document.addEventListener('click', e => {
+  const m = e.target.closest && e.target.closest('#chatBox img.wmedia, #chatBox video.wmedia:not([controls])');
+  if (m) openView(m);
+});
+/* after the reveal the chat can take the whole screen, so the full conversation fits */
+function toggleFullChat() {
+  const g = document.querySelector('#stage .qgrid'); if (!g) return;
+  const on = g.classList.toggle('full');
+  const b = $('fullBtn'); if (b) b.textContent = t(on ? 'backToBoard' : 'fullChat');
+  // show as much of the conversation as fits, ending with the laughs at the bottom
+  const body = g.querySelector('.wa-body'); if (body) body.scrollTop = on ? body.scrollHeight : 0;
+  if (!on) scrollToTarget();
+}
+/* open each question with the highlighted message in view */
+function scrollToTarget() {
+  const body = document.querySelector('#chatBox .wa-body'), tg = body && body.querySelector('.b.target');
+  if (tg) body.scrollTop += tg.getBoundingClientRect().top - body.getBoundingClientRect().top - body.clientHeight * 0.3;
+}
 function tick() {
-  const left = Math.max(0, qDur - (performance.now() - qStart) / 1000);
+  const left = Math.max(0, qDur - (clockNow() - qStart) / 1000);
   $('timer').textContent = Math.ceil(left);
   $('timeFill').style.width = (left / qDur * 100) + '%';
   const hurry = left <= 5;
@@ -628,7 +709,7 @@ function onAnswer(p, choice) {
   const it = ROUND.items[qIndex];
   if (!Number.isInteger(choice) || choice < 0 || choice >= it.options.length) return;
   p.answer = choice;
-  p.elapsed = (performance.now() - qStart) / 1000;   // measured on the TV, so phone clocks don't matter
+  p.elapsed = (clockNow() - qStart) / 1000;   // measured on the TV, so phone clocks don't matter
   send(p, { type: 'locked', choice: it.options[choice] });
   renderLocked(); maybeEndEarly();
 }
@@ -640,7 +721,7 @@ function maybeEndEarly() {
 function endQuestion() {
   if (phase !== 'question') return;
   phase = 'reveal';
-  clearInterval(timerId);
+  clearInterval(timerId); pausedAt = 0; clockHolds.clear();
   $('timer').textContent = ''; $('timeFill').style.width = '0%';
   const it = ROUND.items[qIndex], q = it.q, g = ROUND.game;
   const st = senderStats[q.sender] || (senderStats[q.sender] = { answers: 0, right: 0 });
@@ -656,6 +737,9 @@ function endQuestion() {
   // chat with names, reactions, and the votes per suspect
   $('chatBox').innerHTML = chatHtml({ group: g.group, date: q.date, note: q.note, lines: q.messages },
     { reveal: true, me: g.me, colors: ROUND.colors, names: g.participants.map(p => p.name), pics: ROUND.pics, groupPic: ROUND.groupPic });
+  const head = document.querySelector('#chatBox .wa-head');
+  if (head) head.insertAdjacentHTML('beforeend', `<button class="btn ghost small" id="fullBtn" onclick="toggleFullChat()">${esc(t('fullChat'))}</button>`);
+  scrollToTarget();
   it.options.forEach((o, i) => {
     const voters = [...players.values()].filter(p => p.answer === i);
     const el = $('sus' + i);
@@ -735,6 +819,7 @@ function fakeAnswers() {
 
 /* Space / Enter presses the main button on the TV */
 document.addEventListener('keydown', e => {
+  if ($('viewer') && (e.code === 'Escape' || e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); closeView(); return; }
   if (e.code !== 'Space' && e.code !== 'Enter') return;
   if (/^(INPUT|SELECT|TEXTAREA|BUTTON|A|SUMMARY)$/.test(e.target.tagName)) return;
   const btn = document.querySelector('.screen.active [data-primary]:not(:disabled)');

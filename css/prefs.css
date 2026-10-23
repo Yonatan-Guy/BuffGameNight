@@ -1,0 +1,28 @@
+/* The look switcher and language button: the same corner on every page. */
+#prefs{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:calc(14px + env(safe-area-inset-left,0px));z-index:35;
+       display:flex;gap:8px;align-items:center;direction:ltr}   /* same order in both languages */
+#prefs .btn{min-height:36px;padding:.25em .9em;font-size:.85rem}
+body.inPlay #prefs,body.inGame #prefs{display:none}
+
+/* a pill with a thumb that slides to the chosen look; always laid out left-to-right so the thumb moves the same way in both languages */
+.skinSlider{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:3px;border-radius:999px;direction:ltr;
+  background:var(--sl-bg,#141821);box-shadow:inset 0 0 0 1.5px var(--sl-line,#2b3344);font-family:inherit;flex:none}
+.skinSlider .thumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / var(--n,3));border-radius:999px;background:var(--sl-thumb,#ffd84d);
+  transform:translateX(calc(var(--i,0) * 100%));transition:transform .28s cubic-bezier(.3,1.4,.5,1)}
+.skinSlider button{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:30px;padding:3px 12px;
+  background:none;border:0;border-radius:999px;color:var(--sl-ink,#f4efe4);font:inherit;font-weight:800;font-size:.85rem;white-space:nowrap;cursor:pointer;
+  transition:color .2s}
+.skinSlider button[aria-checked=true]{color:var(--sl-on,#1d1700)}
+.skinSlider button:focus-visible{outline:2px solid var(--sl-thumb,#ffd84d);outline-offset:2px}
+.skinSlider .ic{font-size:1rem;line-height:1}
+.skinSlider.mini button{padding:3px 8px}
+.skinSlider.mini .lb{display:none}
+@media (max-width:420px){#prefs .skinSlider .lb{display:none}}
+@media (prefers-reduced-motion:reduce){.skinSlider .thumb{transition:none}}
+
+/* per look */
+html[data-skin=retro] .skinSlider{--sl-bg:#c6c6c6;--sl-thumb:#0a1a8c;--sl-ink:#000;--sl-on:#fff;border-radius:0;
+  box-shadow:inset 2px 2px 0 #0a0a0a,inset -2px -2px 0 #fff,inset 4px 4px 0 #808080,inset -4px -4px 0 #dfdfdf;padding:4px}
+html[data-skin=retro] .skinSlider .thumb,html[data-skin=retro] .skinSlider button{border-radius:0}
+html[data-skin=retro] .skinSlider .thumb{top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / var(--n,3))}
+html[data-skin=arcade] .skinSlider{--sl-bg:#fff;--sl-thumb:#0b63f6;--sl-ink:#08224f;--sl-on:#fff;box-shadow:inset 0 0 0 2px #08224f,3px 3px 0 #08224f}

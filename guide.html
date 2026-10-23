@@ -10,11 +10,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;800&family=JetBrains+Mono:wght@500;700&family=Karantina:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/guide.css">
+<link rel="stylesheet" href="css/prefs.css">
 </head>
 <body>
 <div class="top">
   <a class="btn ghost" href="./" id="toGame">← למשחק</a>
-  <span class="tb"><button class="btn ghost" id="skinBtn" onclick="toggleSkin()"></button><button class="btn ghost" id="langBtn" onclick="toggleLang()">English</button></span>
 </div>
 
 <!-- ======================= HEBREW ======================= -->
@@ -264,6 +264,8 @@ Rules for the file:
 - A photo, video or voice note inside the context becomes a text line like "📷 Photo".
 - "time" is HH:MM, "date" is DD/MM/YYYY. "category", "note" and "color" are optional.
 - Check that the JSON is valid before giving it to me.</template>
+<div id="prefs"><div class="skinSlider" data-skin-slider></div><button class="btn ghost small" id="langBtn" onclick="toggleLang()">English</button></div>
+<script src="js/prefs.js"></script>
 <script src="js/guide.js"></script>
 </body>
 </html>

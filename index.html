@@ -12,6 +12,7 @@
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link rel="stylesheet" href="css/game.css">
+<link rel="stylesheet" href="css/prefs.css">
 </head>
 <body>
 
@@ -98,7 +99,7 @@
       <span class="prog" id="prog"></span>
       <span class="hright"><span id="previewBar" hidden><span class="tag" data-t="previewOn"></span>
         <button class="btn ghost small" onclick="location.reload()" data-t="exitPreview"></button></span>
-      <button class="btn ghost small" onclick="toggleSkin()" aria-label="Style" title="Style">◐</button>
+      <div class="skinSlider mini" data-skin-slider></div>
       <button id="playersBtn" class="btn ghost small" hidden onclick="togglePlayers()" data-t="playersBtn"></button>
       <span class="timer" id="timer"></span></span>
     </header>
@@ -122,15 +123,16 @@
 
 <!-- ================= Phone: in game ================= -->
 <section class="screen" id="player">
-  <div class="pbar"><span id="pName" dir="auto"></span><span class="pprog" id="pProg"></span><span class="pr"><button class="kick" onclick="toggleSkin()" aria-label="Style" title="Style">◐</button><span class="sc" id="pScore">0</span></span></div>
+  <div class="pbar"><span id="pName" dir="auto"></span><span class="pprog" id="pProg"></span><span class="pr"><div class="skinSlider mini" data-skin-slider></div><span class="sc" id="pScore">0</span></span></div>
   <div class="pview" id="pview"></div>
 </section>
 
-<div id="prefs"><button class="btn ghost small" id="skinBtn" onclick="toggleSkin()"></button><button class="btn ghost small" id="langBtn" onclick="toggleLang()" data-t="langSwitch">English</button></div>
+<div id="prefs"><div class="skinSlider" data-skin-slider></div><button class="btn ghost small" id="langBtn" onclick="toggleLang()" data-t="langSwitch">English</button></div>
 <div id="playersPanel" class="wnd" data-title="players.exe" hidden></div>
 
 <div id="toast" role="status" aria-live="polite" hidden></div>
 
+<script src="js/prefs.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>f
