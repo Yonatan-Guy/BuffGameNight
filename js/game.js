@@ -20,7 +20,7 @@ function toast(msg) { const el = $('toast'); el.textContent = msg; el.hidden = f
    ========================================================= */
 const STR = {
   he: {
-    docTitle: 'מי שלח?', langSwitch: 'English', skinLabel: 'סגנון: {s}', skinTitle: 'סגנון', skinNight: 'לילה', skinRetro: 'רטרו',
+    docTitle: 'מי שלח?', langSwitch: 'English', skinLabel: 'סגנון: {s}', skinTitle: 'סגנון', skinArcade: 'ארקייד', skinNight: 'לילה', skinRetro: 'רטרו',
     picsLabel: 'תמונות פרופיל (לא חובה): מופיעות בחשיפה', groupPic: 'הקבוצה', addPic: 'להוסיף תמונה ל{n}', removePic: 'להסיר', errPic: 'לא הצלחנו לקרוא את התמונה.', logoA: 'מי ', logoB: 'שלח', logoC: '?',
     tagline: 'משחק ניחושים על הקבוצה שלכם: ההודעות הכי מצחיקות מהצ\'אט, עם השמות מוסתרים. כולם מנחשים מהטלפון מי כתב מה.',
     hostTitle: 'לפתוח חדר', hostSub: 'על המסך הגדול, עם קובץ המשחק', joinTitle: 'להצטרף', joinSub: 'מהטלפון, עם קוד בן 4 ספרות',
@@ -58,7 +58,7 @@ const STR = {
     fullChat: '⤢ שיחה מלאה', backToBoard: '⤡ חזרה לטבלה', closeView: 'סגירה'
   },
   en: {
-    docTitle: 'Who sent it?', langSwitch: 'עברית', skinLabel: 'Look: {s}', skinTitle: 'Look', skinNight: 'Night', skinRetro: 'Retro',
+    docTitle: 'Who sent it?', langSwitch: 'עברית', skinLabel: 'Look: {s}', skinTitle: 'Look', skinArcade: 'Arcade', skinNight: 'Night', skinRetro: 'Retro',
     picsLabel: 'Profile pictures (optional): shown at the reveal', groupPic: 'Group', addPic: 'Add a picture for {n}', removePic: 'Remove', errPic: 'Couldn’t read that image.', logoA: 'Who ', logoB: 'sent', logoC: ' it?',
     tagline: 'A guessing game about your group chat: its funniest messages with the names hidden. Everyone guesses who wrote what from their phone.',
     hostTitle: 'Host a room', hostSub: 'On the big screen, with your game file', joinTitle: 'Join', joinSub: 'From your phone, with a 4-digit code',
@@ -114,26 +114,29 @@ function applyLang() {
 }
 function toggleLang() { LANG = LANG === 'he' ? 'en' : 'he'; lsSet('wst.lang', LANG); applyLang(); }
 
-/* looks: 'night' (default) or 'retro'. The TV's choice is sent to the phones. */
-const SKINS = ['night', 'retro'];
+/* looks: 'arcade', 'night' (default) or 'retro'. The TV's choice is sent to the phones. */
+const SKINS = ['arcade', 'night', 'retro'];
 let SKIN = new URLSearchParams(location.search).get('skin') || lsGet('wst.skin') || 'night';
 if (!SKINS.includes(SKIN)) SKIN = 'night';
-let retroFonts = false;
+const SKIN_FONTS = {   // each look's extra fonts, loaded the first time it is picked
+  retro: 'family=Press+Start+2P&family=Rubik:wght@500;700;900&family=VT323',
+  arcade: 'family=Secular+One&family=Press+Start+2P&family=Rubik:wght@400;500;700;900'
+}, fontsLoaded = new Set();
 function setSkin(sk, save) {
   if (!SKINS.includes(sk)) return;
   SKIN = sk;
   document.documentElement.dataset.skin = sk;
   if (save) lsSet('wst.skin', sk);
-  if (sk === 'retro' && !retroFonts) {
-    retroFonts = true;
+  if (SKIN_FONTS[sk] && !fontsLoaded.has(sk)) {
+    fontsLoaded.add(sk);
     const l = document.createElement('link'); l.rel = 'stylesheet';
-    l.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@500;700;900&family=VT323&display=swap';
+    l.href = `https://fonts.googleapis.com/css2?${SKIN_FONTS[sk]}&display=swap`;
     document.head.appendChild(l);
   }
   renderSkinSliders(SKINS, sk, k => t('skin' + k[0].toUpperCase() + k.slice(1)));
 }
 function pickSkin(sk) { setSkin(sk, true); broadcast({ type: 'skin', skin: SKIN }); }
-function toggleSkin() { setSkin(SKIN === 'retro' ? 'night' : 'retro', true); broadcast({ type: 'skin', skin: SKIN }); }
+function toggleSkin() { pickSkin(SKINS[(SKINS.indexOf(SKIN) + 1) % SKINS.length]); }
 
 /* =========================================================
    screens + browser Back

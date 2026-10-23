@@ -11,17 +11,18 @@ function applyLang() {
   setSkin(SKIN);
 }
 function toggleLang() { LANG = LANG === 'he' ? 'en' : 'he'; lsSet('wst.lang', LANG); applyLang(); }
-const SKINS = ['night', 'retro'];
+const SKINS = ['arcade', 'night', 'retro'];
 let SKIN = new URLSearchParams(location.search).get('skin') || lsGet('wst.skin') || 'night';
 if (!SKINS.includes(SKIN)) SKIN = 'night';
-let fonts = false;
+const fonts = new Set();
 function setSkin(sk) {
   SKIN = sk; document.documentElement.dataset.skin = sk;
-  if (sk === 'retro' && !fonts) {
-    fonts = true; const l = document.createElement('link'); l.rel = 'stylesheet';
-    l.href = 'https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;900&family=VT323&display=swap'; document.head.appendChild(l);
+  const FONTS = { retro: 'family=Rubik:wght@500;700;900&family=VT323', arcade: 'family=Secular+One&family=Press+Start+2P&family=Rubik:wght@400;500;700;900' };
+  if (FONTS[sk] && !fonts.has(sk)) {
+    fonts.add(sk); const l = document.createElement('link'); l.rel = 'stylesheet';
+    l.href = `https://fonts.googleapis.com/css2?${FONTS[sk]}&display=swap`; document.head.appendChild(l);
   }
-  const NAMES = { he: { title: 'סגנון', night: 'לילה', retro: 'רטרו' }, en: { title: 'Look', night: 'Night', retro: 'Retro' } };
+  const NAMES = { he: { title: 'סגנון', arcade: 'ארקייד', night: 'לילה', retro: 'רטרו' }, en: { title: 'Look', arcade: 'Arcade', night: 'Night', retro: 'Retro' } };
   renderSkinSliders(SKINS, sk, k => NAMES[LANG][k] || k);
 }
 function pickSkin(sk) { setSkin(sk); lsSet('wst.skin', SKIN); }

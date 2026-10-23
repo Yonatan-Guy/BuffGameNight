@@ -97,3 +97,27 @@ html[data-skin=retro] code{background:#000;color:#ffe14d;border-radius:0}
 html[data-skin=retro] details{border-color:#000}
 html[data-skin=retro] summary{color:#fff;text-shadow:2px 2px 0 #000}
 html[data-skin=retro] details pre{border-radius:0;background:#000;color:#ffe14d}
+
+/* =================== ARCADE =================== bright 80s arcade, like the game's arcade look */
+html[data-skin=arcade]{--ink:#e8f1ff;--ink-2:#ffffff;--ink-3:#dbe8ff;--line:#08224f;--paper:#08224f;--mute:#4a6da6;--hi:#0b63f6;--hi-ink:#fff;--ok:#00a844;
+  --display:"Secular One","Rubik",system-ui,sans-serif;--body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+html[data-skin=arcade] body{background:#e8f1ff;background-image:repeating-linear-gradient(to bottom,rgba(8,34,79,.04) 0 1px,transparent 1px 4px)}
+html[data-skin=arcade] h1{text-shadow:4px -3px 0 #00c2ff,-4px 3px 0 #00c853;line-height:1.05}
+html[data-skin=arcade] h1{font-size:clamp(40px,7vw,80px)}   /* Secular One is much wider than the night font */
+html[data-skin=arcade] h2{font-size:clamp(26px,3.6vw,38px)}
+html[data-skin=arcade] .num{font-size:48px}
+html[data-skin=arcade] .lede{color:#08224f}
+html[data-skin=arcade] a{color:#0b63f6}
+html[data-skin=arcade] .btn{border-radius:14px;background:#0b63f6;color:#fff;border:0;box-shadow:0 5px 0 #052f86}
+html[data-skin=arcade] .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #052f86}
+html[data-skin=arcade] .btn.ghost{background:#fff;color:#08224f;border:2px solid #08224f;box-shadow:0 4px 0 #08224f}
+html[data-skin=arcade] .fx,html[data-skin=arcade] .card,html[data-skin=arcade] .tip{background:#fff;color:#08224f;border:3px solid #08224f;box-shadow:6px 6px 0 rgba(8,34,79,.85)}
+html[data-skin=arcade] .fx span,html[data-skin=arcade] .card .muted{color:#4a6da6}
+html[data-skin=arcade] .fx b{color:#08224f} html[data-skin=arcade] .fx.code b{color:#0b63f6;font-family:"Press Start 2P",monospace;font-size:.9em}
+html[data-skin=arcade] .arrow{color:#08224f}
+html[data-skin=arcade] .step,html[data-skin=arcade] .section{border-top:3px solid #08224f}
+html[data-skin=arcade] .num{color:#0b63f6;text-shadow:3px 3px 0 #00c853}
+html[data-skin=arcade] .prompt pre,html[data-skin=arcade] details pre{background:#08224f;color:#e8f1ff;border-radius:12px}
+html[data-skin=arcade] code{background:#dbe8ff;color:#08224f}
+html[data-skin=arcade] details{border-color:#08224f}
+html[data-skin=arcade] summary{color:#08224f}
