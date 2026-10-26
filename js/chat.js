@@ -68,6 +68,33 @@ const Chat = (() => {
     return { msgs, group: groupName };
   }
 
+  /* WhatsApp for Mac writes "image omitted" even when the photo is in the zip. The files are named
+     after the moment they were sent (00002621-PHOTO-2020-04-08-15-00-21.jpg), so they are matched
+     to messages by second and kind, then a second or two off, then any kind. Returns how many matched. */
+  const FILE_KIND = { PHOTO: 'image', VIDEO: 'video', GIF: 'gif', STICKER: 'sticker', AUDIO: 'audio', 'VIDEO NOTE': 'video' };
+  function attachByTime(msgs, names) {
+    const pad = n => String(n).padStart(2, '0');
+    const stamp = t => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`; };
+    const pool = new Map();   // "2020-04-08-15-00-21" -> files, oldest number first
+    for (const n of names) {
+      const m = n.match(/^(\d+)-([A-Z ]+)-(\d{4}(?:-\d\d){5})\.\w+$/); if (!m) continue;
+      if (!pool.has(m[3])) pool.set(m[3], []);
+      pool.get(m[3]).push({ name: n, num: +m[1], kind: FILE_KIND[m[2]] || kindOfFile(n) });
+    }
+    pool.forEach(l => l.sort((a, b) => a.num - b.num));
+    const want = msgs.filter(m => m.media && !m.media.file && m.media.kind !== 'doc');
+    const take = (m, dt, anyKind) => {
+      const l = pool.get(stamp(m.ts + dt * 1000)); if (!l) return false;
+      const k = l.findIndex(f => anyKind || f.kind === m.media.kind || (m.media.kind === 'image' && f.kind === 'sticker'));
+      if (k < 0) return false;
+      m.media.file = l.splice(k, 1)[0].name; return true;
+    };
+    let n = 0;
+    for (const pass of [[0, false], [1, false], [-1, false], [2, false], [-2, false], [0, true], [1, true], [-1, true]])
+      for (const m of want) if (!m.media.file && take(m, pass[0], pass[1])) n++;
+    return n;
+  }
+
   /* ---------------- laughter ---------------- */
   // the laughs every group shares; a group adds its own words on top
   const BASE = {
@@ -252,6 +279,6 @@ const Chat = (() => {
     return out;
   }
 
-  return { parse, norm, variants, isCore: w => LAUGH_CORE.test(w) && !String(w).replace(LAUGH_CORE, '').trim(), wordCounts, EXTRA, BASE, makeLaughTest, discoverLaughs, candidates, windowOf, stats, kindOfFile, CURSE };
+  return { parse, attachByTime, norm, variants, isCore: w => LAUGH_CORE.test(w) && !String(w).replace(LAUGH_CORE, '').trim(), wordCounts, EXTRA, BASE, makeLaughTest, discoverLaughs, candidates, windowOf, stats, kindOfFile, CURSE };
 })();
 if (typeof module !== 'undefined') module.exports = Chat;

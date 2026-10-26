@@ -237,6 +237,7 @@ async function readChatFile(file) {
       entries.forEach(f => { if (f !== txt) zipMap.set(f.name.split('/').pop(), f); });
     } else text = await file.text();
     const parsed = Chat.parse(text, LANG);
+    if (parsed && zipMap.size) Chat.attachByTime(parsed.msgs, [...zipMap.keys()]);
     if (!parsed || parsed.msgs.filter(m => !m.system).length < 10) {
       // show only the shape of the first line (dates, punctuation, first letters), not what it says
       const line = text.replace(/^\uFEFF/, '').split(/\r?\n/).find(l => l.trim()) || '';
