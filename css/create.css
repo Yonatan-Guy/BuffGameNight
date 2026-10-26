@@ -153,3 +153,31 @@ body{min-height:100vh}
 /* keep text readable over the face rain, and clear the corner switcher */
 .wizStage .lede,.wizStage .hint{text-shadow:0 0 6px var(--glow),0 0 12px var(--glow)}
 .wiz{padding-bottom:140px}
+
+/* what goes into the game: faded = left out, context tag, tool hints */
+.card .m.skip{opacity:.38} .card .m.skip .b{border-style:dashed;border-color:#3b4a54}
+.card .tag.ctx{background:#12304a;color:#7cc4ff}
+.card .tools button{display:flex;flex-direction:column;align-items:center;line-height:1.2;padding:5px 12px}
+.card .tools button small{font-weight:600;font-size:.68rem;opacity:.75;max-width:150px;white-space:normal}
+.pvBtn{align-self:flex-start}
+.legend dl{display:grid;grid-template-columns:max-content 1fr;gap:8px 14px;margin:12px 0 0}
+.legend dt{font-weight:800;white-space:nowrap} .legend dd{margin:0;color:var(--mute)}
+@media (max-width:600px){.legend dl{grid-template-columns:1fr;gap:2px}.legend dd{margin-bottom:8px}}
+
+/* preview window */
+.pv{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;overflow:auto}
+.pvIn{width:min(640px,100%);display:flex;flex-direction:column;gap:12px}
+.pvHead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pvTabs{display:flex;gap:6px}
+.pvTabs button{border:2px solid var(--line);background:var(--ink-3);color:var(--paper);border-radius:999px;padding:6px 14px;font:inherit;font-weight:800;cursor:pointer}
+.pvTabs button.on{background:var(--sun);color:#1d1700;border-color:var(--sun)}
+.pv .card .b{cursor:default}
+.pv .card .m.ans .b{border-color:#ffd84d}
+.pv .card .m.rxm{animation:pvIn .4s ease both}
+.pv .rb{display:inline-block;height:.8em;width:3.5em;border-radius:4px;background:#3b4a54;vertical-align:middle}
+.pv .ask{align-self:center;background:#ffd84d;color:#1d1700;font-weight:800;border-radius:999px;padding:2px 14px;margin:6px 0 2px;font-family:var(--body)}
+.pv .pvmed{display:block;font-size:1.6rem}
+.pv .phimg{display:block;max-width:min(280px,60vw);max-height:300px;border-radius:7px;margin:2px 0 4px}
+.pvNote{font-weight:700} .pvAns{margin:0;font-size:1.2rem}
+.pvNav{display:flex;justify-content:space-between;align-items:center}
+@keyframes pvIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}

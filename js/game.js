@@ -31,7 +31,8 @@ const STR = {
     noFile: 'איך מכינים משחק עם בינה מלאכותית', trySample: 'או נסו קבוצה לדוגמה', privacy: 'הקובץ נשמר רק בדפדפן הזה ולא עולה לשום שרת.',
     metaQ: '{n} שאלות', metaP: '{n} בקבוצה', openRoom: 'לפתוח חדר', preview: 'תצוגה מקדימה', del: 'מחיקה',
     delConfirm: 'למחוק את "{t}" מהדפדפן הזה?', settingCount: 'כמה שאלות', all: 'כולן ({n})', settingOrder: 'סדר',
-    orderShuffle: 'מעורבב', orderDate: 'לפי תאריך', settingPace: 'קצב', paceRelaxed: 'רגוע', paceNormal: 'רגיל', paceFast: 'מהיר', paceNone: 'בלי הגבלת זמן',
+    orderShuffle: 'מעורבב', orderDate: 'לפי תאריך', settingPace: 'קצב', paceRelaxed: 'רגוע (דקה+)', paceNormal: 'רגיל (45 שנ׳+)', paceFast: 'מהיר (30 שנ׳+)', paceNone: 'בלי הגבלת זמן',
+    paceHint: '⏱ בלי הגבלת זמן: השאלה מחכה שכולם יענו. בכל קצב, מי שעונה נכון מהר מקבל יותר: 1000 נקודות על תשובה מיידית, ויורד עד 500 לתשובה איטית. שאלות ארוכות או עם סרטון מקבלות יותר זמן.',
     questionsList: 'השאלות בקובץ ({a} מתוך {n} פעילות)', loaded: 'נטען: {t}', skipped: ' ({n} שאלות דולגו כי חסר בהן מידע)',
     errNotGame: 'זה לא נראה כמו קובץ משחק.', errNoQuestions: 'אין בקובץ שאלות.', errNoValid: 'לא מצאנו בקובץ אף שאלה תקינה.',
     errRead: 'לא הצלחנו לקרוא את הקובץ. ודאו שזה קובץ משחק (.zip או .json).', errBig: 'הקובץ גדול מדי.',
@@ -71,7 +72,8 @@ const STR = {
     noFile: 'How to make a game with an AI', trySample: 'or try a sample group', privacy: 'The file stays in this browser. It is never uploaded to a server.',
     metaQ: '{n} questions', metaP: '{n} in the chat', openRoom: 'Open the room', preview: 'Preview', del: 'Delete',
     delConfirm: 'Delete "{t}" from this browser?', settingCount: 'Questions', all: 'All ({n})', settingOrder: 'Order',
-    orderShuffle: 'Shuffled', orderDate: 'By date', settingPace: 'Pace', paceRelaxed: 'Relaxed', paceNormal: 'Normal', paceFast: 'Fast', paceNone: 'No time limit',
+    orderShuffle: 'Shuffled', orderDate: 'By date', settingPace: 'Pace', paceRelaxed: 'Relaxed (1 min+)', paceNormal: 'Normal (45s+)', paceFast: 'Fast (30s+)', paceNone: 'No time limit',
+    paceHint: '⏱ No time limit: each question waits for everyone. At any pace, a right answer scores more the faster it comes: 1000 for an instant answer, down to 500 for a slow one. Long questions and videos get extra time.',
     questionsList: 'Questions in the file ({a} of {n} on)', loaded: 'Loaded: {t}', skipped: ' ({n} questions skipped because they were incomplete)',
     errNotGame: 'This doesn’t look like a game file.', errNoQuestions: 'The file has no questions.', errNoValid: 'No usable questions in this file.',
     errRead: 'Couldn’t read the file. Make sure it’s a game file (.zip or .json).', errBig: 'The file is too big.',
@@ -233,7 +235,7 @@ function currentRec() { return games.find(r => r.id === selectedId) || null; }
 function addGame(raw, sample) {
   const g = normalizeGame(raw);
   const rec = { id: newId(), addedAt: Date.now(), game: g, off: [], sample: !!sample,
-    settings: { count: 'all', order: 'shuffle', pace: 'normal' } };
+    settings: { count: 'all', order: 'shuffle', pace: 'none' } };
   games = games.filter(r => !(sample && r.sample));
   games.unshift(rec); selectedId = rec.id;
   if (!sample) saveGames();
@@ -299,8 +301,9 @@ function renderGames() {
           <div class="field"><label for="set-order">${esc(t('settingOrder'))}</label>
             <select id="set-order" onchange="setSetting('order',this.value)">${opt('shuffle', t('orderShuffle'), s.order)}${opt('date', t('orderDate'), s.order)}</select></div>
           <div class="field"><label for="set-pace">${esc(t('settingPace'))}</label>
-            <select id="set-pace" onchange="setSetting('pace',this.value)">${opt('relaxed', t('paceRelaxed'), s.pace)}${opt('normal', t('paceNormal'), s.pace)}${opt('fast', t('paceFast'), s.pace)}${opt('none', t('paceNone'), s.pace)}</select></div>
+            <select id="set-pace" onchange="setSetting('pace',this.value)">${opt('none', t('paceNone'), s.pace)}${opt('relaxed', t('paceRelaxed'), s.pace)}${opt('normal', t('paceNormal'), s.pace)}${opt('fast', t('paceFast'), s.pace)}</select></div>
         </div>
+        <p class="muted small paceHint">${esc(t('paceHint'))}</p>
         <div class="pics">
           <span class="picsLabel">${esc(t('picsLabel'))}</span>
           <div class="picRow">${[{ name: t('groupPic'), src: (rec.pics && rec.pics.group) || DEFAULT_GROUP, custom: !!(rec.pics && rec.pics.group) },
@@ -470,12 +473,12 @@ function prepareRound(rec) {
   let qs = shuffle(g.questions.filter(q => !off.has(q.id)));
   if (s.count && s.count !== 'all') qs = qs.slice(0, Number(s.count));
   if (s.order === 'date') qs.sort((a, b) => a.id - b.id);
-  const pace = { relaxed: 1.4, normal: 1, fast: 0.7 }[s.pace] || 1;
+  const pace = { relaxed: 1.4, normal: 1, fast: 0.7 }[s.pace] || 1, floor = { relaxed: 60, normal: 45, fast: 30 }[s.pace] || 45;
   const pics = (rec.pics && rec.pics.people) || {};
   // 'none': no clock at all; a question waits for the last player (dur still sets how fast answers score)
   ROUND = { noLimit: s.pace === 'none', game: g, colors: Object.fromEntries(g.participants.map(p => [p.name, p.color])), pics, groupPic: (rec.pics && rec.pics.group) || '',
     items: qs.map(q => { const options = optionsFor(q, g);
-      return { q, options, correct: options.findIndex(o => o.name === q.sender), dur: Math.max(8, Math.round(autoTime(q) * pace)) }; }) };
+      return { q, options, correct: options.findIndex(o => o.name === q.sender), dur: Math.max(floor, Math.round(autoTime(q) * pace)) }; }) };
 }
 
 /* =========================================================

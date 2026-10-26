@@ -32,12 +32,29 @@ const STR = {
     msgsN: '{n} הודעות', include: 'במשחק', me: 'זה אני', meHint: '"זה אני" = מי שייצא את הצ\'אט. ההודעות שלו יופיעו בצד ירוק, כמו בוואטסאפ שלו.',
     groupName: 'שם הקבוצה', groupPic: 'תמונת הקבוצה', fewMsgs: 'עם פחות מ־20 הודעות כדאי להוציא מהמשחק',
     laughH: 'מה נחשב צחוק אצלכם?', laughSub: 'אנחנו מוצאים בדיחות לפי ההודעות שאחרים שלחו אחריהן. סמנו מה אצלכם אומר "זה מצחיק".',
-    laughBase: 'צחוק רגיל', laughFound: 'מצאנו אצלכם (מופיעים כשעוד מישהו צוחק)', laughAdd: 'מילה משלכם', add: 'להוסיף',
+    laughBase: 'מילים כלליות (מוכנות מראש, מתאימות לכל קבוצה)', laughFound: 'מהצ\'אט שלכם: מילים שחוזרות אצלכם ברגעים שכולם צוחקים (המספר = כמה פעמים)',
+    laughHowH: 'איך זה עובד?', laughHow: 'אחרי כל הודעה בודקים מה שלחו האחרים בדקות שאחריה. אם מישהו אחר כתב אחת מהמילים המסומנות, ההודעה נחשבת בדיחה. ככה גם מוצאים מי הכי מצחיק. מילה מסומנת = נספרת. אפשר לבטל, להוסיף, ולראות מיד איך המספר משתנה.', laughAdd: 'מילה משלכם', add: 'להוסיף',
     curse: 'לדלג על בדיחות עם קללות', ranks: 'לספור דירוגים כמו "1", "#3", "8/10"',
     foundN: 'מצאנו {n} בדיחות', foundBy: 'לכל אחד:',
     countH: 'כמה בדיחות לעבור עליהן?', countSub: 'מצאנו {n}. בשלב הבא עוברים עליהן אחת־אחת ומסמנים מצחיק / בינוני / לא. משחק טוב צריך 20–30, אז כדאי לעבור על פי 4.',
     perPerson: 'בערך {n} לכל אחד, מהכי מצחיקות שלו', minutes: 'כ־{m} דקות של סימון', startReview: 'להתחיל לסמן',
     revH: 'סימון', revSub: 'לחיצה על הודעה פותחת אפשרויות · לחיצה על אדם מסננת · הכל נשמר לבד',
+    legendH: 'מה זה כל דבר? (מדריך קצר לסימון)',
+    legend: [
+      ['😂 😐 👎', 'מצחיק / בינוני / לא. רק המצחיקות נכנסות למשחק (ובסיכום אפשר להוסיף גם את הבינוניות).'],
+      ['🎯 ההודעה לנחש', 'ההודעה שעליה שואלים "מי שלח?". השם שלה מוסתר, וכולם מנחשים מי כתב. אפשר לסמן כמה הודעות רצופות של אותו אדם. סימנו לבד את המועמדת, אפשר לשנות.'],
+      ['💬 הקשר', 'ההודעות שמופיעות לפני (או מסביב) כדי שיבינו על מה מדברים. השמות שלהן מוסתרים עד החשיפה. אם לא מסמנים כלום, כל ההודעות שמעל ההודעה לנחש נכנסות. מסמנים הקשר? רק המסומנות ייכנסו.'],
+      ['😂 צחוקים', 'התגובות שמופיעות רק אחרי שכולם ענו, ברגע החשיפה: ה"חחחחח" וה"מתתתי" של החברים. עד 3. הן לא נראות בזמן הניחוש.'],
+      ['↩ תגובה ל…', 'אם בוואטסאפ ענו על הודעה מסוימת (Reply), זה מוסיף ציטוט קטן שלה מעל, כמו בוואטסאפ. הייצוא של וואטסאפ לא שומר את זה, אז מסמנים ביד: לוחצים על ההודעה שעונה ואז על זו שענו עליה.'],
+      ['✂ להסתיר', 'מוציא הודעה מהמשחק (למשל הודעה שמגלה מי כתב, או סתם רעש).'],
+      ['⬆ ⬇', 'מוסיף עוד הודעות מלמעלה או מלמטה, אם חסר הקשר.'],
+      ['שקוף', 'הודעה שקופה לא תיכנס למשחק. ככה רואים בדיוק מה ייכנס.'],
+      ['👁 תצוגה מקדימה', 'מראה איך השאלה תיראה במסך: לפני הניחוש ואחרי החשיפה.']
+    ],
+    tCtx: '💬 הקשר', tUnctx: '💬 לא הקשר', inCtx: 'הקשר',
+    tipAnswer: 'זו ההודעה שעליה ישאלו "מי שלח?"', tipLaugh: 'תופיע רק אחרי הניחוש, בחשיפה', tipCtx: 'תופיע לפני הניחוש כדי שיבינו על מה מדברים', tipReply: 'מוסיף ציטוט של ההודעה שעליה ענו', tipHide: 'לא תיכנס למשחק',
+    preview: '👁 תצוגה מקדימה', pvBefore: 'לפני הניחוש', pvAfter: 'אחרי החשיפה', whoSent: 'מי שלח?', close: 'סגירה', prev: 'הקודמת', nextQ: 'הבאה', pvOf: '{i} מתוך {n}',
+    pvNote: 'ככה זה ייראה על המסך. השמות והתמונות מוסתרים עד שכולם עונים.', previewAll: '👁 לראות את השאלות', pvEmpty: 'עוד אין הודעה לנחש',
     show: 'הצג', todo: 'עוד לא סימנתי', all: 'הכל', funny: '😂 מצחיק', meh: '😐 בינוני', no: '👎 לא מצחיק', onlyMedia: 'רק עם תמונה / סרטון / הקלטה',
     goal: 'מטרה: 20–30 מצחיקות, בערך 4–5 לכל אחד', marked: 'סימנתם {r} מתוך {n}', moreUp: '⬆ עוד הקשר מלמעלה', moreDown: '⬇ עוד הודעות אחרי',
     laughed: 'צחקו', toGuess: 'ההודעה לנחש', noAnswer: 'לא נבחרה הודעה לנחש', msgN: 'הודעה', msgsWord: 'הודעות', laughsAtReveal: 'צחוקים בחשיפה',
@@ -70,12 +87,29 @@ const STR = {
     msgsN: '{n} messages', include: 'In the game', me: 'That\'s me', meHint: '"That\'s me" = whoever exported the chat. Their messages show on the green side, like in their own WhatsApp.',
     groupName: 'Group name', groupPic: 'Group picture', fewMsgs: 'Under 20 messages: better left out',
     laughH: 'What counts as a laugh in your group?', laughSub: 'We find jokes by what others sent right after them. Tick what says "that\'s funny" in your group.',
-    laughBase: 'Everyday laughs', laughFound: 'Found in your chat (others laugh at the same moment)', laughAdd: 'Your own word', add: 'Add',
+    laughBase: 'General words (ready-made, fit any group)', laughFound: 'From your chat: words that keep showing up when everyone laughs (the number = how often)',
+    laughHowH: 'How does it work?', laughHow: 'After each message we look at what the others sent in the next few minutes. If someone else wrote one of the ticked words, that message counts as a joke. That is also how we find who is funniest. Ticked = counted. Untick, add your own, and watch the number change.', laughAdd: 'Your own word', add: 'Add',
     curse: 'Skip jokes with swearing', ranks: 'Count ratings like "1", "#3", "8/10"',
     foundN: 'Found {n} jokes', foundBy: 'Per person:',
     countH: 'How many jokes to look through?', countSub: 'We found {n}. Next you go through them one by one: funny / so-so / not. A good game needs 20–30, so look at about 4 times that.',
     perPerson: 'About {n} each, from their funniest', minutes: 'about {m} minutes of marking', startReview: 'Start marking',
     revH: 'Marking', revSub: 'Tap a message for options · tap a person to filter · everything saves by itself',
+    legendH: 'What is everything? (a short guide to marking)',
+    legend: [
+      ['😂 😐 👎', 'Funny / so-so / not. Only the funny ones go into the game (the summary can add the so-so ones).'],
+      ['🎯 Message to guess', 'The message the game asks "who sent it?" about. Its name is hidden and everyone guesses. You can mark several messages in a row by the same person. We pre-mark a likely one; change it freely.'],
+      ['💬 Context', 'The messages shown before (or around) it so people get what is going on. Their names stay hidden until the reveal. Mark nothing and every message above the one to guess goes in. Mark some and only those go in.'],
+      ['😂 Laughs', 'The replies shown only after everyone answered, at the reveal: the friends\' "hahaha" and "I\'m dead". Up to 3. Hidden while guessing.'],
+      ['↩ Replies to…', 'If someone used WhatsApp Reply, this adds a small quote of the original above it, like in WhatsApp. The export drops this, so mark it by hand: tap the reply, then the message it answered.'],
+      ['✂ Leave out', 'Takes a message out of the game (one that gives the answer away, or just noise).'],
+      ['⬆ ⬇', 'Adds more messages above or below if context is missing.'],
+      ['Faded', 'A faded message will not be in the game, so you see exactly what goes in.'],
+      ['👁 Preview', 'Shows how the question will look on screen: while guessing and at the reveal.']
+    ],
+    tCtx: '💬 Context', tUnctx: '💬 Not context', inCtx: 'context',
+    tipAnswer: 'The game asks "who sent it?" about this one', tipLaugh: 'Shown only after the guess, at the reveal', tipCtx: 'Shown before the guess so people get what is going on', tipReply: 'Adds a quote of the message it answered', tipHide: 'Not in the game',
+    preview: '👁 Preview', pvBefore: 'While guessing', pvAfter: 'At the reveal', whoSent: 'Who sent it?', close: 'Close', prev: 'Previous', nextQ: 'Next', pvOf: '{i} of {n}',
+    pvNote: 'This is how it looks on screen. Names and pictures stay hidden until everyone answers.', previewAll: '👁 See the questions', pvEmpty: 'No message to guess yet',
     show: 'Show', todo: 'Not marked yet', all: 'All', funny: '😂 Funny', meh: '😐 So-so', no: '👎 Not funny', onlyMedia: 'Only with photo / video / voice',
     goal: 'Goal: 20–30 funny ones, about 4–5 each', marked: 'Marked {r} of {n}', moreUp: '⬆ More context above', moreDown: '⬇ More messages after',
     laughed: 'Laughed', toGuess: 'Message to guess', noAnswer: 'No message chosen to guess', msgN: 'message', msgsWord: 'messages', laughsAtReveal: 'laughs at the reveal',
@@ -261,6 +295,20 @@ function decOf(start) {
   }
   return S.dec[start];
 }
+/* which messages of a card go into the game, in order: the chat before the guess, then up to 3 laughs */
+function questionIds(d) {
+  const answer = new Set(d.answer), hidden = new Set(d.hidden), ctx = new Set(d.context || []);
+  if (!answer.size) return { body: [], rx: [] };
+  const max = Math.max(...d.answer);
+  const keep = k => !P.msgs[k].system && (P.msgs[k].body || P.msgs[k].media) && (!hidden.has(k) || answer.has(k));
+  const rx = d.reactions.filter(k => k > max && keep(k)).sort((a, b) => a - b).slice(0, 3);
+  const body = [];
+  for (let k = d.lo; k <= d.hi; k++) {
+    if (!keep(k) || rx.includes(k)) continue;
+    if (answer.has(k) || (ctx.size ? ctx.has(k) : k <= max)) body.push(k);
+  }
+  return { body, rx };
+}
 function senderOf(d) { const k = d.answer[0]; return k === undefined ? '' : VIEW[k].who; }
 
 /* ---------------- rendering ---------------- */
@@ -332,6 +380,7 @@ function stepLaughs() {
   const base = PRESET[S.audience || 'friends'].words;
   const custom = S.words.filter(w => !base.includes(w) && !LAUGH_STATS.found.some(f => f.word === Chat.norm(w) || f.example === w));
   return `<h1>${esc(t('laughH'))}</h1><p class="lede">${esc(t('laughSub'))}</p>
+    <details class="how panel"><summary>💡 ${esc(t('laughHowH'))}</summary><p>${esc(t('laughHow'))}</p></details>
     <div class="panel wbox"><h3>${esc(t('laughBase'))}</h3><div class="wchips">${base.map(w => chip(w)).join('')}${custom.map(w => chip(w)).join('')}</div>
       ${LAUGH_STATS.found.length ? `<h3>${esc(t('laughFound'))}</h3><div class="wchips">${LAUGH_STATS.found.map(f => chip(f.example, `<small>${f.count}</small>`)).join('')}</div>` : ''}
       <form class="addWord" id="addWord"><input class="txt" id="newWord" placeholder="${esc(t('laughAdd'))}" maxlength="24" dir="auto"><button class="btn small">${esc(t('add'))}</button></form>
@@ -352,7 +401,9 @@ function stepCount() {
 }
 function stepReview() {
   const people = Object.keys(S.people).filter(included);
-  return `<div class="revTop panel" id="revTop"></div>
+  return `<details class="how panel legend" ${S.legendClosed ? '' : 'open'} id="legend"><summary>💡 ${esc(t('legendH'))}</summary>
+      <dl>${t('legend').map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></details>
+    <div class="revTop panel" id="revTop"></div>
     <div class="revFilters"><label>${esc(t('show'))} <select id="fStatus">${['todo', 'all', 'funny', 'meh', 'no'].map(k => `<option value="${k}"${filters.status === k ? ' selected' : ''}>${esc(t(k))}</option>`).join('')}</select></label>
       <label class="chk"><input type="checkbox" id="fMedia" ${filters.media ? 'checked' : ''}> ${esc(t('onlyMedia'))}</label><span class="hint small">${esc(t('revSub'))}</span></div>
     <div id="cards" class="cards"></div>
@@ -401,10 +452,11 @@ const MEDIA_ICON = { image: '📷', video: '🎥', gif: '🎞️', audio: '🎤'
 function cardHtml(id) {
   const d = decOf(id), c = itemFor(id); if (!d) return '';
   const ms = VIEW.slice(d.lo, d.hi + 1).filter(m => !m.system);
+  const qi = questionIds(d), inGame = new Set([...qi.body, ...qi.rx]), ctx = d.context || [];
   let last = null, lastDate = '';
   const rows = ms.map(m => {
     const out = m.raw === S.me, first = m.who !== last; last = m.who;
-    const cls = ['m', out ? 'out' : '', first ? 'first' : '', d.answer.includes(m.i) ? 'ans' : '', d.hidden.includes(m.i) ? 'hid' : '', sel && sel.id === id && sel.i === m.i ? 'sel' : ''].join(' ');
+    const cls = ['m', out ? 'out' : '', first ? 'first' : '', d.answer.includes(m.i) ? 'ans' : '', d.hidden.includes(m.i) ? 'hid' : '', d.answer.length && !inGame.has(m.i) && !d.hidden.includes(m.i) ? 'skip' : '', sel && sel.id === id && sel.i === m.i ? 'sel' : ''].join(' ');
     const p = S.people[m.raw] || { color: '#8696a0', pic: '' };
     const rq = d.replies[m.i] != null ? VIEW[d.replies[m.i]] : null;
     const quote = rq ? `<span class="q" style="--qc:${(S.people[rq.raw] || {}).color || '#53bdeb'}"><span class="qn">${esc(rq.who)}</span><span class="qt">${esc(rq.text.slice(0, 90))}</span></span>` : '';
@@ -413,7 +465,7 @@ function cardHtml(id) {
       const cap = m.text.split('\n').slice(0, -1).join('\n');
       body = `<span class="ph" data-media="${m.i}" data-drop-media="${m.i}"><b>${MEDIA_ICON[m.media.kind] || '📎'}</b>${esc(m.date)} ${esc(m.time)}<br>${t('mediaDrop')}</span>${esc(cap)}`;
     }
-    const tags = (d.answer.includes(m.i) ? `<span class="tag ans">🎯</span>` : '') + (d.reactions.includes(m.i) ? `<span class="tag rx">😂 ${esc(t('inReveal'))}</span>` : '') + (d.hidden.includes(m.i) ? `<span class="tag hid">${esc(t('hidden'))}</span>` : '');
+    const tags = (d.answer.includes(m.i) ? `<span class="tag ans">🎯</span>` : '') + (d.reactions.includes(m.i) ? `<span class="tag rx">😂 ${esc(t('inReveal'))}</span>` : '') + (ctx.includes(m.i) ? `<span class="tag ctx">💬 ${esc(t('inCtx'))}</span>` : '') + (d.hidden.includes(m.i) ? `<span class="tag hid">${esc(t('hidden'))}</span>` : '');
     const day = m.date !== lastDate ? (lastDate = m.date, `<div class="day">${esc(m.date)}</div>`) : '';
     const tools = sel && sel.id === id && sel.i === m.i ? toolsHtml(d, m) : '';
     return `${day}<div class="${cls}">${out ? '' : `<span class="ava${first ? '' : ' sp'}" style="--c:${p.color}">${p.pic ? `<img src="${p.pic}" alt="">` : ''}</span>`}
@@ -426,18 +478,60 @@ function cardHtml(id) {
     <div class="wa"><button class="more" data-more-up>${esc(t('moreUp'))}</button>${rows}<button class="more" data-more-down>${esc(t('moreDown'))}</button></div>
     <div class="cfoot">
       <div class="ansline">${who ? `${esc(t('toGuess'))}: <b style="color:${(S.people[P.msgs[d.answer[0]].who] || {}).color}">${esc(who)}</b> (${d.answer.length} ${esc(d.answer.length === 1 ? t('msgN') : t('msgsWord'))})` : `<span class="warn">${esc(t('noAnswer'))}</span>`}${d.reactions.length ? ` · ${d.reactions.length} ${esc(t('laughsAtReveal'))}` : ''}</div>
+      <button class="btn small ghost pvBtn" data-preview>${esc(t('preview'))}</button>
       <div class="rate"><button class="f${r === 'funny' ? ' on' : ''}" data-rate="funny">${esc(t('funny'))}</button><button class="m2${r === 'meh' ? ' on' : ''}" data-rate="meh">${esc(t('meh'))}</button><button class="x${r === 'no' ? ' on' : ''}" data-rate="no">${esc(t('no'))}</button></div>
       <div class="extra"><input class="txt" data-field="note" value="${esc(d.note)}" placeholder="${esc(t('note'))}" dir="auto">
         <select data-field="category"><option value="">${esc(t('category'))}</option>${cats.map(x => `<option${d.category === x ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
     </div></article>`;
 }
 function toolsHtml(d, m) {
-  const a = d.answer.includes(m.i), rx = d.reactions.includes(m.i), h = d.hidden.includes(m.i), rp = d.replies[m.i] != null;
-  return `<div class="tools"><button data-tool="answer" class="${a ? 'on' : ''}">${esc(t(a ? 'tUnanswer' : 'tAnswer'))}</button>
-    <button data-tool="reaction" class="${rx ? 'on' : ''}">${esc(t(rx ? 'tUnlaugh' : 'tLaugh'))}</button>
-    <button data-tool="reply" class="${rp ? 'on' : ''}">${esc(t(rp ? 'tUnreply' : 'tReply'))}</button>
-    <button data-tool="hide" class="${h ? 'on' : ''}">${esc(t(h ? 'tShow' : 'tHide'))}</button></div>`;
+  const a = d.answer.includes(m.i), rx = d.reactions.includes(m.i), h = d.hidden.includes(m.i), rp = d.replies[m.i] != null, cx = (d.context || []).includes(m.i);
+  const b = (tool, on, yes, no, tip) => `<button data-tool="${tool}" class="${on ? 'on' : ''}" title="${esc(t(tip))}">${esc(t(on ? no : yes))}<small>${esc(t(tip))}</small></button>`;
+  return `<div class="tools">${b('answer', a, 'tAnswer', 'tUnanswer', 'tipAnswer')}${b('context', cx, 'tCtx', 'tUnctx', 'tipCtx')}${b('reaction', rx, 'tLaugh', 'tUnlaugh', 'tipLaugh')}
+    ${b('reply', rp, 'tReply', 'tUnreply', 'tipReply')}${b('hide', h, 'tHide', 'tShow', 'tipHide')}</div>`;
 }
+
+/* ---------------- preview: the question as the TV shows it ---------------- */
+let PV = null;   // { ids, n, reveal }
+function openPreview(ids, n) { PV = { ids, n, reveal: false }; renderPreview(); }
+function renderPreview() {
+  let box = $('pv');
+  if (!PV) { if (box) box.remove(); return; }
+  if (!box) { box = document.createElement('div'); box.id = 'pv'; box.className = 'pv'; document.body.appendChild(box); }
+  const d = S.dec[PV.ids[PV.n]], { body, rx } = questionIds(d), lines = [...body, ...(PV.reveal ? rx : [])].sort((a, b) => a - b);
+  let last = null, run = -1, asked = false;
+  const rows = lines.map(k => {
+    const m = VIEW[k], p = S.people[m.raw] || { color: '#8696a0', pic: '' }, first = m.who !== last; last = m.who;
+    if (first) run++;
+    const out = PV.reveal && m.raw === S.me;
+    const nm = first && !out ? (PV.reveal ? `<span class="nm" style="color:${p.color}">${esc(m.who)}</span>` : `<span class="nm"><i class="rb" style="width:${[3.4, 4.6, 2.8, 3.9, 5.1][run % 5]}em"></i></span>`) : '';
+    const rq = d.replies[k] != null ? VIEW[d.replies[k]] : null;
+    const quote = rq ? `<span class="q" style="--qc:${PV.reveal ? (S.people[rq.raw] || {}).color || '#53bdeb' : '#8696a0'}"><span class="qn">${PV.reveal ? esc(rq.who) : '<i class="rb"></i>'}</span><span class="qt">${esc(rq.text.slice(0, 90))}</span></span>` : '';
+    const cap = m.media ? m.text.split('\n').slice(0, -1).join('\n') : m.text;
+    const med = m.media ? `<span class="pvmed" data-pvmedia="${k}">${MEDIA_ICON[m.media.kind] || '📎'}</span>` : '';
+    const ask = !PV.reveal && d.answer.includes(k) && !asked ? (asked = true, `<div class="ask">${esc(t('whoSent'))}</div>`) : '';
+    const ava = out ? '' : `<span class="ava${first ? '' : ' sp'}" style="--c:${PV.reveal ? p.color : '#3b4a54'}">${PV.reveal && p.pic ? `<img src="${p.pic}" alt="">` : ''}</span>`;
+    return `${ask}<div class="m${out ? ' out' : ''}${first ? ' first' : ''}${d.answer.includes(k) ? ' ans' : ''}${rx.includes(k) ? ' rxm' : ''}">${ava}<div class="b">${nm}${quote}${med}<span dir="auto">${esc(cap)}</span><span class="tm">${esc(m.time)}</span></div></div>`;
+  }).join('');
+  box.innerHTML = `<div class="pvIn panel" role="dialog" aria-modal="true">
+    <div class="pvHead"><div class="pvTabs"><button class="${PV.reveal ? '' : 'on'}" data-pv-tab="0">${esc(t('pvBefore'))}</button><button class="${PV.reveal ? 'on' : ''}" data-pv-tab="1">${esc(t('pvAfter'))}</button></div>
+      <button class="btn small ghost" data-pv-close>✕ ${esc(t('close'))}</button></div>
+    ${d.category || d.note ? `<div class="pvNote">${d.category ? `<b>${esc(d.category)}</b> ` : ''}${esc(d.note || '')}</div>` : ''}
+    <div class="card"><div class="wa">${rows || `<p class="warn">${esc(t('pvEmpty'))}</p>`}</div></div>
+    ${PV.reveal && d.answer.length ? `<p class="pvAns">🎯 <b style="color:${(S.people[P.msgs[d.answer[0]].who] || {}).color}">${esc(senderOf(d))}</b></p>` : `<p class="hint small">${esc(t('pvNote'))}</p>`}
+    ${PV.ids.length > 1 ? `<div class="pvNav"><button class="btn small ghost" data-pv-step="-1" ${PV.n ? '' : 'disabled'}>${esc(t('prev'))}</button><span>${esc(t('pvOf', { i: PV.n + 1, n: PV.ids.length }))}</span><button class="btn small ghost" data-pv-step="1" ${PV.n < PV.ids.length - 1 ? '' : 'disabled'}>${esc(t('nextQ'))}</button></div>` : ''}
+  </div>`;
+  box.querySelectorAll('[data-pvmedia]').forEach(async el => { const u = await mediaUrl(VIEW[+el.dataset.pvmedia]); if (u) el.outerHTML = mediaTag(u); });
+}
+document.addEventListener('click', e => {
+  if (!PV) return;
+  const tg = e.target;
+  if (tg.id === 'pv' || tg.closest('[data-pv-close]')) { PV = null; renderPreview(); return; }
+  const tab = tg.closest('[data-pv-tab]'); if (tab) { PV.reveal = tab.dataset.pvTab === '1'; renderPreview(); return; }
+  const st = tg.closest('[data-pv-step]'); if (st) { PV.n = Math.max(0, Math.min(PV.ids.length - 1, PV.n + +st.dataset.pvStep)); PV.reveal = false; renderPreview(); return; }
+  if (tg.closest('#pv')) e.stopPropagation();
+}, true);
+document.addEventListener('keydown', e => { if (PV && e.key === 'Escape') { PV = null; renderPreview(); } });
 function stepFinish() {
   const people = Object.keys(S.people).filter(included);
   const c = {}; people.forEach(p => { c[p] = { funny: 0, meh: 0 }; });
@@ -450,6 +544,7 @@ function stepFinish() {
       <label class="fld">${esc(t('gameTitle'))}<input class="txt" id="gameTitle" value="${esc(S.title || S.group)}" maxlength="60" dir="auto"></label>
       <b class="bigN">${total}</b>
       ${low.length ? `<p class="hint">⚠️ ${esc(t('lowWarn', { p: low.join(', ') }))}</p>` : ''}
+      ${total ? `<button class="btn ghost" data-preview-all>${esc(t('previewAll'))}</button>` : ''}
       <div id="finMsg" class="msg"></div></div>
     <details class="panel how"><summary>💾 ${esc(t('where'))}</summary><p>${esc(t('whereTxt'))}</p></details>
     <div class="wizNav"><button class="btn ghost" data-go="5">${esc(t('back'))}</button>
@@ -467,11 +562,8 @@ async function createGame() {
   const questions = [];
   let missing = 0;
   for (const id of ids) {
-    const d = S.dec[id], answer = new Set(d.answer), hidden = new Set(d.hidden), max = Math.max(...d.answer);
-    const keep = k => !P.msgs[k].system && (P.msgs[k].body || P.msgs[k].media) && (!hidden.has(k) || answer.has(k));
-    const body = []; for (let k = d.lo; k <= max; k++) if (keep(k)) body.push(k);
-    const rx = d.reactions.filter(k => k > max && keep(k)).sort((a, b) => a - b).slice(0, 3);
-    const order = [...body, ...rx], pos = new Map(order.map((k, n) => [k, n]));
+    const d = S.dec[id], answer = new Set(d.answer), { body, rx } = questionIds(d);
+    const order = [...body, ...rx].sort((a, b) => a - b), pos = new Map(order.map((k, n) => [k, n]));
     const lines = [];
     for (const k of order) {
       const m = P.msgs[k], line = { from: name(m.who), time: m.time, text: m.text };
@@ -523,11 +615,13 @@ document.addEventListener('click', e => {
   if (tg.closest('#chatDrop')) { e.preventDefault(); pickFile('.zip,.txt,application/zip,text/plain', { kind: 'chat' }); return; }
   const pic = tg.closest('[data-pic]'); if (pic) { pickFile('image/*', { kind: 'pic', who: pic.dataset.pic }); return; }
   if (tg.id === 'createBtn') { createGame(); return; }
+  if (tg.closest('[data-preview-all]')) { const ids = S.reviewIds.filter(id => { const d = S.dec[id]; return d && d.answer.length && (d.rating === 'funny' || (S.includeMeh && d.rating === 'meh')); }); if (ids.length) openPreview(ids, 0); return; }
   if (S.step !== 5) return;
   const pc = tg.closest('[data-person]'); if (pc) { filters.person = filters.person === pc.dataset.person ? '' : pc.dataset.person; shown = 15; renderCards(); return; }
   if (tg.closest('[data-more]')) { shown += 15; renderCards(); return; }
   const card = tg.closest('.card'); if (!card) return;
   const id = +card.dataset.id, d = S.dec[id];
+  if (tg.closest('[data-preview]')) { const ids = visibleIds(); openPreview(ids.includes(id) ? ids : [id], Math.max(0, ids.indexOf(id))); return; }
   const up = tg.closest('[data-upload]') || (tg.closest('[data-media]') && tg.closest('[data-media]'));
   if (up) { pickFile('image/*,video/*,audio/*,.opus', { kind: 'media', i: +(up.dataset.upload || up.dataset.media), card: id }); return; }
   if (tg.closest('[data-cancel]')) { pick = null; rerenderCard(id); return; }
@@ -545,6 +639,7 @@ document.addEventListener('click', e => {
       d.reactions = d.reactions.filter(x => !d.answer.includes(x)); d.hidden = d.hidden.filter(x => !d.answer.includes(x));
     } else if (kind === 'reaction') { d.reactions = tog(d.reactions, k); d.answer = d.answer.filter(x => x !== k); }
     else if (kind === 'hide') d.hidden = tog(d.hidden, k);
+    else if (kind === 'context') { d.context = tog(d.context || [], k); d.hidden = d.hidden.filter(x => x !== k); }
     else if (kind === 'reply') { if (d.replies[k] != null) delete d.replies[k]; else { pick = { id, i: k }; sel = null; rerenderCard(id); return; } }
     save(); rerenderCard(id); return;
   }
@@ -584,6 +679,7 @@ document.addEventListener('submit', e => {
   const w = $('newWord').value.trim(); if (!w) return;
   S.words = [...new Set([...S.words, w])]; findJokes(); save(); render();
 });
+document.addEventListener('toggle', e => { if (e.target.id === 'legend') { S.legendClosed = !e.target.open; save(); } }, true);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && (sel || pick)) { const id = (sel || pick).id; sel = pick = null; rerenderCard(id); } });
 /* drag & drop: the chat file anywhere on step 2, a photo onto its placeholder */
 document.addEventListener('dragover', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); const z = e.target.closest && e.target.closest('[data-drop],[data-drop-media]'); document.querySelectorAll('.over').forEach(x => x !== z && x.classList.remove('over')); if (z) z.classList.add('over'); } });
