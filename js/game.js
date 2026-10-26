@@ -24,7 +24,7 @@ const STR = {
     picsLabel: 'תמונות פרופיל (לא חובה): מופיעות בחשיפה', groupPic: 'הקבוצה', addPic: 'להוסיף תמונה ל{n}', removePic: 'להסיר', errPic: 'לא הצלחנו לקרוא את התמונה.', logoA: 'מי ', logoB: 'שלח', logoC: '?',
     tagline: 'משחק ניחושים על הקבוצה שלכם: ההודעות הכי מצחיקות מהצ\'אט, עם השמות מוסתרים. כולם מנחשים מהטלפון מי כתב מה.',
     hostTitle: 'לפתוח חדר', hostSub: 'על המסך הגדול, עם קובץ המשחק', joinTitle: 'להצטרף', joinSub: 'מהטלפון, עם קוד בן 4 ספרות',
-    howTo: 'איך מכינים משחק מהצ\'אט שלכם ←', back: 'חזרה', aiLink: '🤖 מעדיפים שמודל שפה (ChatGPT / Claude / Gemini) יבחר בשבילכם? ככה עושים את זה ←',
+    howTo: 'איך מכינים משחק מהצ\'אט שלכם ←', back: 'חזרה', tryNow: '🎮 לנסות עכשיו, בלי להכין כלום', tryNowSub: 'משחק לדוגמה עם שחקנים מדומים, דקה אחת', fbLink: '🐞 משהו לא עובד? ספרו לנו', aiLink: '🤖 מעדיפים שמודל שפה (ChatGPT / Claude / Gemini) יבחר בשבילכם? ככה עושים את זה ←',
     createTitle: 'ליצור משחק', createSub: 'מהצ\'אט של הקבוצה, ישר בדפדפן', createNew: '✨ ליצור משחק חדש מהצ\'אט', saveFile: '💾 שמירה לקובץ',
     created: 'המשחק "{t}" מוכן! 🎉', saving: 'שומרים…', awards: '🏆 טקס הפרסים',
     setupTitle: 'איזה צ\'אט משחקים?', dropTitle: 'גררו לכאן את קובץ המשחק', dropSub: 'משחק ששמרתם לקובץ (.zip), או קובץ JSON שקיבלתם מבינה מלאכותית',
@@ -65,7 +65,7 @@ const STR = {
     picsLabel: 'Profile pictures (optional): shown at the reveal', groupPic: 'Group', addPic: 'Add a picture for {n}', removePic: 'Remove', errPic: 'Couldn’t read that image.', logoA: 'Who ', logoB: 'sent', logoC: ' it?',
     tagline: 'A guessing game about your group chat: its funniest messages with the names hidden. Everyone guesses who wrote what from their phone.',
     hostTitle: 'Host a room', hostSub: 'On the big screen, with your game file', joinTitle: 'Join', joinSub: 'From your phone, with a 4-digit code',
-    howTo: 'How to make a game from your chat →', back: 'Back', aiLink: '🤖 Rather have an AI (ChatGPT / Claude / Gemini) pick for you? Here is how →',
+    howTo: 'How to make a game from your chat →', back: 'Back', tryNow: '🎮 Try it now, nothing to prepare', tryNowSub: 'A sample game with pretend players, one minute', fbLink: '🐞 Something not working? Tell us', aiLink: '🤖 Rather have an AI (ChatGPT / Claude / Gemini) pick for you? Here is how →',
     createTitle: 'Make a game', createSub: 'From your group chat, right in the browser', createNew: '✨ Make a new game from a chat', saveFile: '💾 Save to file',
     created: '"{t}" is ready! 🎉', saving: 'Saving…', awards: '🏆 The awards',
     setupTitle: 'Which chat are we playing?', dropTitle: 'Drop your game file here', dropSub: 'a game you saved to a file (.zip), or a JSON file you got from an AI',
@@ -257,7 +257,11 @@ function addWrapped(raw) {
   if (wrapped) { if (raw.pics) rec.pics = raw.pics; if (raw.stats) rec.stats = raw.stats; saveGames(); }
   return rec;
 }
+/* anonymous counts on the public site (js/track.js); a no-op anywhere else */
+function ev(name) { if (window.track) window.track(name); }
+function tryNow() { goSetup(); loadSample(); ev('try-sample'); startPreview(); }
 function gameLoaded(rec) {
+  ev('load-file');
   setMsg(t('loaded', { t: rec.game.title }) + (rec.game.skipped ? t('skipped', { n: rec.game.skipped }) : ''), 'ok');
   if (!canSave) setMsg(t('notSaved'), 'err');
   renderGames();
@@ -386,6 +390,7 @@ function gameToFile(g) {
 }
 async function exportGame(id) {
   const rec = games.find(r => r.id === id); if (!rec) return;
+  ev('save-file');
   toast(t('saving'));
   const Zip = await needZip(), zip = new Zip(), file = gameToFile(rec.game);
   let n = 0;
@@ -553,6 +558,7 @@ let qIndex = -1, qStart = 0, qDur = 20, timerId = null, senderStats = {}, paused
 
 async function openRoom() {
   const rec = currentRec(); if (!rec) return;
+  ev(rec.sample ? 'room-sample' : 'room-open');
   prepareRound(rec);
   if (!ROUND.items.length) return;
   await loadRoundMedia(rec);
@@ -686,6 +692,7 @@ function renderPlayersPanel() {
 /* game flow */
 function startGame() {
   players.forEach((p, key) => { if (!p.connected) players.delete(key); });
+  if (!previewMode) { ev('game-start'); ev('game-players-' + Math.min(players.size, 10)); }
   players.forEach(p => { p.score = 0; p.hits = []; });
   senderStats = {}; qIndex = -1;
   show('game');
@@ -864,6 +871,7 @@ function finalMsg(p) {
 }
 function showFinal() {
   phase = 'final';
+  if (!previewMode) ev('game-end');
   clearInterval(timerId);
   $('timer').textContent = ''; $('prog').textContent = ''; $('timeFill').style.width = '0%';
   const r = ranking();
@@ -904,6 +912,7 @@ function otherGame() { closeRoom(); renderGames(); show('setup', false); replace
 /* preview: the game on this screen with pretend players */
 async function startPreview() {
   const rec = currentRec(); if (!rec) return;
+  ev('preview');
   closeRoom();
   prepareRound(rec);
   await loadRoundMedia(rec);
@@ -1015,6 +1024,7 @@ function onHostMessage(msg, conn, fail, code) {
       try { myPeer && myPeer.destroy(); } catch (e) {}
       break;
     case 'welcome':
+
       myConn = conn; retries = 0;
       session = { code, name: msg.name, at: Date.now() };
       lsSet(SESSION_KEY, JSON.stringify(session));
@@ -1025,7 +1035,7 @@ function onHostMessage(msg, conn, fail, code) {
         if (typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v) && v.length < 200000) phonePics[k] = v;
       });
       $('status').textContent = ''; $('joinBtn').disabled = false;
-      if (current !== 'player') show('player');
+      if (current !== 'player') { ev('phone-join'); show('player'); }
       break;
     case 'lobby': pview(`<p class="big">${esc(t('inLobby'))}</p><p class="muted">${esc(t('inLobbySub'))}</p>`, 'plain'); break;
     case 'between': pview(`<p class="big">${esc(t('getReady'))}</p>`, 'plain'); break;

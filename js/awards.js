@@ -180,6 +180,7 @@ const Awards = (() => {
   }
   /* rec: the game; start: a slide number or kind to jump to */
   async function open(rec, start = 0) {
+    if (window.track) window.track('awards');
     if (!statsFor(rec)) return;
     if (typeof loadRoundMedia === 'function' && !Object.keys(typeof mediaUrls !== 'undefined' ? mediaUrls : {}).length) await loadRoundMedia(rec);
     build(rec); close();

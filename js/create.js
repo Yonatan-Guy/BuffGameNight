@@ -20,7 +20,7 @@ const STR = {
     next: 'הבא', back: 'חזרה', resumeQ: 'יש משחק שהתחלתם להכין ({f}). להמשיך מאיפה שעצרתם?', resume: 'להמשיך', startOver: 'להתחיל מחדש',
     whoH: 'למי המשחק?', whoSub: 'זה משנה רק את ברירות המחדל: מילות הצחוק, הקטגוריות והאם לדלג על בדיחות עם קללות. אפשר לשנות הכל אחר כך.',
     friends: 'חברים', friendsSub: 'החבורה, הצבא, העבודה. עקיצות וקללות זה חלק מהכיף.', family: 'משפחה', familySub: 'קבוצת המשפחה. בלי קללות, עם 😂 ו"מתה מצחוק".',
-    privacyH: 'הכל קורה בדפדפן הזה', privacy: 'הצ\'אט, התמונות והמשחק נשמרים רק במחשב הזה (בדפדפן). שום דבר לא עולה לשרת, וגם אנחנו לא רואים כלום.',
+    privacyH: 'הכל קורה בדפדפן הזה', privacy: 'הצ\'אט, התמונות והמשחק נשמרים רק במחשב הזה (בדפדפן). שום דבר לא עולה לשרת, וגם אנחנו לא רואים כלום. (אנחנו רק סופרים כניסות לאתר באופן אנונימי, בלי שום תוכן.)',
     upH: 'מייצאים את הצ\'אט מוואטסאפ', upDrop: 'גררו לכאן את קובץ הצ\'אט', upDropSub: 'קובץ ה־zip שוואטסאפ יוצר (מומלץ, עם התמונות) או _chat.txt',
     upHow: 'איך מייצאים?', iphone: 'אייפון', android: 'אנדרואיד',
     iphoneSteps: ['פותחים את הקבוצה בוואטסאפ ולוחצים על שם הקבוצה למעלה', 'גוללים למטה ובוחרים "ייצוא צ\'אט"', 'בוחרים "צרף מדיה" אם רוצים תמונות וסרטונים במשחק (מומלץ)', 'שולחים את הקובץ לעצמכם (מייל, וואטסאפ לעצמכם, דרייב) ומורידים אותו למחשב'],
@@ -82,7 +82,7 @@ const STR = {
     next: 'Next', back: 'Back', resumeQ: 'You started making a game ({f}). Pick up where you left off?', resume: 'Continue', startOver: 'Start over',
     whoH: 'Who is the game for?', whoSub: 'This only sets defaults: the laugh words, the categories and whether to skip jokes with swearing. You can change it all later.',
     friends: 'Friends', friendsSub: 'The gang, the army, work. Roasts and swearing are part of the fun.', family: 'Family', familySub: 'The family group. No swearing, plenty of 😂.',
-    privacyH: 'It all happens in this browser', privacy: 'The chat, the photos and the game are kept only on this computer (in the browser). Nothing is uploaded, and nobody else sees anything.',
+    privacyH: 'It all happens in this browser', privacy: 'The chat, the photos and the game are kept only on this computer (in the browser). Nothing is uploaded, and nobody else sees anything. (We only count visits anonymously, never any content.)',
     upH: 'Export the chat from WhatsApp', upDrop: 'Drop the chat file here', upDropSub: 'the zip WhatsApp makes (best, with photos) or _chat.txt',
     upHow: 'How do I export?', iphone: 'iPhone', android: 'Android',
     iphoneSteps: ['Open the group in WhatsApp and tap its name at the top', 'Scroll down and choose "Export Chat"', 'Choose "Attach Media" to get photos and videos into the game (best)', 'Send the file to yourself (email, WhatsApp, Drive) and download it to this computer'],
@@ -151,6 +151,7 @@ function setSkin(sk) { SKIN = sk; document.documentElement.dataset.skin = sk; re
 function pickSkin(sk) { setSkin(sk); lsSet('wst.skin', sk); }
 function toggleLang() { LANG = LANG === 'he' ? 'en' : 'he'; lsSet('wst.lang', LANG); applyLang(); }
 function applyLang() {
+  if ($('fbLink')) $('fbLink').textContent = LANG === 'he' ? '🐞 משהו לא עובד? ספרו לנו' : '🐞 Something not working? Tell us';
   document.documentElement.lang = LANG; document.documentElement.dir = LANG === 'he' ? 'rtl' : 'ltr';
   document.title = t('title'); $('langBtn').textContent = t('langSwitch');
   document.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
@@ -623,6 +624,7 @@ async function createGame() {
   const stats = Chat.stats(VIEW.filter(m => m.system || included(m.raw)), isLaugh, CANDS.map(c => ({ ...c, sender: name(c.sender), laughers: c.laughers.map(name) })), people.map(name));
   const pics = { group: S.groupPic, people: Object.fromEntries(people.filter(p => S.people[p].pic).map(p => [name(p), S.people[p].pic])) };
   lsSet('wst.pending', JSON.stringify({ game, pics, stats, mediaPrefix: gid + '/' }));
+  if (window.track) track('create-done');
   if (missing) toast(t('mediaMissing', { n: missing }));
   setTimeout(() => { location.href = './?import=1'; }, missing ? 1600 : 200);
 }
@@ -633,6 +635,7 @@ async function go(step) {
   if (step === 5 && S.step === 4) { S.reviewIds = chooseForReview(S.reviewCount); S.reviewIds.forEach(decOf); filters = { status: 'todo', person: '', media: false }; shown = 15; }
   if (step === 3) LAUGH_STATS = null;
   S.step = Math.max(0, Math.min(step, maxStep())); save(); render(); scrollTo(0, 0);
+  if (window.track) track('create-step-' + (S.step + 1));
 }
 document.addEventListener('click', e => {
   const tg = e.target;

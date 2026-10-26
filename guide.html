@@ -4,6 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>מי שלח? איך מכינים משחק</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="images/icon-180.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="מי שלח?">
+<meta property="og:title" content="מי שלח? איך מכינים משחק מהצ׳אט">
+<meta property="og:description" content="שלוש דרכים להפוך את קבוצת הוואטסאפ למשחק ניחושים: בדפדפן, עם מודל שפה, או מקובץ מוכן.">
+<meta property="og:url" content="https://who-sent-it.netlify.app/guide.html">
+<meta property="og:image" content="https://who-sent-it.netlify.app/images/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="he_IL">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="description" content="How to turn your WhatsApp group chat into a 'Who sent it?' party game: in the browser, or with any AI chatbot.">
 <meta name="theme-color" content="#0b63f6">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -87,6 +99,7 @@
       <div class="card"><b>בטלפונים</b>כל שאלה נשלחת ישר מהטלוויזיה לטלפונים שבחדר, בלי שמות ובלי התמונות, ונעלמת בסוף המשחק.</div>
     </div>
     <p class="muted">ניקוי נתוני גלישה או "גלישה בסתר" מוחקים את מה שנשמר. אם המשחק חשוב לכם, שמרו אותו לקובץ.</p>
+    <p class="muted">📊 אנחנו סופרים כניסות לאתר ורגעים כמו "נוצר משחק" או "נפתח חדר", באופן אנונימי (GoatCounter, בלי עוגיות). שום תוכן מהצ'אט, שמות או קודי חדרים לא נשלחים.</p>
   </section>
 
   <section class="section aiSec">
@@ -98,6 +111,7 @@
 
   <section class="section">
     <h2>שאלות</h2>
+    <p><a href="feedback.html">🐞 משהו לא עובד, או שיש לכם רעיון? ספרו לנו</a></p>
     <details><summary>הוא לא מוצא מספיק בדיחות של מישהו</summary><p>בשלב "מה מצחיק" הוסיפו את מילות הצחוק של הקבוצה. אחר כך, בשלב "כמה", הגדילו את המספר. בסימון, לחיצה על השם של האדם למעלה מציגה רק את הבדיחות שלו.</p></details>
     <details><summary>התמונות לא הופיעו</summary><p>אם ייצאתם "ללא מדיה" אין תמונות בקובץ: בשלב הסימון גוררים את התמונה למשבצת שלה (מוצגים התאריך והשעה כדי למצוא אותה בוואטסאפ). אם ייצאתם עם מדיה, ודאו שגררתם את ה־zip עצמו ולא רק את קובץ הטקסט.</p></details>
     <details><summary>חייבים להיות באותה רשת וויי־פיי?</summary><p>לא, החיבור עובר דרך האינטרנט. אבל אם טלפון נתקע על "מתחברים…", חיבור לוויי־פיי של הבית בדרך כלל פותר.</p></details>
@@ -175,6 +189,7 @@
       <div class="card"><b>On the phones</b>Each question goes straight from the TV to the phones in the room, without names or photos, and is gone when the game ends.</div>
     </div>
     <p class="muted">Clearing browsing data, or a private window, deletes what’s saved. If the game matters, save it to a file.</p>
+    <p class="muted">📊 We count visits and moments like "a game was made" or "a room was opened", anonymously (GoatCounter, no cookies). No chat content, names or room codes are ever sent.</p>
   </section>
 
   <section class="section aiSec">
@@ -186,6 +201,7 @@
 
   <section class="section">
     <h2>Questions</h2>
+    <p><a href="feedback.html">🐞 Something not working, or have an idea? Tell us</a></p>
     <details><summary>It doesn’t find enough jokes for someone</summary><p>In “What’s funny”, add your group’s laugh words. Then in “How many”, raise the number. While marking, tap that person’s name at the top to see only their jokes.</p></details>
     <details><summary>The photos didn’t show up</summary><p>An export “without media” has no photos: drop each photo on its placeholder while marking (it shows the date and time so you can find it in WhatsApp). If you exported with media, make sure you dropped the zip itself, not just the text file.</p></details>
     <details><summary>Do we need to be on the same Wi-Fi?</summary><p>No, it connects over the internet. If a phone is stuck on “Connecting…”, joining the home Wi-Fi usually fixes it.</p></details>
@@ -279,6 +295,7 @@ Talk to me in the language I write to you in.</template>
 - "replyTo": position of the quoted message in the same question (optional).
 - "time" is HH:MM, "date" is DD/MM/YYYY.</template>
 <div id="prefs"><div class="skinSlider" data-skin-slider></div><button class="btn ghost small" id="langBtn" onclick="toggleLang()">English</button></div>
+<script src="js/track.js"></script>
 <script src="js/prefs.js"></script>
 <script src="js/rain.js"></script>
 <script src="js/guide.js"></script>

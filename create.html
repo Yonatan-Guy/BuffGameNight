@@ -4,6 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>מי שלח? יצירת משחק</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="images/icon-180.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="מי שלח?">
+<meta property="og:title" content="מי שלח? יוצרים משחק מהצ׳אט שלכם">
+<meta property="og:description" content="גוררים את הייצוא מוואטסאפ, מסמנים את הבדיחות, ומשחקים. הכל בדפדפן, שום דבר לא עולה לשרת.">
+<meta property="og:url" content="https://who-sent-it.netlify.app/create.html">
+<meta property="og:image" content="https://who-sent-it.netlify.app/images/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="he_IL">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="description" content="Turn your WhatsApp group chat into a party game. Everything happens in your browser; the chat is never uploaded.">
 <meta name="theme-color" content="#0b63f6">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,10 +34,12 @@
     <ol class="steps" id="steps"></ol>
   </header>
   <section id="stage" class="wizStage" aria-live="polite"></section>
+  <p class="fbFoot"><a href="feedback.html?from=create" id="fbLink">🐞 משהו לא עובד? ספרו לנו</a></p>
 </main>
 <div id="prefs"><div class="skinSlider" data-skin-slider></div><button class="btn ghost small" id="langBtn" onclick="toggleLang()">English</button></div>
 <input type="file" id="fileIn" hidden>
 <div id="toast" role="status" aria-live="polite" hidden></div>
+<script src="js/track.js"></script>
 <script src="js/prefs.js"></script>
 <script src="js/rain.js"></script>
 <script src="js/store.js"></script>

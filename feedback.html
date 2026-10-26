@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="he" dir="rtl" class="arcade" data-skin="arcade">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מי שלח? משהו לא עובד</title>
+<meta name="theme-color" content="#0b63f6">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="images/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/guide.css">
+<link rel="stylesheet" href="css/prefs.css">
+<link rel="stylesheet" href="css/rain-only.css">
+<style>
+  .fb{display:flex;flex-direction:column;gap:16px;max-width:620px}
+  .fb label{display:flex;flex-direction:column;gap:6px;font-weight:800}
+  .fb select,.fb textarea,.fb input{font:inherit;font-weight:500;color:var(--paper);background:var(--ink-2);border:2.5px solid var(--line);border-radius:14px;padding:10px 14px}
+  .fb textarea{min-height:150px;resize:vertical}
+  .fb small{font-weight:500;color:var(--mute)}
+  .fb .hidden{display:none}
+  #done{font-size:1.3rem;font-weight:800}
+</style>
+</head>
+<body>
+<div class="top">
+  <a class="btn ghost" href="./" id="toGame">→ למשחק</a>
+</div>
+<main>
+  <h1 id="h">משהו לא עובד? ספרו לנו</h1>
+  <p class="lede" id="sub">באג, משהו מבלבל, או רעיון. כל הודעה נקראת.</p>
+  <!-- Netlify reads this form at deploy time and keeps the messages in the site's dashboard -->
+  <form class="fb" name="feedback" method="POST" data-netlify="true" netlify-honeypot="bot" id="fb">
+    <input type="hidden" name="form-name" value="feedback">
+    <p class="hidden"><label>Leave empty <input name="bot"></label></p>
+    <label><span id="lWhere">איפה זה קרה?</span>
+      <select name="where" id="where">
+        <option value="create">יצירת משחק</option><option value="game">המשחק בטלוויזיה / מחשב</option>
+        <option value="phone">בטלפון</option><option value="export">ייצוא הצ'אט מוואטסאפ</option>
+        <option value="ai">עם מודל שפה</option><option value="idea">רעיון / משהו אחר</option>
+      </select></label>
+    <label><span id="lMsg">מה קרה?</span>
+      <textarea name="message" id="msg" required placeholder="למשל: העליתי zip מאנדרואיד וכתוב שלא נמצא צ'אט"></textarea>
+      <small id="noChat">בלי הודעות מהצ'אט עצמו, בבקשה.</small></label>
+    <label><span id="lContact">איך לחזור אליכם? (לא חובה)</span>
+      <input name="contact" id="contact" placeholder="טלפון / מייל" dir="auto"></label>
+    <input type="hidden" name="device" id="device">
+    <div><button class="btn" id="send">לשלוח</button></div>
+    <p id="err" class="muted" hidden></p>
+  </form>
+  <p id="done" hidden>תודה! קיבלנו 🙏</p>
+</main>
+<div id="prefs"><div class="skinSlider" data-skin-slider></div></div>
+<script src="js/prefs.js"></script>
+<script src="js/rain.js"></script>
+<script src="js/track.js"></script>
+<script>
+'use strict';
+let LANG = 'he'; try { LANG = localStorage.getItem('wst.lang') || ((navigator.language || '').toLowerCase().startsWith('he') ? 'he' : 'en'); } catch (e) {}
+let SKIN = 'arcade'; try { SKIN = { night: 'dark', retro: 'arcade' }[localStorage.getItem('wst.skin')] || localStorage.getItem('wst.skin') || 'arcade'; } catch (e) {}
+if (!['arcade', 'dark'].includes(SKIN)) SKIN = 'arcade';
+function setSkin(sk) { SKIN = sk; document.documentElement.dataset.skin = sk; renderSkinSliders(['arcade', 'dark'], sk, k => ({ he: { arcade: 'בהיר', dark: 'כהה' }, en: { arcade: 'Light', dark: 'Dark' } })[LANG][k]); }
+function pickSkin(sk) { setSkin(sk); try { localStorage.setItem('wst.skin', sk); } catch (e) {} }
+setSkin(SKIN);
+if (LANG === 'en') {
+  document.documentElement.lang = 'en'; document.documentElement.dir = 'ltr'; document.title = 'Who sent it? Something wrong';
+  const T = { toGame: '← To the game', h: 'Something not working? Tell us', sub: 'A bug, something confusing, or an idea. Every message is read.',
+    lWhere: 'Where did it happen?', lMsg: 'What happened?', noChat: 'Please don\'t paste messages from the chat itself.', lContact: 'How can we reach you? (optional)',
+    send: 'Send', done: 'Thanks! Got it 🙏' };
+  Object.entries(T).forEach(([id, v]) => { document.getElementById(id).textContent = v; });
+  ['Making a game', 'The game on the TV / computer', 'On the phone', 'Exporting the chat from WhatsApp', 'With an AI', 'An idea / something else']
+    .forEach((v, i) => { document.getElementById('where').options[i].textContent = v; });
+  document.getElementById('msg').placeholder = 'e.g. I dropped an Android zip and it says no chat was found';
+  document.getElementById('contact').placeholder = 'phone / email';
+}
+const from = new URLSearchParams(location.search).get('from');
+if (from && document.querySelector(`#where option[value="${CSS.escape(from)}"]`)) document.getElementById('where').value = from;
+document.getElementById('device').value = navigator.userAgent.slice(0, 200);
+document.getElementById('fb').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('send'), err = document.getElementById('err');
+  btn.disabled = true; err.hidden = true;
+  try {
+    const r = await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(new FormData(e.target)).toString() });
+    if (!r.ok) throw new Error(r.status);
+    e.target.hidden = true; document.getElementById('done').hidden = false; track('feedback');
+  } catch (x) {
+    err.textContent = LANG === 'he' ? 'לא הצלחנו לשלוח. נסו שוב עוד רגע.' : 'Could not send. Try again in a moment.';
+    err.hidden = false; btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
