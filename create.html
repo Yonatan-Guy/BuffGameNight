@@ -34,12 +34,13 @@
     <ol class="steps" id="steps"></ol>
   </header>
   <section id="stage" class="wizStage" aria-live="polite"></section>
-  <p class="fbFoot"><a href="feedback.html?from=create" id="fbLink">🐞 משהו לא עובד? ספרו לנו</a></p>
+  <div data-footer></div>
 </main>
 <div id="prefs"><div class="skinSlider" data-skin-slider></div><button class="btn ghost small" id="langBtn" onclick="toggleLang()">English</button></div>
 <input type="file" id="fileIn" hidden>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script src="js/track.js"></script>
+<script src="js/footer.js" defer></script>
 <script src="js/prefs.js"></script>
 <script src="js/rain.js"></script>
 <script src="js/store.js"></script>

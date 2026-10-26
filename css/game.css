@@ -320,7 +320,6 @@ img.av{object-fit:cover;background:#3b4a54}
 }
 .paceHint{margin:10px 0 0;line-height:1.5}
 .aiLink{display:block;margin-top:10px;color:var(--mute);font-weight:700}
-.fbLink{display:block;margin-top:8px;color:var(--mute);font-size:.9rem}
 .tryNow{display:flex;flex-direction:column;align-items:center;gap:2px;margin:6px auto 16px;padding:12px 26px;border-radius:999px;border:3px solid var(--line);
   background:var(--sun,#ffc400);color:#1d1700;font:inherit;cursor:pointer;box-shadow:5px 5px 0 var(--line)}
 .tryNow b{font-size:1.2rem} .tryNow span{font-size:.9rem}

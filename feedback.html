@@ -50,11 +50,13 @@
     <p id="err" class="muted" hidden></p>
   </form>
   <p id="done" hidden>תודה! קיבלנו 🙏</p>
+  <div data-footer></div>
 </main>
 <div id="prefs"><div class="skinSlider" data-skin-slider></div></div>
 <script src="js/prefs.js"></script>
 <script src="js/rain.js"></script>
 <script src="js/track.js"></script>
+<script src="js/footer.js" defer></script>
 <script>
 'use strict';
 let LANG = 'he'; try { LANG = localStorage.getItem('wst.lang') || ((navigator.language || '').toLowerCase().startsWith('he') ? 'he' : 'en'); } catch (e) {}

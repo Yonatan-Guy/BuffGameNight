@@ -34,7 +34,7 @@ const STR = {
     laughH: 'מה נחשב צחוק אצלכם?', laughSub: 'אנחנו מוצאים בדיחות לפי ההודעות שאחרים שלחו אחריהן. סמנו מה אצלכם אומר "זה מצחיק".',
     laughBase: 'מילים כלליות (מוכנות מראש, מתאימות לכל קבוצה)', laughFound: 'מהצ\'אט שלכם: מילים שחוזרות אצלכם ברגעים שכולם צוחקים (המספר = כמה פעמים)',
     laughUnseen: 'עוד {n} מילים כלליות שלא הופיעו אצלכם (מסומנות בכל מקרה)', laughExtra: 'עוד מילים שאולי אצלכם הן צחוק', laughExtraSub: 'לא מסומנות, כי לפעמים הן לא צחוק ("די", "אחי"). מופיעות רק מילים שיש בצ׳אט שלכם, עם המספר. לחיצה מוסיפה.',
-    otherH: 'דרכים אחרות:', otherAi: 'עם מודל שפה (ChatGPT / Claude / Gemini): הוא בוחר את הבדיחות בשבילכם', otherFile: 'כבר יש לכם קובץ משחק? פותחים אותו ישר במשחק',
+    otherH: 'דרכים אחרות:', otherAi: 'עם מודל שפה כמו ChatGPT, Claude או Gemini: הוא בוחר את הבדיחות בשבילכם', otherFile: 'כבר יש לכם קובץ משחק? פותחים אותו ישר במשחק',
     needAnswer: 'קודם בוחרים איזו הודעה לנחש: לוחצים על ההודעה המצחיקה ואז 🎯',
     lostAnswer: 'לבדיחה הזאת אין עכשיו הודעה לנחש, אז היא לא תיכנס למשחק',
     noAnsWarn: '{n} בדיחות מסומנות בלי הודעה לנחש, והן לא ייכנסו למשחק. חזרו לסימון ובחרו להן 🎯',
@@ -151,7 +151,6 @@ function setSkin(sk) { SKIN = sk; document.documentElement.dataset.skin = sk; re
 function pickSkin(sk) { setSkin(sk); lsSet('wst.skin', sk); }
 function toggleLang() { LANG = LANG === 'he' ? 'en' : 'he'; lsSet('wst.lang', LANG); applyLang(); }
 function applyLang() {
-  if ($('fbLink')) $('fbLink').textContent = LANG === 'he' ? '🐞 משהו לא עובד? ספרו לנו' : '🐞 Something not working? Tell us';
   document.documentElement.lang = LANG; document.documentElement.dir = LANG === 'he' ? 'rtl' : 'ltr';
   document.title = t('title'); $('langBtn').textContent = t('langSwitch');
   document.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });

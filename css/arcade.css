@@ -131,3 +131,10 @@ html.arcade .tile.create .tt span{color:#eafff1}
 html.arcade .tile .em{font-size:34px;line-height:1;margin-bottom:8px}
 html.arcade .createBtn{align-self:flex-start;margin-bottom:16px;text-decoration:none;color:#fff;background:var(--green);box-shadow:0 6px 0 var(--green-dark)}
 @media (max-width:860px){html.arcade .tiles{grid-template-columns:1fr}}
+
+html.arcade h1{text-wrap:balance}
+@media (max-width:640px){
+  html.arcade .home{padding-top:14px}
+  html.arcade .logo{font-size:clamp(58px,19vw,104px);line-height:1.15;padding-top:.06em}
+  html.arcade .tryNow{width:100%;border-radius:22px;margin-inline:0}
+}
