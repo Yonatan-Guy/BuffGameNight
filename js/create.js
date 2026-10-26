@@ -53,6 +53,7 @@ const STR = {
     legendH: 'מה זה כל דבר? (מדריך קצר לסימון)',
     legend: [
       ['😂 😐 👎', 'מצחיק / בינוני / לא. רק המצחיקות נכנסות למשחק (ובסיכום אפשר להוסיף גם את הבינוניות).'],
+      ['1️⃣ תפקיד אחד', 'כל הודעה היא רק דבר אחד: לנחש, הקשר, צחוק או מוסתרת. בחירה חדשה מחליפה את הקודמת. ↩ "תגובה ל" אפשר להוסיף לכל הודעה.'],
       ['🎯 ההודעה לנחש', 'ההודעה שעליה שואלים "מי שלח?". השם שלה מוסתר, וכולם מנחשים מי כתב. אפשר לסמן כמה הודעות רצופות של אותו אדם. סימנו לבד את המועמדת, אפשר לשנות.'],
       ['💬 הקשר', 'ההודעות שמופיעות לפני (או מסביב) כדי שיבינו על מה מדברים. השמות שלהן מוסתרים עד החשיפה. אם לא מסמנים כלום, כל ההודעות שמעל ההודעה לנחש נכנסות. מסמנים הקשר? רק המסומנות ייכנסו.'],
       ['😂 צחוקים', 'התגובות שמופיעות רק אחרי שכולם ענו, ברגע החשיפה: ה"חחחחח" וה"מתתתי" של החברים. עד 3. הן לא נראות בזמן הניחוש.'],
@@ -119,6 +120,7 @@ const STR = {
     legendH: 'What is everything? (a short guide to marking)',
     legend: [
       ['😂 😐 👎', 'Funny / so-so / not. Only the funny ones go into the game (the summary can add the so-so ones).'],
+      ['1️⃣ One role', 'Each message is one thing only: to guess, context, a laugh, or left out. A new choice replaces the old one. ↩ "Replies to" can go on any message.'],
       ['🎯 Message to guess', 'The message the game asks "who sent it?" about. Its name is hidden and everyone guesses. You can mark several messages in a row by the same person. We pre-mark a likely one; change it freely.'],
       ['💬 Context', 'The messages shown before (or around) it so people get what is going on. Their names stay hidden until the reveal. Mark nothing and every message above the one to guess goes in. Mark some and only those go in.'],
       ['😂 Laughs', 'The replies shown only after everyone answered, at the reveal: the friends\' "hahaha" and "I\'m dead". Up to 3. Hidden while guessing.'],
@@ -691,16 +693,21 @@ document.addEventListener('click', e => {
   const tool = tg.closest('[data-tool]');
   if (tool && sel) {
     const k = sel.i, kind = tool.dataset.tool, m = P.msgs[k];
-    const tog = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
-    if (kind === 'answer') {
-      const cur = d.answer.length ? P.msgs[d.answer[0]].who : '';
-      if (d.answer.includes(k)) { d.answer = d.answer.filter(x => x !== k); if (!d.answer.length && (d.rating === 'funny' || d.rating === 'meh')) toast(t('lostAnswer')); }
-      else d.answer = cur && cur !== m.who ? [k] : [...d.answer, k].sort((a, b) => a - b);
-      d.reactions = d.reactions.filter(x => !d.answer.includes(x)); d.hidden = d.hidden.filter(x => !d.answer.includes(x));
-    } else if (kind === 'reaction') { d.reactions = tog(d.reactions, k); d.answer = d.answer.filter(x => x !== k); }
-    else if (kind === 'hide') d.hidden = tog(d.hidden, k);
-    else if (kind === 'context') { d.context = tog(d.context || [], k); d.hidden = d.hidden.filter(x => x !== k); }
-    else if (kind === 'reply') { if (d.replies[k] != null) delete d.replies[k]; else { pick = { id, i: k }; sel = null; rerenderCard(id); return; } }
+    if (kind === 'reply') { if (d.replies[k] != null) delete d.replies[k]; else { pick = { id, i: k }; sel = null; rerenderCard(id); return; } }
+    else {
+      // a message has one role at most: to guess, context, a laugh, or left out ("replies to" comes on top)
+      const ROLE = { answer: 'answer', context: 'context', reaction: 'reactions', hide: 'hidden' };
+      d.context = d.context || [];
+      const had = d[ROLE[kind]].includes(k), hadAnswer = d.answer.length > 0;
+      Object.values(ROLE).forEach(r => { d[r] = d[r].filter(x => x !== k); });
+      if (!had) {
+        if (kind === 'answer') {   // the answer is one person's messages: picking someone else's starts over
+          const cur = d.answer.length ? P.msgs[d.answer[0]].who : '';
+          d.answer = cur && cur !== m.who ? [k] : [...d.answer, k].sort((a, b) => a - b);
+        } else d[ROLE[kind]].push(k);
+      }
+      if (hadAnswer && !d.answer.length && (d.rating === 'funny' || d.rating === 'meh')) toast(t('lostAnswer'));
+    }
     save(); rerenderCard(id); return;
   }
   const b = tg.closest('[data-msg]');
