@@ -26,7 +26,7 @@ const STR = {
     iphoneSteps: ['פותחים את הקבוצה בוואטסאפ ולוחצים על שם הקבוצה למעלה', 'גוללים למטה ובוחרים "ייצוא צ\'אט"', 'בוחרים "צרף מדיה" אם רוצים תמונות וסרטונים במשחק (מומלץ)', 'שולחים את הקובץ לעצמכם (מייל, וואטסאפ לעצמכם, דרייב) ומורידים אותו למחשב'],
     androidSteps: ['פותחים את הקבוצה בוואטסאפ ולוחצים על ⋮ למעלה', 'עוד ← ייצוא צ\'אט', 'בוחרים "כולל מדיה" אם רוצים תמונות (מומלץ)', 'שולחים את הקובץ לעצמכם ומורידים אותו למחשב'],
     upTip: 'קבוצה גדולה עם הרבה מדיה? וואטסאפ מגביל את הייצוא. אפשר לייצא בלי מדיה ולגרור תמונות אחת־אחת בשלב הסימון.',
-    reading: 'קוראים את הצ\'אט…', zipBig: 'ה־zip גדול מדי לדפדפן ({mb} MB). ייצאו שוב "ללא מדיה", או פתחו את ה־zip במחשב וגררו לכאן רק את _chat.txt.',
+    reading: 'קוראים את הצ\'אט…',
     zipBad: 'לא הצלחנו לפתוח את ה־zip. פתחו אותו במחשב (לחיצה כפולה) וגררו לכאן רק את הקובץ _chat.txt שבתוכו.',
     noTxt: 'ב־zip אין קובץ צ׳אט ({n} קבצים בפנים, אבל אף txt). ודאו שזה הקובץ שוואטסאפ יצר ב"ייצוא צ׳אט".',
     noParse: 'מצאנו קובץ טקסט, אבל השורות לא נראות כמו ייצוא של וואטסאפ. השורה הראשונה נראית ככה: "{line}". שלחו לנו את זה דרך "באג" ונתקן.',
@@ -92,7 +92,7 @@ const STR = {
     iphoneSteps: ['Open the group in WhatsApp and tap its name at the top', 'Scroll down and choose "Export Chat"', 'Choose "Attach Media" to get photos and videos into the game (best)', 'Send the file to yourself (email, WhatsApp, Drive) and download it to this computer'],
     androidSteps: ['Open the group in WhatsApp and tap ⋮ at the top', 'More → Export chat', 'Choose "Include media" to get photos (best)', 'Send the file to yourself and download it to this computer'],
     upTip: 'Big group with lots of media? WhatsApp limits the export. Export without media and drop photos one by one while marking.',
-    reading: 'Reading the chat…', zipBig: 'That zip is too big for the browser ({mb} MB). Export again "without media", or unzip it and drop only _chat.txt here.',
+    reading: 'Reading the chat…',
     zipBad: 'Could not open that zip. Unzip it on the computer (double-click) and drop only the _chat.txt inside.',
     noTxt: 'No chat in that zip ({n} files inside, but no txt). Make sure it is the file WhatsApp made with "Export chat".',
     noParse: 'Found a text file, but its lines do not look like a WhatsApp export. The first line looks like this: "{line}". Send us that through "Bug" and we will fix it.',
@@ -178,7 +178,7 @@ const PRESET = {
 const S = { step: 0, audience: '', fileName: '', chatText: '', people: {}, me: '', group: '', groupPic: '',
             words: [], curse: false, ranks: true, reviewCount: 0, dec: {}, uploads: {}, includeMeh: false, title: '', reviewIds: [] };
 let P = null;          // the parsed chat: { msgs, group }
-let ZIP = new Map();   // file name in the zip → JSZip entry (kept in memory only)
+let ZIP = new Map();   // file name in the zip → { name, async(kind) }, unpacked on demand (kept in memory only)
 let CANDS = [];        // jokes found with the current laugh words
 let VIEW = [];         // P.msgs with display names
 const urls = new Map();   // media blob URLs already made
@@ -203,16 +203,25 @@ function findJokes() {
   const curse = new RegExp(Chat.CURSE.source, 'i');
   CANDS = Chat.candidates(P.msgs, isLaugh).filter(c => included(c.sender) && !(S.curse && c.answer.some(k => curse.test(P.msgs[k].body))));
 }
+/* Reads only the zip's table of contents; each file is unpacked when it is needed.
+   That is what lets a 7 GB export with every photo work: the chat text is read now,
+   and only the photos of the jokes that make it into the game later. */
+async function openZip(file) {
+  zip.configure({ useWebWorkers: false });
+  const entries = await new zip.ZipReader(new zip.BlobReader(file)).getEntries();
+  return entries.filter(e => !e.directory).map(e => ({ name: e.filename,
+    async: kind => e.getData(kind === 'string' ? new zip.TextWriter() : new zip.BlobWriter()) }));
+}
 async function readChatFile(file) {
   const st = $('upMsg'); if (st) { st.className = 'msg'; st.textContent = t('reading'); }
   try {
     let text = '', zipMap = new Map();
     const mb = Math.round(file.size / 1048576);
     if (/\.zip$/i.test(file.name) || file.type.includes('zip')) {
-      let zip;
-      try { zip = await JSZip.loadAsync(file); } catch (e) { throw Object.assign(e, { why: mb > 400 ? 'zipBig' : 'zipBad', mb }); }
+      let files;
+      try { files = await openZip(file); } catch (e) { throw Object.assign(e, { why: 'zipBad', mb }); }
       // Mac zips carry "__MACOSX/._name" shadow copies next to the real files
-      const entries = Object.values(zip.files).filter(f => !f.dir && !/(^|\/)(__MACOSX\/|\._)/.test(f.name));
+      const entries = files.filter(f => !/(^|\/)(__MACOSX\/|\._)/.test(f.name));
       const txts = entries.filter(f => /\.txt$/i.test(f.name));
       const txt = txts.find(f => /(^|\/)_?chat\.txt$/i.test(f.name)) || txts.find(f => /whatsapp|chat|צ.?אט/i.test(f.name)) || txts[0];
       if (!txt) throw Object.assign(new Error('no txt'), { why: 'noTxt', n: entries.length });
