@@ -32,6 +32,7 @@ const STR = {
     metaQ: '{n} שאלות', metaP: '{n} בקבוצה', openRoom: 'לפתוח חדר', preview: 'תצוגה מקדימה', del: 'מחיקה',
     delConfirm: 'למחוק את "{t}" מהדפדפן הזה?', settingCount: 'כמה שאלות', all: 'כולן ({n})', settingOrder: 'סדר',
     orderShuffle: 'מעורבב', orderDate: 'לפי תאריך', settingPace: 'קצב', paceRelaxed: 'רגוע (דקה+)', paceNormal: 'רגיל (45 שנ׳+)', paceFast: 'מהיר (30 שנ׳+)', paceNone: 'בלי הגבלת זמן',
+    voiceSafari: 'יש במשחק הקלטות קוליות, והדפדפן הזה לא מנגן אותן (כנראה ספארי). כדי לשמוע אותן, פתחו את המשחק בכרום או באדג׳. אפשר גם לשחק ככה: במקום ההקלטה יופיע "🎤 הקלטה".',
     paceHint: '⏱ בלי הגבלת זמן: השאלה מחכה שכולם יענו. בכל קצב, מי שעונה נכון מהר מקבל יותר: 1000 נקודות על תשובה מיידית, ויורד עד 500 לתשובה איטית. שאלות ארוכות או עם סרטון מקבלות יותר זמן.',
     questionsList: 'השאלות בקובץ ({a} מתוך {n} פעילות)', loaded: 'נטען: {t}', skipped: ' ({n} שאלות דולגו כי חסר בהן מידע)',
     errNotGame: 'זה לא נראה כמו קובץ משחק.', errNoQuestions: 'אין בקובץ שאלות.', errNoValid: 'לא מצאנו בקובץ אף שאלה תקינה.',
@@ -73,6 +74,7 @@ const STR = {
     metaQ: '{n} questions', metaP: '{n} in the chat', openRoom: 'Open the room', preview: 'Preview', del: 'Delete',
     delConfirm: 'Delete "{t}" from this browser?', settingCount: 'Questions', all: 'All ({n})', settingOrder: 'Order',
     orderShuffle: 'Shuffled', orderDate: 'By date', settingPace: 'Pace', paceRelaxed: 'Relaxed (1 min+)', paceNormal: 'Normal (45s+)', paceFast: 'Fast (30s+)', paceNone: 'No time limit',
+    voiceSafari: 'This game has voice messages, and this browser cannot play them (probably Safari). To hear them, open the game in Chrome or Edge. You can also play as is: they show as "🎤 Voice message".',
     paceHint: '⏱ No time limit: each question waits for everyone. At any pace, a right answer scores more the faster it comes: 1000 for an instant answer, down to 500 for a slow one. Long questions and videos get extra time.',
     questionsList: 'Questions in the file ({a} of {n} on)', loaded: 'Loaded: {t}', skipped: ' ({n} questions skipped because they were incomplete)',
     errNotGame: 'This doesn’t look like a game file.', errNoQuestions: 'The file has no questions.', errNoValid: 'No usable questions in this file.',
@@ -260,6 +262,11 @@ function addWrapped(raw) {
 /* anonymous counts on the public site (js/track.js); a no-op anywhere else */
 function ev(name) { if (window.track) window.track(name); }
 function tryNow() { goSetup(); loadSample(); ev('try-sample'); startPreview(); }
+/* WhatsApp voice notes are .opus files, which Safari often cannot play */
+function voiceTrouble(g) {
+  const voice = g.questions.some(q => q.messages.some(m => m.media && (m.mediaKind === 'audio' || /\.(opus|ogg)$/i.test(m.media))));
+  return voice && !document.createElement('audio').canPlayType('audio/ogg; codecs="opus"');
+}
 function gameLoaded(rec) {
   ev('load-file');
   setMsg(t('loaded', { t: rec.game.title }) + (rec.game.skipped ? t('skipped', { n: rec.game.skipped }) : ''), 'ok');
@@ -308,6 +315,7 @@ function renderGames() {
             <select id="set-pace" onchange="setSetting('pace',this.value)">${opt('none', t('paceNone'), s.pace)}${opt('relaxed', t('paceRelaxed'), s.pace)}${opt('normal', t('paceNormal'), s.pace)}${opt('fast', t('paceFast'), s.pace)}</select></div>
         </div>
         <p class="muted small paceHint">${esc(t('paceHint'))}</p>
+        ${voiceTrouble(g) ? `<p class="warnLine">🎤 ${esc(t('voiceSafari'))}</p>` : ''}
         <div class="pics">
           <span class="picsLabel">${esc(t('picsLabel'))}</span>
           <div class="picRow">${[{ name: t('groupPic'), src: (rec.pics && rec.pics.group) || DEFAULT_GROUP, custom: !!(rec.pics && rec.pics.group) },

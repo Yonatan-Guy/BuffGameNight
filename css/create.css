@@ -185,3 +185,5 @@ body{min-height:100vh}
 .wchip.locked{cursor:default;opacity:.9}
 .otherWays{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center} .otherWays a{font-weight:700}
 .ansline.shake{animation:shake .4s} @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.card .bigFile{color:#ffd84d;font-size:.78rem}
+.card .loadBig{cursor:pointer;font:inherit}

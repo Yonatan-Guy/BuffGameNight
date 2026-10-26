@@ -324,3 +324,4 @@ img.av{object-fit:cover;background:#3b4a54}
   background:var(--sun,#ffc400);color:#1d1700;font:inherit;cursor:pointer;box-shadow:5px 5px 0 var(--line)}
 .tryNow b{font-size:1.2rem} .tryNow span{font-size:.9rem}
 .tryNow:hover{transform:translate(-1px,-1px)}
+.warnLine{margin:8px 0 0;font-weight:700;color:var(--bad,#c62828)}

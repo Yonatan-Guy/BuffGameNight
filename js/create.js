@@ -73,7 +73,10 @@ const STR = {
     tAnswer: '🎯 זו ההודעה לנחש', tUnanswer: '🎯 לא לנחש', tLaugh: '😂 צחוק (בחשיפה)', tUnlaugh: '😂 לא צחוק', tReply: '↩ היא תגובה ל…', tUnreply: '↩ להוריד ציטוט',
     tHide: '✂ להסתיר מהמשחק', tShow: '👁 להחזיר', pickReply: 'לחצו על ההודעה שעליה ענו', cancel: 'ביטול',
     note: 'הסבר קצר מעל הצ\'אט (לא חובה)', category: 'קטגוריה (לא חובה)', sameConvo: 'אותה שיחה כמו בדיחה קודמת',
-    mediaDrop: 'גררו לכאן או <u>לחצו</u> כדי להוסיף', replace: 'להחליף', zipAgain: 'כדי להחזיר את התמונות מה־zip, גררו אותו שוב לשלב "הצ\'אט".',
+    mediaDrop: 'גררו לכאן או <u>לחצו</u> כדי להוסיף', replace: 'להחליף', zipAgain: 'התמונות שכבר ראיתם בכרטיסים שמורות. כדי להחזיר את כל השאר מה־zip, גררו אותו שוב לכאן.',
+    bigFile: 'קובץ גדול: {mb} MB', loadBig: 'סרטון גדול ({mb} MB). לחצו כדי לטעון', audioNote: 'בספארי ייתכן שלא יתנגן. במשחק עדיף כרום או אדג׳',
+    bigWarn: 'במשחק יש {n} סרטונים גדולים ({mb} MB). זה עובד, אבל "שמירה לקובץ" תהיה כבדה, ובספארי עלול להיגמר המקום. סרטון שלא חייב, אפשר להסתיר בשלב הסימון.',
+    voiceWarn: 'במשחק יש {n} הקלטות קוליות. הן מתנגנות בכרום ובאדג׳. בספארי (מק ואייפון) ייתכן שלא, ואז יופיע "🎤 הקלטה" במקומן. כדאי להריץ את המסך הגדול מכרום.',
     more: 'עוד {n}', doneReview: 'סיימתי, לסיכום', hidden: 'מוסתר', inReveal: 'בחשיפה',
     finH: 'סיכום', finSub: 'כמה יש לכל אחד. אפשר לחזור לסמן עוד, או ליצור את המשחק.', withMeh: 'להוסיף גם את הבינוניות', gameTitle: 'שם המשחק',
     create: 'ליצור את המשחק 🎉', creating: 'שומרים…', tooFew: 'סמנו לפחות 5 בדיחות כמצחיקות',
@@ -140,7 +143,10 @@ const STR = {
     tAnswer: '🎯 This is the one to guess', tUnanswer: '🎯 Not this one', tLaugh: '😂 A laugh (at the reveal)', tUnlaugh: '😂 Not a laugh', tReply: '↩ It replies to…', tUnreply: '↩ Remove quote',
     tHide: '✂ Leave out of the game', tShow: '👁 Put back', pickReply: 'Tap the message it replies to', cancel: 'Cancel',
     note: 'Short note above the chat (optional)', category: 'Category (optional)', sameConvo: 'Same conversation as an earlier joke',
-    mediaDrop: 'Drop here or <u>click</u> to add', replace: 'Replace', zipAgain: 'To bring back the photos from the zip, drop it again on the "The chat" step.',
+    mediaDrop: 'Drop here or <u>click</u> to add', replace: 'Replace', zipAgain: 'Photos you already saw on the cards are saved. To bring back all the rest from the zip, drop it here again.',
+    bigFile: 'big file: {mb} MB', loadBig: 'Big video ({mb} MB). Click to load', audioNote: 'may not play in Safari. Chrome or Edge is best for the game',
+    bigWarn: 'The game has {n} big videos ({mb} MB). It works, but "Save to file" will be heavy, and Safari may run out of space. A video you can do without can be left out while marking.',
+    voiceWarn: 'The game has {n} voice messages. They play in Chrome and Edge. Safari (Mac and iPhone) may not play them and shows "🎤 Voice message" instead. Run the big screen from Chrome.',
     more: '{n} more', doneReview: 'Done, show the summary', hidden: 'left out', inReveal: 'at reveal',
     finH: 'Summary', finSub: 'How many each person has. Go back to mark more, or make the game.', withMeh: 'Include the so-so ones too', gameTitle: 'Game name',
     create: 'Make the game 🎉', creating: 'Saving…', tooFew: 'Mark at least 5 jokes as funny',
@@ -211,7 +217,7 @@ function findJokes() {
 async function openZip(file) {
   zip.configure({ useWebWorkers: false });
   const entries = await new zip.ZipReader(new zip.BlobReader(file)).getEntries();
-  return entries.filter(e => !e.directory).map(e => ({ name: e.filename,
+  return entries.filter(e => !e.directory).map(e => ({ name: e.filename, size: e.uncompressedSize,
     async: kind => e.getData(kind === 'string' ? new zip.TextWriter() : new zip.BlobWriter()) }));
 }
 async function readChatFile(file) {
@@ -239,6 +245,7 @@ async function readChatFile(file) {
     const sameChat = S.chatText && S.chatText.length === text.length && S.chatText.slice(0, 2000) === text.slice(0, 2000);
     ZIP = zipMap; P = parsed;
     if (!sameChat) {   // a new chat: fresh people, keep the audience
+      Store.delPrefix('media', 'draft/').catch(() => {}); urls.clear();
       Object.assign(S, { fileName: file.name, chatText: text, people: {}, me: '', group: parsed.group || '', groupPic: '', dec: {}, uploads: {}, reviewIds: [], reviewCount: 0, title: parsed.group || '' });
       const counts = {}; parsed.msgs.forEach(m => { if (!m.system) counts[m.who] = (counts[m.who] || 0) + 1; });
       Object.keys(counts).sort((a, b) => counts[b] - counts[a]).forEach((w, i) => {
@@ -287,13 +294,18 @@ async function useFile(f, target) {
   if (target.kind === 'media') {
     const key = `draft/${target.i}`;
     await Store.put('media', key, f);
-    S.uploads[target.i] = { key, name: f.name, type: f.type };
+    S.uploads[target.i] = { key, name: f.name, type: f.type, size: f.size };
     urls.delete('u' + target.i);
     save(); rerenderCard(target.card);
   }
 }
 
 /* ---------------- media for a message ---------------- */
+const KEEP_MAX = 60 * 1048576, BIG_VIDEO = 50 * 1048576, LOAD_BIG = new Set();
+function mediaSize(m) {
+  const up = S.uploads[m.i]; if (up && up.size) return up.size;
+  const z = m.media && m.media.file && ZIP.get(m.media.file); return z ? z.size || 0 : 0;
+}
 async function mediaUrl(m) {
   const up = S.uploads[m.i];
   if (up) {
@@ -301,7 +313,15 @@ async function mediaUrl(m) {
     return urls.get('u' + m.i) || null;
   }
   if (m.media && m.media.file && ZIP.has(m.media.file)) {
-    if (!urls.has('z' + m.i)) { const b = await ZIP.get(m.media.file).async('blob'); urls.set('z' + m.i, { url: URL.createObjectURL(b), name: m.media.file }); }
+    if (!urls.has('z' + m.i)) {
+      const b = await ZIP.get(m.media.file).async('blob');
+      urls.set('z' + m.i, { url: URL.createObjectURL(b), name: m.media.file });
+      // keep it for after a refresh (not huge videos: those come back from the zip)
+      if (b.size <= KEEP_MAX && !S.uploads[m.i]) {
+        const key = `draft/${m.i}`;
+        Store.put('media', key, b).then(() => { S.uploads[m.i] = { key, name: m.media.file, size: b.size, auto: true }; save(); }).catch(() => {});
+      }
+    }
     return urls.get('z' + m.i);
   }
   return null;
@@ -391,7 +411,7 @@ function stepUpload() {
   return `<h1>${esc(t('upH'))}</h1>
     <label class="drop big" id="chatDrop" data-drop="chat"><strong>${esc(t('upDrop'))}</strong><span class="muted">${esc(t('upDropSub'))}</span></label>
     <div id="upMsg" class="msg" role="status"></div>${got}
-    ${P && S.chatText && !ZIP.size && Object.keys(S.uploads).length === 0 && /\.zip$/i.test(S.fileName) ? `<p class="hint">${esc(t('zipAgain'))}</p>` : ''}
+    ${P && S.chatText && !ZIP.size && /\.zip$/i.test(S.fileName) ? `<p class="hint">${esc(t('zipAgain'))}</p>` : ''}
     <details class="how panel" ${P ? '' : 'open'}><summary>${esc(t('upHow'))}</summary>
       <div class="howGrid"><div><h3>📱 ${esc(t('iphone'))}</h3>${steps('iphoneSteps')}</div><div><h3>🤖 ${esc(t('android'))}</h3>${steps('androidSteps')}</div></div>
       <p class="hint">💡 ${esc(t('upTip'))}</p></details>
@@ -497,8 +517,14 @@ function rerenderCard(id) {
 function fillMedia(root) {
   if (!root) return;
   root.querySelectorAll('[data-media]').forEach(async el => {
-    const m = VIEW[+el.dataset.media], u = await mediaUrl(m);
-    if (u) el.outerHTML = `${mediaTag(u)}<span class="phrow"><button data-upload="${m.i}">${esc(t('replace'))}</button></span>`;
+    const m = VIEW[+el.dataset.media];
+    const mb = Math.round(mediaSize(m) / 1048576), big = mediaSize(m) > BIG_VIDEO;
+    // a huge video waits for a click instead of filling memory with every one on the page
+    if (big && !S.uploads[m.i] && !urls.has('z' + m.i) && !LOAD_BIG.has(m.i)) {
+      el.outerHTML = `<button class="ph loadBig" data-loadbig="${m.i}"><b>🎥</b>${esc(t('loadBig', { mb }))}</button>`; return;
+    }
+    const u = await mediaUrl(m);
+    if (u) el.outerHTML = `${mediaTag(u)}<span class="phrow"><button data-upload="${m.i}">${esc(t('replace'))}</button>${big ? `<span class="bigFile">⚠️ ${esc(t('bigFile', { mb }))}</span>` : ''}${isAudio(u.name) ? `<span class="bigFile">${esc(t('audioNote'))}</span>` : ''}</span>`;
   });
 }
 const MEDIA_ICON = { image: '📷', video: '🎥', gif: '🎞️', audio: '🎤', sticker: '🏷️', doc: '📎' };
@@ -591,6 +617,10 @@ function stepFinish() {
   S.reviewIds.forEach(id => { const d = S.dec[id]; if (!d || !d.answer.length || (d.rating !== 'funny' && d.rating !== 'meh')) return; const w = P.msgs[d.answer[0]].who; if (c[w]) c[w][d.rating]++; });
   const total = Object.values(c).reduce((s, x) => s + x.funny + (S.includeMeh ? x.meh : 0), 0);
   const low = people.filter(p => c[p].funny < 2).map(p => S.people[p].name);
+  const inGame = S.reviewIds.filter(id => { const d = S.dec[id]; return d && d.answer.length && (d.rating === 'funny' || (S.includeMeh && d.rating === 'meh')); })
+    .flatMap(id => { const q = questionIds(S.dec[id]); return [...q.body, ...q.rx]; }).map(k => P.msgs[k]).filter(m => m.media);
+  const bigs = inGame.filter(m => mediaSize(m) > BIG_VIDEO), bigMb = Math.round(bigs.reduce((s, m) => s + mediaSize(m), 0) / 1048576);
+  const voices = inGame.filter(m => m.media.kind === 'audio').length;
   const noAns = S.reviewIds.filter(id => { const d = S.dec[id]; return d && !d.answer.length && (d.rating === 'funny' || d.rating === 'meh'); }).length;
   return `<h1>${esc(t('finH'))}</h1><p class="lede">${esc(t('finSub'))}</p>
     <div class="panel finBox"><div class="perP big">${people.map(p => `<span style="--c:${S.people[p].color}">${S.people[p].pic ? `<img src="${S.people[p].pic}" alt="">` : '<i></i>'}${esc(S.people[p].name)} <b>${c[p].funny}${S.includeMeh && c[p].meh ? ` + ${c[p].meh}` : ''}</b></span>`).join('')}</div>
@@ -599,6 +629,8 @@ function stepFinish() {
       <b class="bigN">${total}</b>
       ${low.length ? `<p class="hint">⚠️ ${esc(t('lowWarn', { p: low.join(', ') }))}</p>` : ''}
       ${noAns ? `<p class="hint">⚠️ ${esc(t('noAnsWarn', { n: noAns }))}</p>` : ''}
+      ${bigs.length ? `<p class="hint">⚠️ ${esc(t('bigWarn', { n: bigs.length, mb: bigMb }))}</p>` : ''}
+      ${voices ? `<p class="hint">🎤 ${esc(t('voiceWarn', { n: voices }))}</p>` : ''}
       ${total ? `<button class="btn ghost" data-preview-all>${esc(t('previewAll'))}</button>` : ''}
       <div id="finMsg" class="msg"></div></div>
     <details class="panel how"><summary>💾 ${esc(t('where'))}</summary><p>${esc(t('whereTxt'))}</p></details>
@@ -679,6 +711,8 @@ document.addEventListener('click', e => {
   const card = tg.closest('.card'); if (!card) return;
   const id = +card.dataset.id, d = S.dec[id];
   if (tg.closest('[data-preview]')) { const ids = visibleIds(); openPreview(ids.includes(id) ? ids : [id], Math.max(0, ids.indexOf(id))); return; }
+  const lb = tg.closest('[data-loadbig]');
+  if (lb) { LOAD_BIG.add(+lb.dataset.loadbig); lb.outerHTML = `<span class="ph" data-media="${lb.dataset.loadbig}"><b>⏳</b></span>`; fillMedia(card); return; }
   const up = tg.closest('[data-upload]') || (tg.closest('[data-media]') && tg.closest('[data-media]'));
   if (up) { pickFile('image/*,video/*,audio/*,.opus', { kind: 'media', i: +(up.dataset.upload || up.dataset.media), card: id }); return; }
   if (tg.closest('[data-cancel]')) { pick = null; rerenderCard(id); return; }
