@@ -33,7 +33,10 @@ const STR = {
     groupName: 'שם הקבוצה', groupPic: 'תמונת הקבוצה', fewMsgs: 'עם פחות מ־20 הודעות כדאי להוציא מהמשחק',
     laughH: 'מה נחשב צחוק אצלכם?', laughSub: 'אנחנו מוצאים בדיחות לפי ההודעות שאחרים שלחו אחריהן. סמנו מה אצלכם אומר "זה מצחיק".',
     laughBase: 'מילים כלליות (מוכנות מראש, מתאימות לכל קבוצה)', laughFound: 'מהצ\'אט שלכם: מילים שחוזרות אצלכם ברגעים שכולם צוחקים (המספר = כמה פעמים)',
-    laughHowH: 'איך זה עובד?', laughHow: 'אחרי כל הודעה בודקים מה שלחו האחרים בדקות שאחריה. אם מישהו אחר כתב אחת מהמילים המסומנות, ההודעה נחשבת בדיחה. ככה גם מוצאים מי הכי מצחיק. מילה מסומנת = נספרת. אפשר לבטל, להוסיף, ולראות מיד איך המספר משתנה.', laughAdd: 'מילה משלכם', add: 'להוסיף',
+    laughUnseen: 'עוד {n} מילים כלליות שלא הופיעו אצלכם (מסומנות בכל מקרה)', laughExtra: 'עוד מילים שאולי אצלכם הן צחוק', laughExtraSub: 'לא מסומנות, כי לפעמים הן לא צחוק ("די", "אחי"). מופיעות רק מילים שיש בצ׳אט שלכם, עם המספר. לחיצה מוסיפה.',
+    alwaysTip: 'צחוק בטוח: נספר תמיד, בכל מספר אותיות', wordDelta: '"{w}": {n} בדיחות', wordNone: '"{w}" לא שינה כלום (אין אותה בצ׳אט, או שהיא כבר נספרת)', wordTooMuch: '⚠️ "{w}" הוסיפה {n} בדיחות. אם היא לא תמיד צחוק אצלכם, עדיף לבטל אותה',
+    sureFresh: 'למחוק את כל מה שסימנתם ולהתחיל מאפס?',
+    laughHowH: 'איך זה עובד?', laughHow: 'חחח (בכל אורך), 😂, 🤣 ו־💀 נספרים תמיד (🔒). מילה כמו "הרגת" תופסת גם "הרגת אותי" ו"הרגתתתת". אחרי כל הודעה בודקים מה שלחו האחרים בדקות שאחריה. אם מישהו אחר כתב אחת מהמילים המסומנות, ההודעה נחשבת בדיחה. ככה גם מוצאים מי הכי מצחיק. מילה מסומנת = נספרת. אפשר לבטל, להוסיף, ולראות מיד איך המספר משתנה.', laughAdd: 'מילה משלכם', add: 'להוסיף',
     curse: 'לדלג על בדיחות עם קללות', ranks: 'לספור דירוגים כמו "1", "#3", "8/10"',
     foundN: 'מצאנו {n} בדיחות', foundBy: 'לכל אחד:',
     countH: 'כמה בדיחות לעבור עליהן?', countSub: 'מצאנו {n}. בשלב הבא עוברים עליהן אחת־אחת ומסמנים מצחיק / בינוני / לא. משחק טוב צריך 20–30, אז כדאי לעבור על פי 4.',
@@ -65,7 +68,7 @@ const STR = {
     more: 'עוד {n}', doneReview: 'סיימתי, לסיכום', hidden: 'מוסתר', inReveal: 'בחשיפה',
     finH: 'סיכום', finSub: 'כמה יש לכל אחד. אפשר לחזור לסמן עוד, או ליצור את המשחק.', withMeh: 'להוסיף גם את הבינוניות', gameTitle: 'שם המשחק',
     create: 'ליצור את המשחק 🎉', creating: 'שומרים…', tooFew: 'סמנו לפחות 5 בדיחות כמצחיקות',
-    lowWarn: 'ל{p} יש מעט. נסו לסנן לפי השם שלו בשלב הסימון.', mediaMissing: '{n} תמונות/סרטונים חסרים: הם יופיעו במשחק כ"📷 תמונה"',
+    lowWarn: 'יש מעט בדיחות ל: {p}. בשלב הסימון לוחצים על שם כדי לראות רק את הבדיחות שלו.', mediaMissing: '{n} תמונות/סרטונים חסרים: הם יופיעו במשחק כ"📷 תמונה"',
     where: 'איפה זה נשמר?', whereTxt: 'המשחק, התמונות והטיוטה נשמרים בדפדפן הזה בלבד. בדפדפן אחר או במחשב אחר הם לא יופיעו. כדי להעביר: בעמוד המשחק לוחצים "שמירה לקובץ" ופותחים את הקובץ במחשב השני. ניקוי נתוני גלישה מוחק אותם.',
     family: 'משפחה'
   },
@@ -88,7 +91,10 @@ const STR = {
     groupName: 'Group name', groupPic: 'Group picture', fewMsgs: 'Under 20 messages: better left out',
     laughH: 'What counts as a laugh in your group?', laughSub: 'We find jokes by what others sent right after them. Tick what says "that\'s funny" in your group.',
     laughBase: 'General words (ready-made, fit any group)', laughFound: 'From your chat: words that keep showing up when everyone laughs (the number = how often)',
-    laughHowH: 'How does it work?', laughHow: 'After each message we look at what the others sent in the next few minutes. If someone else wrote one of the ticked words, that message counts as a joke. That is also how we find who is funniest. Ticked = counted. Untick, add your own, and watch the number change.', laughAdd: 'Your own word', add: 'Add',
+    laughUnseen: '{n} more general words that never showed up in your chat (ticked anyway)', laughExtra: 'More words that might mean laughing in your group', laughExtraSub: 'Not ticked, because sometimes they are not a laugh ("stop", "bro"). Only words from your chat show, with how often. Tap to add.',
+    alwaysTip: 'A sure laugh: always counted, however long', wordDelta: '"{w}": {n} jokes', wordNone: '"{w}" changed nothing (not in the chat, or already counted)', wordTooMuch: '⚠️ "{w}" added {n} jokes. If it is not always a laugh in your group, better untick it',
+    sureFresh: 'Delete everything you marked and start from scratch?',
+    laughHowH: 'How does it work?', laughHow: 'Hahaha (any length), 😂, 🤣 and 💀 always count (🔒). A word like "dead" also catches "dead lol" and "deaddd". After each message we look at what the others sent in the next few minutes. If someone else wrote one of the ticked words, that message counts as a joke. That is also how we find who is funniest. Ticked = counted. Untick, add your own, and watch the number change.', laughAdd: 'Your own word', add: 'Add',
     curse: 'Skip jokes with swearing', ranks: 'Count ratings like "1", "#3", "8/10"',
     foundN: 'Found {n} jokes', foundBy: 'Per person:',
     countH: 'How many jokes to look through?', countSub: 'We found {n}. Next you go through them one by one: funny / so-so / not. A good game needs 20–30, so look at about 4 times that.',
@@ -120,7 +126,7 @@ const STR = {
     more: '{n} more', doneReview: 'Done, show the summary', hidden: 'left out', inReveal: 'at reveal',
     finH: 'Summary', finSub: 'How many each person has. Go back to mark more, or make the game.', withMeh: 'Include the so-so ones too', gameTitle: 'Game name',
     create: 'Make the game 🎉', creating: 'Saving…', tooFew: 'Mark at least 5 jokes as funny',
-    lowWarn: '{p} has few. Filter by their name while marking.', mediaMissing: '{n} photos/videos missing: they will show as "📷 Photo"',
+    lowWarn: 'Few jokes for: {p}. While marking, tap a name to see only theirs.', mediaMissing: '{n} photos/videos missing: they will show as "📷 Photo"',
     where: 'Where is it saved?', whereTxt: 'The game, the photos and the draft live in this browser only. Another browser or computer won\'t see them. To move a game: on the game page press "Save to file" and open that file on the other computer. Clearing browsing data deletes them.',
     family: 'Family'
   }
@@ -372,17 +378,26 @@ function stepLaughs() {
   if (!LAUGH_STATS) {
     const base = PRESET[S.audience || 'friends'].words;
     const found = Chat.discoverLaughs(P.msgs, base);
-    LAUGH_STATS = { found: found.filter(f => !f.known) };
+    const extra = [...new Set([...Chat.EXTRA.he, ...Chat.EXTRA.en])].filter(w => !base.includes(w));
+    const real = P.msgs.filter(m => m.system || included(m.who));
+    LAUGH_STATS = { found: found.filter(f => !f.known), extra, counts: Chat.wordCounts(real, [...base, ...extra]) };
   }
+  const cnt = w => LAUGH_STATS.counts[w] || 0;
   const people = Object.keys(S.people).filter(included);
   const by = {}; CANDS.forEach(c => { by[c.sender] = (by[c.sender] || 0) + 1; });
-  const chip = (w, extra = '') => `<label class="wchip${S.words.includes(w) ? ' on' : ''}"><input type="checkbox" data-word="${esc(w)}" ${S.words.includes(w) ? 'checked' : ''}><span dir="auto">${esc(w)}</span>${extra}</label>`;
+  const chip = (w, extra = '') => Chat.isCore(w) ? `<label class="wchip on locked" title="${esc(t('alwaysTip'))}"><span dir="auto">${esc(w)}</span>${extra}<span>🔒</span></label>` : `<label class="wchip${S.words.includes(w) ? ' on' : ''}"><input type="checkbox" data-word="${esc(w)}" ${S.words.includes(w) ? 'checked' : ''}><span dir="auto">${esc(w)}</span>${extra}</label>`;
+  const num = w => cnt(w) ? `<small>${cnt(w)}</small>` : '';
   const base = PRESET[S.audience || 'friends'].words;
-  const custom = S.words.filter(w => !base.includes(w) && !LAUGH_STATS.found.some(f => f.word === Chat.norm(w) || f.example === w));
+  const seen = base.filter(w => cnt(w)).sort((a, b) => cnt(b) - cnt(a)), unseen = base.filter(w => !cnt(w));
+  const extra = LAUGH_STATS.extra.filter(w => cnt(w)).sort((a, b) => cnt(b) - cnt(a));
+  const isExtra = w => LAUGH_STATS.extra.some(x => Chat.norm(x) === Chat.norm(w));
+  const custom = S.words.filter(w => !base.includes(w) && !isExtra(w) && !LAUGH_STATS.found.some(f => f.word === Chat.norm(w) || f.example === w));
   return `<h1>${esc(t('laughH'))}</h1><p class="lede">${esc(t('laughSub'))}</p>
     <details class="how panel"><summary>💡 ${esc(t('laughHowH'))}</summary><p>${esc(t('laughHow'))}</p></details>
-    <div class="panel wbox"><h3>${esc(t('laughBase'))}</h3><div class="wchips">${base.map(w => chip(w)).join('')}${custom.map(w => chip(w)).join('')}</div>
-      ${LAUGH_STATS.found.length ? `<h3>${esc(t('laughFound'))}</h3><div class="wchips">${LAUGH_STATS.found.map(f => chip(f.example, `<small>${f.count}</small>`)).join('')}</div>` : ''}
+    <div class="panel wbox"><h3>${esc(t('laughBase'))}</h3><div class="wchips">${seen.map(w => chip(w, num(w))).join('')}${custom.map(w => chip(w)).join('')}</div>
+      ${unseen.length ? `<details class="unseen"><summary>${esc(t('laughUnseen', { n: unseen.length }))}</summary><div class="wchips">${unseen.map(w => chip(w)).join('')}</div></details>` : ''}
+      ${extra.length ? `<h3>${esc(t('laughExtra'))}</h3><p class="hint small">${esc(t('laughExtraSub'))}</p><div class="wchips">${extra.map(w => chip(w, num(w))).join('')}</div>` : ''}
+      ${LAUGH_STATS.found.filter(f => !isExtra(f.example)).length ? `<h3>${esc(t('laughFound'))}</h3><div class="wchips">${LAUGH_STATS.found.filter(f => !isExtra(f.example)).map(f => chip(f.example, `<small>${f.count}</small>`)).join('')}</div>` : ''}
       <form class="addWord" id="addWord"><input class="txt" id="newWord" placeholder="${esc(t('laughAdd'))}" maxlength="24" dir="auto"><button class="btn small">${esc(t('add'))}</button></form>
       <label class="chk"><input type="checkbox" id="curse" ${S.curse ? 'checked' : ''}> ${esc(t('curse'))}</label>
       <label class="chk"><input type="checkbox" id="ranks" ${S.ranks ? 'checked' : ''}> ${esc(t('ranks'))}</label></div>
@@ -665,7 +680,7 @@ document.addEventListener('change', e => {
   const tg = e.target;
   if (tg.dataset.inc) { S.people[tg.dataset.inc].include = tg.checked; findJokes(); rainNow(); save(); render(); return; }
   if (tg.dataset.me) { S.me = tg.dataset.me; save(); return; }
-  if (tg.dataset.word !== undefined) { const w = tg.dataset.word; S.words = tg.checked ? [...new Set([...S.words, w])] : S.words.filter(x => x !== w); findJokes(); save(); render(); return; }
+  if (tg.dataset.word !== undefined) { const w = tg.dataset.word; setWords(tg.checked ? [...new Set([...S.words, w])] : S.words.filter(x => x !== w), w); return; }
   if (tg.id === 'curse') { S.curse = tg.checked; findJokes(); save(); render(); return; }
   if (tg.id === 'ranks') { S.ranks = tg.checked; findJokes(); save(); render(); return; }
   if (tg.id === 'withMeh') { S.includeMeh = tg.checked; save(); render(); return; }
@@ -677,8 +692,16 @@ document.addEventListener('submit', e => {
   if (e.target.id !== 'addWord') return;
   e.preventDefault();
   const w = $('newWord').value.trim(); if (!w) return;
-  S.words = [...new Set([...S.words, w])]; findJokes(); save(); render();
+  setWords([...new Set([...S.words, w])], w);
 });
+/* change the laugh words and say what it did: "+162 jokes" (and warn when one word adds a lot) */
+function setWords(words, w) {
+  const before = CANDS.length;
+  S.words = words; findJokes(); save(); render();
+  const d = CANDS.length - before;
+  if (d && before) toast(d > 0 && d / before > 0.06 ? t('wordTooMuch', { w, n: d }) : t('wordDelta', { w, n: (d > 0 ? '+' : '') + d }));
+  else if (!d) toast(t('wordNone', { w }));
+}
 document.addEventListener('toggle', e => { if (e.target.id === 'legend') { S.legendClosed = !e.target.open; save(); } }, true);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && (sel || pick)) { const id = (sel || pick).id; sel = pick = null; rerenderCard(id); } });
 /* drag & drop: the chat file anywhere on step 2, a photo onto its placeholder */
@@ -706,6 +729,6 @@ document.addEventListener('drop', e => {
       P = Chat.parse(S.chatText, LANG); rebuildView(); findJokes();
       S.step = Math.min(S.step, maxStep()); rainNow(); render();
     };
-    $('fresh').onclick = async () => { await Store.del('drafts', 'current'); await Store.delPrefix('media', 'draft/'); render(); };
+    $('fresh').onclick = async () => { if (!confirm(t('sureFresh'))) return; await Store.del('drafts', 'current'); await Store.delPrefix('media', 'draft/'); render(); };
   }
 })();

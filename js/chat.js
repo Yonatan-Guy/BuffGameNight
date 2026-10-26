@@ -71,29 +71,46 @@ const Chat = (() => {
   /* ---------------- laughter ---------------- */
   // the laughs every group shares; a group adds its own words on top
   const BASE = {
-    he: ['חחח', '😂', '🤣', '💀', 'מת', 'אני מת', 'מתתי', 'קרסתי', 'נפטרתי', 'צורח', 'בוכה'],
-    en: ['haha', 'hahaha', 'lol', 'lmao', 'lmfao', '😂', '🤣', '💀', 'dead', "i'm dead", 'dying', 'hilarious']
+    he: ['חחח', '😂', '🤣', '💀', '😹', 'מת', 'אני מת', 'מתתי', 'מתה', 'אני מתה', 'מתים', 'מת מצחוק', 'מתה מצחוק', 'מתתי מצחוק',
+         'קרסתי', 'קורס', 'קורסת', 'נפטרתי', 'צורח', 'צורחת', 'צרחתי', 'בוכה', 'בוכה מצחוק', 'בכיתי', 'בכיתי מצחוק',
+         'הרגת', 'הרגת אותי', 'הרגתם אותי', 'גמרת', 'גמרת אותי', 'קרעת', 'קרעת אותי', 'קורע', 'קורעת', 'קורע מצחוק',
+         'הצחקת', 'הצחקת אותי', 'איזה מצחיק', 'מצחיק רצח', 'לא נושם', 'לא נושמת', 'אין לי אוויר', 'נחנקתי', 'התפקעתי', 'התפוצצתי'],
+    en: ['haha', 'hahaha', 'lol', 'lmao', 'lmfao', 'rofl', '😂', '🤣', '💀', '😹', 'dead', "i'm dead", 'im dead', 'dying', "i'm dying",
+         'hilarious', 'crying', "i'm crying", 'screaming', "i can't", 'cant breathe', "can't breathe", 'killing me', 'you killed me']
+  };
+  /* words that often mean "funny" but sometimes don't: offered with one click, not ticked by default */
+  const EXTRA = {
+    he: ['😭', '😆', '😅', '🙈', '🔥', '👏', 'גדול', 'אגדה', 'יא אגדה', 'אלוף', 'גאון', 'לגנדרי', 'פצצה', 'מצחיק', 'אין עליך', 'לא נורמלי', 'חולה', 'סוף', 'די', 'דייי', 'וואו', 'אחי'],
+    en: ['😭', '😆', '😅', '🙈', '🔥', '👏', 'legend', 'genius', 'omg', 'stop', 'stoppp', 'no way', 'bro', 'funny', 'classic', 'iconic']
   };
   const RANK = /^\W*(#\s*\d{1,2}|(טופ|top|מקום)\s*\d{1,2}|\d{1,2}\s*\/\s*10|solid\s*\d|יופי של בדיחה\s*\d|\d{1,2} מצחיק)\W*$/i;
   const LAUGH_CORE = /(ח[חה]{2,}|(?:ha){2,}h?|\bh{3,}\b|\blo+l\b|\blmf?ao+\b|\bxd+\b|😂|🤣|💀|😹)/i;
   /* fold repeats so "מתתתת" matches "מת" and "hahahahaha" matches "haha" */
   function norm(s) {
-    return String(s).toLowerCase().replace(BIDI, '').replace(/[\s.,!?'"״׳…~*_\-]+/g, ' ').trim()
-      .replace(/(.)\1{2,}/gu, '$1$1').replace(/(ח[חה]?)+/g, 'חח').replace(/(ha)+h?/g, 'haha');
+    return String(s).toLowerCase().replace(BIDI, '').replace(/[\uFE0F\u{1F3FB}-\u{1F3FF}]/gu, '').replace(/[\s.,!?'"״׳…~*_\-]+/g, ' ').trim()
+      .replace(/(\p{Extended_Pictographic})(?:\s*\1)+/gu, '$1')                 // 🤭🤭🤭 -> 🤭
+      .replace(/(?<!\p{L})ח[חה]+(?!\p{L})/gu, 'חח').replace(/\b(?:ha)+h?\b/g, 'haha')
+      .replace(/(.)\1{2,}/gu, '$1$1');
+  }
+  /* a stretched word can be stretched from one letter ("מתתתת" = "מת") or two ("מתתתתי" = "מתתי") */
+  function variants(t) {
+    const n = norm(t), one = n.replace(/(\p{L})\1+(?=\P{L}|$)/gu, '$1');
+    const raw = String(t).toLowerCase().replace(BIDI, '').replace(/[\s.,!?'"״׳…~*_\-]+/g, ' ').trim().replace(/(\p{L})\1{2,}/gu, '$1');
+    return [...new Set([n, one, norm(raw)])];
   }
   function makeLaughTest(words, opts = {}) {
     const set = new Set(words.map(norm).filter(Boolean));
-    const longest = Math.max(12, ...[...set].map(w => w.length + 4));
+    const fits = (n, w) => n.startsWith(w + ' ') && n.length <= Math.max(12, w.length + 4);   // "הרגת אותי" for "הרגת", not a long sentence
     return function isLaugh(text) {
       const t = String(text || '').replace(BIDI, '').trim();
       if (!t) return false;
       if (opts.ranks !== false && RANK.test(t)) return true;
-      const n = norm(t);
-      if (set.has(n)) return true;
+      const vs = variants(t);
+      if (vs.some(v => set.has(v))) return true;
       // a reply that starts with laughing ("חחחח מה קורה") is still a laugh
       if (/^\W*(ח[חה׳']{2,}|😂|🤣|💀)/.test(t)) return true;
       if (LAUGH_CORE.test(t) && t.replace(LAUGH_CORE, '').replace(/[\s!?.,ה]+/g, '').length <= 12) return true;
-      for (const w of set) if (w.length >= 2 && n.startsWith(w + ' ') && n.length <= longest) return true;
+      for (const w of set) if (w.length >= 2 && vs.some(n => fits(n, w))) return true;
       return false;
     };
   }
@@ -126,6 +143,17 @@ const Chat = (() => {
     return [...counts.values()].map(c => ({ ...c, rate: c.together / c.count, known: isKnown(c.example) }))
       .filter(c => c.count >= 4 && c.together >= 3 && c.rate >= 0.25)
       .sort((a, b) => b.together - a.together).slice(0, 36);
+  }
+
+  function wordCounts(msgs, words) {
+    const ws = words.map(w => [w, norm(w)]).filter(([, n]) => n), out = Object.fromEntries(words.map(w => [w, 0]));
+    for (let j = 1; j < msgs.length; j++) {
+      const m = msgs[j];
+      if (m.system || m.media || msgs[j - 1].who === m.who || !m.body || m.body.length > 30) continue;
+      const vs = variants(m.body);
+      for (const [w, n] of ws) if (vs.some(v => v === n || (v.startsWith(n + ' ') && v.length <= Math.max(12, n.length + 4)))) out[w]++;
+    }
+    return out;
   }
 
   /* ---------------- the jokes ---------------- */
@@ -224,6 +252,6 @@ const Chat = (() => {
     return out;
   }
 
-  return { parse, norm, BASE, makeLaughTest, discoverLaughs, candidates, windowOf, stats, kindOfFile, CURSE };
+  return { parse, norm, variants, isCore: w => LAUGH_CORE.test(w) && !String(w).replace(LAUGH_CORE, '').trim(), wordCounts, EXTRA, BASE, makeLaughTest, discoverLaughs, candidates, windowOf, stats, kindOfFile, CURSE };
 })();
 if (typeof module !== 'undefined') module.exports = Chat;

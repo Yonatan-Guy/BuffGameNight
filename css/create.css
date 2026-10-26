@@ -181,3 +181,5 @@ body{min-height:100vh}
 .pvNote{font-weight:700} .pvAns{margin:0;font-size:1.2rem}
 .pvNav{display:flex;justify-content:space-between;align-items:center}
 @keyframes pvIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.unseen{margin:-6px 0 14px} .unseen summary{cursor:pointer;color:var(--mute);font-weight:700;margin-bottom:8px}
+.wchip.locked{cursor:default;opacity:.9}
