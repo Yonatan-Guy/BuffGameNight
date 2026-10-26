@@ -8,8 +8,8 @@ const Chat = (() => {
   /* ---------------- parsing ---------------- */
   const BIDI = /[‎‏⁦-⁩‪-‮⁠﻿]/g;
   // iPhone: [18/06/2021, 13:05:22] Name: text      Android: 18/06/2021, 13:05 - Name: text
-  const IOS = /^\[(\d{1,4})[./-](\d{1,2})[./-](\d{1,4}),? (\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?[Mm]\.?)?\] ([^:]{1,80}?): ?([\s\S]*)$/;
-  const AND = /^(\d{1,4})[./-](\d{1,2})[./-](\d{1,4}),? (\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?[Mm]\.?)?\s*[-–] (?:([^:]{1,80}?): )?([\s\S]*)$/;
+  const IOS = /^\[(\d{1,4})[./-](\d{1,2})[./-](\d{1,4}),?\s(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?[Mm]\.?)?\]\s?([^:]{1,80}?): ?([\s\S]*)$/;
+  const AND = /^(\d{1,4})[./-](\d{1,2})[./-](\d{1,4}),?\s(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?[Mm]\.?)?\s*[-–]\s(?:([^:]{1,80}?): )?([\s\S]*)$/;
   const SYSTEM = /(end-to-end encrypted|הודעות ושיחות מוצפנות|created (this )?group|יצר\/ה את הקבוצה|יצר את הקבוצה|added|הוסיף|הוסיפה|removed|הסיר|left$|יצא\/ה|עזב|joined using|הצטרף|changed (this group|the group|the subject|their phone)|שינה את|שינתה את|This message was deleted|You deleted this message|הודעה זו נמחקה|מחקת הודעה זו|^POLL:|^סקר:|Missed (voice|video) call|שיחה .* שלא נענתה|security code|קוד האבטחה|is a contact|pinned a message|הצמיד)/i;
   const OMITTED = [
     [/(image|photo) omitted|תמונה הושמטה|תמונה לא נכללה/i, 'image'],

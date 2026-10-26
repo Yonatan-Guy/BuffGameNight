@@ -26,7 +26,11 @@ const STR = {
     iphoneSteps: ['פותחים את הקבוצה בוואטסאפ ולוחצים על שם הקבוצה למעלה', 'גוללים למטה ובוחרים "ייצוא צ\'אט"', 'בוחרים "צרף מדיה" אם רוצים תמונות וסרטונים במשחק (מומלץ)', 'שולחים את הקובץ לעצמכם (מייל, וואטסאפ לעצמכם, דרייב) ומורידים אותו למחשב'],
     androidSteps: ['פותחים את הקבוצה בוואטסאפ ולוחצים על ⋮ למעלה', 'עוד ← ייצוא צ\'אט', 'בוחרים "כולל מדיה" אם רוצים תמונות (מומלץ)', 'שולחים את הקובץ לעצמכם ומורידים אותו למחשב'],
     upTip: 'קבוצה גדולה עם הרבה מדיה? וואטסאפ מגביל את הייצוא. אפשר לייצא בלי מדיה ולגרור תמונות אחת־אחת בשלב הסימון.',
-    reading: 'קוראים את הצ\'אט…', badFile: 'לא מצאנו בקובץ צ\'אט של וואטסאפ. ודאו שזה ה־zip או ה־txt שוואטסאפ יצר.',
+    reading: 'קוראים את הצ\'אט…', zipBig: 'ה־zip גדול מדי לדפדפן ({mb} MB). ייצאו שוב "ללא מדיה", או פתחו את ה־zip במחשב וגררו לכאן רק את _chat.txt.',
+    zipBad: 'לא הצלחנו לפתוח את ה־zip. פתחו אותו במחשב (לחיצה כפולה) וגררו לכאן רק את הקובץ _chat.txt שבתוכו.',
+    noTxt: 'ב־zip אין קובץ צ׳אט ({n} קבצים בפנים, אבל אף txt). ודאו שזה הקובץ שוואטסאפ יצר ב"ייצוא צ׳אט".',
+    noParse: 'מצאנו קובץ טקסט, אבל השורות לא נראות כמו ייצוא של וואטסאפ. השורה הראשונה נראית ככה: "{line}". שלחו לנו את זה דרך "באג" ונתקן.',
+    badFile: 'לא מצאנו בקובץ צ\'אט של וואטסאפ. ודאו שזה ה־zip או ה־txt שוואטסאפ יצר.',
     gotChat: '{n} הודעות · {p} אנשים · {a} עד {b}', gotMedia: '{n} תמונות, סרטונים והקלטות בקובץ', noMedia: 'בלי מדיה בקובץ: את התמונות אפשר להוסיף אחר כך',
     peopleH: 'מי בקבוצה?', peopleSub: 'השמות כמו שיופיעו במשחק. לחצו על העיגול כדי להוסיף תמונת פרופיל: ככה תדעו מי זה בחשיפה, והתמונות ייפלו ברקע.',
     msgsN: '{n} הודעות', include: 'במשחק', me: 'זה אני', meHint: '"זה אני" = מי שייצא את הצ\'אט. ההודעות שלו יופיעו בצד ירוק, כמו בוואטסאפ שלו.',
@@ -88,7 +92,11 @@ const STR = {
     iphoneSteps: ['Open the group in WhatsApp and tap its name at the top', 'Scroll down and choose "Export Chat"', 'Choose "Attach Media" to get photos and videos into the game (best)', 'Send the file to yourself (email, WhatsApp, Drive) and download it to this computer'],
     androidSteps: ['Open the group in WhatsApp and tap ⋮ at the top', 'More → Export chat', 'Choose "Include media" to get photos (best)', 'Send the file to yourself and download it to this computer'],
     upTip: 'Big group with lots of media? WhatsApp limits the export. Export without media and drop photos one by one while marking.',
-    reading: 'Reading the chat…', badFile: 'No WhatsApp chat found in that file. Use the zip or txt that WhatsApp made.',
+    reading: 'Reading the chat…', zipBig: 'That zip is too big for the browser ({mb} MB). Export again "without media", or unzip it and drop only _chat.txt here.',
+    zipBad: 'Could not open that zip. Unzip it on the computer (double-click) and drop only the _chat.txt inside.',
+    noTxt: 'No chat in that zip ({n} files inside, but no txt). Make sure it is the file WhatsApp made with "Export chat".',
+    noParse: 'Found a text file, but its lines do not look like a WhatsApp export. The first line looks like this: "{line}". Send us that through "Bug" and we will fix it.',
+    badFile: 'No WhatsApp chat found in that file. Use the zip or txt that WhatsApp made.',
     gotChat: '{n} messages · {p} people · {a} to {b}', gotMedia: '{n} photos, videos and voice notes in the file', noMedia: 'No media in the file: photos can be added later',
     peopleH: 'Who is in the group?', peopleSub: 'Names as they will show in the game. Tap the circle to add a profile picture: it shows at the reveal, and the faces drift in the background.',
     msgsN: '{n} messages', include: 'In the game', me: 'That\'s me', meHint: '"That\'s me" = whoever exported the chat. Their messages show on the green side, like in their own WhatsApp.',
@@ -199,16 +207,24 @@ async function readChatFile(file) {
   const st = $('upMsg'); if (st) { st.className = 'msg'; st.textContent = t('reading'); }
   try {
     let text = '', zipMap = new Map();
+    const mb = Math.round(file.size / 1048576);
     if (/\.zip$/i.test(file.name) || file.type.includes('zip')) {
-      const zip = await JSZip.loadAsync(file);
-      const entries = Object.values(zip.files).filter(f => !f.dir);
-      const txt = entries.find(f => /(^|\/)_?chat\.txt$/i.test(f.name)) || entries.find(f => /\.txt$/i.test(f.name));
-      if (!txt) throw new Error('no txt');
+      let zip;
+      try { zip = await JSZip.loadAsync(file); } catch (e) { throw Object.assign(e, { why: mb > 400 ? 'zipBig' : 'zipBad', mb }); }
+      // Mac zips carry "__MACOSX/._name" shadow copies next to the real files
+      const entries = Object.values(zip.files).filter(f => !f.dir && !/(^|\/)(__MACOSX\/|\._)/.test(f.name));
+      const txts = entries.filter(f => /\.txt$/i.test(f.name));
+      const txt = txts.find(f => /(^|\/)_?chat\.txt$/i.test(f.name)) || txts.find(f => /whatsapp|chat|צ.?אט/i.test(f.name)) || txts[0];
+      if (!txt) throw Object.assign(new Error('no txt'), { why: 'noTxt', n: entries.length });
       text = await txt.async('string');
       entries.forEach(f => { if (f !== txt) zipMap.set(f.name.split('/').pop(), f); });
     } else text = await file.text();
     const parsed = Chat.parse(text, LANG);
-    if (!parsed || parsed.msgs.filter(m => !m.system).length < 10) throw new Error('not a chat');
+    if (!parsed || parsed.msgs.filter(m => !m.system).length < 10) {
+      // show only the shape of the first line (dates, punctuation, first letters), not what it says
+      const line = text.replace(/^\uFEFF/, '').split(/\r?\n/).find(l => l.trim()) || '';
+      throw Object.assign(new Error('not a chat'), { why: /^PK/.test(text) ? 'zipBad' : 'noParse', line: line.replace(/\p{L}{2,}/gu, w => w[0] + '…').slice(0, 60) });
+    }
     const sameChat = S.chatText && S.chatText.length === text.length && S.chatText.slice(0, 2000) === text.slice(0, 2000);
     ZIP = zipMap; P = parsed;
     if (!sameChat) {   // a new chat: fresh people, keep the audience
@@ -222,7 +238,8 @@ async function readChatFile(file) {
     render();
   } catch (e) {
     console.warn(e);
-    if (st) { st.className = 'msg err'; st.textContent = t('badFile'); }
+    if (st) { st.className = 'msg err'; st.textContent = t(e.why || 'badFile', e); }
+    if (window.track) track('upload-fail-' + (e.why || 'other'));
   }
 }
 
