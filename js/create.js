@@ -34,6 +34,10 @@ const STR = {
     laughH: 'מה נחשב צחוק אצלכם?', laughSub: 'אנחנו מוצאים בדיחות לפי ההודעות שאחרים שלחו אחריהן. סמנו מה אצלכם אומר "זה מצחיק".',
     laughBase: 'מילים כלליות (מוכנות מראש, מתאימות לכל קבוצה)', laughFound: 'מהצ\'אט שלכם: מילים שחוזרות אצלכם ברגעים שכולם צוחקים (המספר = כמה פעמים)',
     laughUnseen: 'עוד {n} מילים כלליות שלא הופיעו אצלכם (מסומנות בכל מקרה)', laughExtra: 'עוד מילים שאולי אצלכם הן צחוק', laughExtraSub: 'לא מסומנות, כי לפעמים הן לא צחוק ("די", "אחי"). מופיעות רק מילים שיש בצ׳אט שלכם, עם המספר. לחיצה מוסיפה.',
+    otherH: 'דרכים אחרות:', otherAi: 'עם מודל שפה (ChatGPT / Claude / Gemini): הוא בוחר את הבדיחות בשבילכם', otherFile: 'כבר יש לכם קובץ משחק? פותחים אותו ישר במשחק',
+    needAnswer: 'קודם בוחרים איזו הודעה לנחש: לוחצים על ההודעה המצחיקה ואז 🎯',
+    lostAnswer: 'לבדיחה הזאת אין עכשיו הודעה לנחש, אז היא לא תיכנס למשחק',
+    noAnsWarn: '{n} בדיחות מסומנות בלי הודעה לנחש, והן לא ייכנסו למשחק. חזרו לסימון ובחרו להן 🎯',
     alwaysTip: 'צחוק בטוח: נספר תמיד, בכל מספר אותיות', wordDelta: '"{w}": {n} בדיחות', wordNone: '"{w}" לא שינה כלום (אין אותה בצ׳אט, או שהיא כבר נספרת)', wordTooMuch: '⚠️ "{w}" הוסיפה {n} בדיחות. אם היא לא תמיד צחוק אצלכם, עדיף לבטל אותה',
     sureFresh: 'למחוק את כל מה שסימנתם ולהתחיל מאפס?',
     laughHowH: 'איך זה עובד?', laughHow: 'חחח (בכל אורך), 😂, 🤣 ו־💀 נספרים תמיד (🔒). מילה כמו "הרגת" תופסת גם "הרגת אותי" ו"הרגתתתת". אחרי כל הודעה בודקים מה שלחו האחרים בדקות שאחריה. אם מישהו אחר כתב אחת מהמילים המסומנות, ההודעה נחשבת בדיחה. ככה גם מוצאים מי הכי מצחיק. מילה מסומנת = נספרת. אפשר לבטל, להוסיף, ולראות מיד איך המספר משתנה.', laughAdd: 'מילה משלכם', add: 'להוסיף',
@@ -92,6 +96,10 @@ const STR = {
     laughH: 'What counts as a laugh in your group?', laughSub: 'We find jokes by what others sent right after them. Tick what says "that\'s funny" in your group.',
     laughBase: 'General words (ready-made, fit any group)', laughFound: 'From your chat: words that keep showing up when everyone laughs (the number = how often)',
     laughUnseen: '{n} more general words that never showed up in your chat (ticked anyway)', laughExtra: 'More words that might mean laughing in your group', laughExtraSub: 'Not ticked, because sometimes they are not a laugh ("stop", "bro"). Only words from your chat show, with how often. Tap to add.',
+    otherH: 'Other ways:', otherAi: 'With an AI (ChatGPT / Claude / Gemini): it picks the jokes for you', otherFile: 'Already have a game file? Open it right in the game',
+    needAnswer: 'First choose the message to guess: tap the funny message, then 🎯',
+    lostAnswer: 'This joke now has no message to guess, so it will not be in the game',
+    noAnsWarn: '{n} marked jokes have no message to guess and will not be in the game. Go back and give them a 🎯',
     alwaysTip: 'A sure laugh: always counted, however long', wordDelta: '"{w}": {n} jokes', wordNone: '"{w}" changed nothing (not in the chat, or already counted)', wordTooMuch: '⚠️ "{w}" added {n} jokes. If it is not always a laugh in your group, better untick it',
     sureFresh: 'Delete everything you marked and start from scratch?',
     laughHowH: 'How does it work?', laughHow: 'Hahaha (any length), 😂, 🤣 and 💀 always count (🔒). A word like "dead" also catches "dead lol" and "deaddd". After each message we look at what the others sent in the next few minutes. If someone else wrote one of the ticked words, that message counts as a joke. That is also how we find who is funniest. Ticked = counted. Untick, add your own, and watch the number change.', laughAdd: 'Your own word', add: 'Add',
@@ -341,6 +349,8 @@ function stepWho() {
       <button class="tile${S.audience === 'family' ? ' primary' : ''}" data-aud="family"><span class="em">👨‍👩‍👧‍👦</span><span class="tt"><b>${esc(t('family'))}</b><span>${esc(t('familySub'))}</span></span></button>
     </div>
     <div class="note panel"><b>🔒 ${esc(t('privacyH'))}</b><p>${esc(t('privacy'))}</p></div>
+    <div class="otherWays panel"><b>${esc(t('otherH'))}</b>
+      <a href="guide.html#ai">🤖 ${esc(t('otherAi'))}</a><a href="./?host=1">📄 ${esc(t('otherFile'))}</a></div>
     ${nav(false, S.audience ? 'on' : 'off')}`;
 }
 function stepUpload() {
@@ -553,12 +563,14 @@ function stepFinish() {
   S.reviewIds.forEach(id => { const d = S.dec[id]; if (!d || !d.answer.length || (d.rating !== 'funny' && d.rating !== 'meh')) return; const w = P.msgs[d.answer[0]].who; if (c[w]) c[w][d.rating]++; });
   const total = Object.values(c).reduce((s, x) => s + x.funny + (S.includeMeh ? x.meh : 0), 0);
   const low = people.filter(p => c[p].funny < 2).map(p => S.people[p].name);
+  const noAns = S.reviewIds.filter(id => { const d = S.dec[id]; return d && !d.answer.length && (d.rating === 'funny' || d.rating === 'meh'); }).length;
   return `<h1>${esc(t('finH'))}</h1><p class="lede">${esc(t('finSub'))}</p>
     <div class="panel finBox"><div class="perP big">${people.map(p => `<span style="--c:${S.people[p].color}">${S.people[p].pic ? `<img src="${S.people[p].pic}" alt="">` : '<i></i>'}${esc(S.people[p].name)} <b>${c[p].funny}${S.includeMeh && c[p].meh ? ` + ${c[p].meh}` : ''}</b></span>`).join('')}</div>
       <label class="chk"><input type="checkbox" id="withMeh" ${S.includeMeh ? 'checked' : ''}> ${esc(t('withMeh'))}</label>
       <label class="fld">${esc(t('gameTitle'))}<input class="txt" id="gameTitle" value="${esc(S.title || S.group)}" maxlength="60" dir="auto"></label>
       <b class="bigN">${total}</b>
       ${low.length ? `<p class="hint">⚠️ ${esc(t('lowWarn', { p: low.join(', ') }))}</p>` : ''}
+      ${noAns ? `<p class="hint">⚠️ ${esc(t('noAnsWarn', { n: noAns }))}</p>` : ''}
       ${total ? `<button class="btn ghost" data-preview-all>${esc(t('previewAll'))}</button>` : ''}
       <div id="finMsg" class="msg"></div></div>
     <details class="panel how"><summary>💾 ${esc(t('where'))}</summary><p>${esc(t('whereTxt'))}</p></details>
@@ -642,14 +654,19 @@ document.addEventListener('click', e => {
   if (tg.closest('[data-cancel]')) { pick = null; rerenderCard(id); return; }
   if (tg.closest('[data-more-up]')) { d.lo = Math.max(0, d.lo - 10); save(); rerenderCard(id); return; }
   if (tg.closest('[data-more-down]')) { d.hi = Math.min(P.msgs.length - 1, d.hi + 10); save(); rerenderCard(id); return; }
-  const rate = tg.closest('[data-rate]'); if (rate) { d.rating = d.rating === rate.dataset.rate ? '' : rate.dataset.rate; save(); rerenderCard(id); return; }
+  const rate = tg.closest('[data-rate]');
+  if (rate) {
+    const r = d.rating === rate.dataset.rate ? '' : rate.dataset.rate;
+    if ((r === 'funny' || r === 'meh') && !d.answer.length) { toast(t('needAnswer')); card.querySelector('.ansline').classList.add('shake'); return; }
+    d.rating = r; save(); rerenderCard(id); return;
+  }
   const tool = tg.closest('[data-tool]');
   if (tool && sel) {
     const k = sel.i, kind = tool.dataset.tool, m = P.msgs[k];
     const tog = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
     if (kind === 'answer') {
       const cur = d.answer.length ? P.msgs[d.answer[0]].who : '';
-      if (d.answer.includes(k)) d.answer = d.answer.filter(x => x !== k);
+      if (d.answer.includes(k)) { d.answer = d.answer.filter(x => x !== k); if (!d.answer.length && (d.rating === 'funny' || d.rating === 'meh')) toast(t('lostAnswer')); }
       else d.answer = cur && cur !== m.who ? [k] : [...d.answer, k].sort((a, b) => a - b);
       d.reactions = d.reactions.filter(x => !d.answer.includes(x)); d.hidden = d.hidden.filter(x => !d.answer.includes(x));
     } else if (kind === 'reaction') { d.reactions = tog(d.reactions, k); d.answer = d.answer.filter(x => x !== k); }

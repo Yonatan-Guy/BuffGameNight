@@ -319,3 +319,4 @@ img.av{object-fit:cover;background:#3b4a54}
   *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}
 }
 .paceHint{margin:10px 0 0;line-height:1.5}
+.aiLink{display:block;margin-top:10px;color:var(--mute);font-weight:700}

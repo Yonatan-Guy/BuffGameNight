@@ -183,3 +183,5 @@ body{min-height:100vh}
 @keyframes pvIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .unseen{margin:-6px 0 14px} .unseen summary{cursor:pointer;color:var(--mute);font-weight:700;margin-bottom:8px}
 .wchip.locked{cursor:default;opacity:.9}
+.otherWays{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center} .otherWays a{font-weight:700}
+.ansline.shake{animation:shake .4s} @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}

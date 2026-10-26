@@ -37,5 +37,9 @@ function copyPrompt(btn) {
   } else fallback();
 }
 applyLang();
+// "#ai" goes to the AI section of whichever language is showing
+function toAi() { if (location.hash !== '#ai') return; const s = document.querySelector('main:not([hidden]) .aiSec'); if (s) s.scrollIntoView(); }
+document.addEventListener('click', e => { if (e.target.closest('a[href="#ai"]')) { e.preventDefault(); history.replaceState(null, '', '#ai'); toAi(); } });
+addEventListener('load', toAi);
 // faces from the games made in this browser drift in the background, like on the game page
 try { const g = JSON.parse(lsGet('wst.games') || '[]')[0]; if (g && g.pics) FaceRain.setFaces([g.pics.group, ...Object.values(g.pics.people || {})]); } catch (e) {}

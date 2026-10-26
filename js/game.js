@@ -24,7 +24,7 @@ const STR = {
     picsLabel: 'תמונות פרופיל (לא חובה): מופיעות בחשיפה', groupPic: 'הקבוצה', addPic: 'להוסיף תמונה ל{n}', removePic: 'להסיר', errPic: 'לא הצלחנו לקרוא את התמונה.', logoA: 'מי ', logoB: 'שלח', logoC: '?',
     tagline: 'משחק ניחושים על הקבוצה שלכם: ההודעות הכי מצחיקות מהצ\'אט, עם השמות מוסתרים. כולם מנחשים מהטלפון מי כתב מה.',
     hostTitle: 'לפתוח חדר', hostSub: 'על המסך הגדול, עם קובץ המשחק', joinTitle: 'להצטרף', joinSub: 'מהטלפון, עם קוד בן 4 ספרות',
-    howTo: 'איך מכינים משחק מהצ\'אט שלכם ←', back: 'חזרה',
+    howTo: 'איך מכינים משחק מהצ\'אט שלכם ←', back: 'חזרה', aiLink: '🤖 מעדיפים שמודל שפה (ChatGPT / Claude / Gemini) יבחר בשבילכם? ככה עושים את זה ←',
     createTitle: 'ליצור משחק', createSub: 'מהצ\'אט של הקבוצה, ישר בדפדפן', createNew: '✨ ליצור משחק חדש מהצ\'אט', saveFile: '💾 שמירה לקובץ',
     created: 'המשחק "{t}" מוכן! 🎉', saving: 'שומרים…', awards: '🏆 טקס הפרסים',
     setupTitle: 'איזה צ\'אט משחקים?', dropTitle: 'גררו לכאן את קובץ המשחק', dropSub: 'משחק ששמרתם לקובץ (.zip), או קובץ JSON שקיבלתם מבינה מלאכותית',
@@ -65,7 +65,7 @@ const STR = {
     picsLabel: 'Profile pictures (optional): shown at the reveal', groupPic: 'Group', addPic: 'Add a picture for {n}', removePic: 'Remove', errPic: 'Couldn’t read that image.', logoA: 'Who ', logoB: 'sent', logoC: ' it?',
     tagline: 'A guessing game about your group chat: its funniest messages with the names hidden. Everyone guesses who wrote what from their phone.',
     hostTitle: 'Host a room', hostSub: 'On the big screen, with your game file', joinTitle: 'Join', joinSub: 'From your phone, with a 4-digit code',
-    howTo: 'How to make a game from your chat →', back: 'Back',
+    howTo: 'How to make a game from your chat →', back: 'Back', aiLink: '🤖 Rather have an AI (ChatGPT / Claude / Gemini) pick for you? Here is how →',
     createTitle: 'Make a game', createSub: 'From your group chat, right in the browser', createNew: '✨ Make a new game from a chat', saveFile: '💾 Save to file',
     created: '"{t}" is ready! 🎉', saving: 'Saving…', awards: '🏆 The awards',
     setupTitle: 'Which chat are we playing?', dropTitle: 'Drop your game file here', dropSub: 'a game you saved to a file (.zip), or a JSON file you got from an AI',
@@ -1185,6 +1185,10 @@ function showRejoinBanner() {
       try { history.replaceState({ screen: 'setup' }, '', location.pathname); } catch (e) {}
       goSetup(); setMsg(t('created', { t: rec.game.title }), 'ok');
     } catch (e) { console.warn(e); }
+  }
+  if (!pending && new URLSearchParams(location.search).get('host')) {   // "already have a file?" links land on the setup screen
+    try { history.replaceState({ screen: 'setup' }, '', location.pathname); } catch (e) {}
+    goSetup();
   }
   const pre = new URLSearchParams(location.search).get('join');
   if (pre && /^\d{4}$/.test(pre)) { show('join'); $('codeInput').value = pre; $('nameInput').focus(); }

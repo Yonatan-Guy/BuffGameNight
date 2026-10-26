@@ -23,6 +23,12 @@
 <main data-lang="he" dir="rtl" lang="he">
   <h1>איך מכינים משחק מהצ'אט שלכם</h1>
   <p class="lede">מייצאים את הקבוצה מוואטסאפ, בוחרים את ההודעות הכי מצחיקות, ומשחקים בטלוויזיה כשכולם מנחשים מהטלפון. בערך חצי שעה של הכנה, ואחר כך משחקים כמה פעמים שרוצים.</p>
+  <h2 class="waysH">שלוש דרכים להכין משחק</h2>
+  <div class="ways">
+    <a class="way main" href="create.html"><span class="em">✨</span><b>בדפדפן</b><span>גוררים את הצ'אט, מסמנים בדיחות, וזהו. שום דבר לא יוצא מהמחשב. <u>מומלץ</u></span></a>
+    <a class="way" href="#ai"><span class="em">🤖</span><b>עם מודל שפה</b><span>ChatGPT, Claude, Gemini: מעלים לו את הצ'אט עם הפרומפט שלנו, והוא בוחר בשבילכם ומחזיר קובץ משחק.</span></a>
+    <a class="way" href="./?host=1"><span class="em">📄</span><b>כבר יש לכם קובץ?</b><span>קובץ משחק (<code>.json</code> או <code>.whosent.zip</code>) מחבר או ממודל שפה: "לפתוח חדר" וגוררים אותו.</span></a>
+  </div>
 
   <div class="flow" aria-label="שלושה שלבים">
     <div class="fx"><b>WhatsApp.zip</b><span>הצ'אט מוואטסאפ, עם התמונות</span></div>
@@ -83,8 +89,8 @@
     <p class="muted">ניקוי נתוני גלישה או "גלישה בסתר" מוחקים את מה שנשמר. אם המשחק חשוב לכם, שמרו אותו לקובץ.</p>
   </section>
 
-  <section class="section">
-    <h2>🤖 לחלופין: עם בינה מלאכותית</h2>
+  <section class="section aiSec">
+    <h2>🤖 דרך שנייה: עם מודל שפה (ChatGPT / Claude / Gemini)</h2>
     <p>מעדיפים שמודל שפה יבחר בשבילכם? זה עובד עם <b>ChatGPT, Claude, Gemini</b> ודומיהם, כל מודל שיודע לקרוא קבצים ולהריץ קוד. מעלים את הצ'אט, מעתיקים את ההוראות האלה, ובסוף מקבלים קובץ <code>who-sent-that.json</code> שגוררים ל"לפתוח חדר".</p>
     <div class="prompt"><pre class="promptText"></pre><button class="btn copy" onclick="copyPrompt(this)">להעתיק</button></div>
     <p class="muted">שימו לב: בדרך הזאת הצ'אט נשלח לחברה שמפעילה את המודל. העלו רק צ'אט שאתם והקבוצה בסדר לשתף. היצירה בדפדפן לא שולחת כלום לשום מקום.</p>
@@ -105,6 +111,12 @@
 <main data-lang="en" dir="ltr" lang="en" hidden>
   <h1>How to make a game from your chat</h1>
   <p class="lede">Export your group from WhatsApp, pick its funniest messages, and play on the TV while everyone guesses from their phone. About half an hour to prepare, then play it as often as you like.</p>
+  <h2 class="waysH">Three ways to make a game</h2>
+  <div class="ways">
+    <a class="way main" href="create.html"><span class="em">✨</span><b>In the browser</b><span>Drop the chat, mark the jokes, done. Nothing leaves your computer. <u>Recommended</u></span></a>
+    <a class="way" href="#ai"><span class="em">🤖</span><b>With an AI</b><span>ChatGPT, Claude, Gemini: give it the chat with our prompt, it picks for you and hands back a game file.</span></a>
+    <a class="way" href="./?host=1"><span class="em">📄</span><b>Already have a file?</b><span>A game file (<code>.json</code> or <code>.whosent.zip</code>) from a friend or an AI: "Host a game" and drop it in.</span></a>
+  </div>
 
   <div class="flow" aria-label="Three stages">
     <div class="fx"><b>WhatsApp.zip</b><span>The chat from WhatsApp, with photos</span></div>
@@ -165,8 +177,8 @@
     <p class="muted">Clearing browsing data, or a private window, deletes what’s saved. If the game matters, save it to a file.</p>
   </section>
 
-  <section class="section">
-    <h2>🤖 Or: with an AI</h2>
+  <section class="section aiSec">
+    <h2>🤖 Second way: with an AI (ChatGPT / Claude / Gemini)</h2>
     <p>Rather have a language model pick for you? This works with <b>ChatGPT, Claude, Gemini</b> and similar, any model that can read files and run code. Upload the chat, paste these instructions, and you get a <code>who-sent-that.json</code> file to drop into “Host a room”.</p>
     <div class="prompt"><pre class="promptText"></pre><button class="btn copy" onclick="copyPrompt(this)">Copy</button></div>
     <p class="muted">Note: this way the chat goes to the company running the model. Upload only a chat you and the group are fine sharing. Making the game in the browser sends nothing anywhere.</p>
