@@ -7,22 +7,17 @@ function applyLang() {
   document.documentElement.lang = LANG; document.documentElement.dir = LANG === 'he' ? 'rtl' : 'ltr';
   document.getElementById('langBtn').textContent = LANG === 'he' ? 'English' : 'עברית';
   document.getElementById('toGame').textContent = LANG === 'he' ? '→ למשחק' : '← To the game';
+  document.getElementById('toCreate').textContent = LANG === 'he' ? '✨ ליצור משחק' : '✨ Make a game';
   document.title = LANG === 'he' ? 'מי שלח? איך מכינים משחק' : 'Who sent it? Making a game';
   setSkin(SKIN);
 }
 function toggleLang() { LANG = LANG === 'he' ? 'en' : 'he'; lsSet('wst.lang', LANG); applyLang(); }
-const SKINS = ['arcade', 'night', 'retro'];
-let SKIN = new URLSearchParams(location.search).get('skin') || lsGet('wst.skin') || 'night';
-if (!SKINS.includes(SKIN)) SKIN = 'night';
-const fonts = new Set();
+const SKINS = ['arcade', 'dark'];
+let SKIN = { night: 'dark', retro: 'arcade' }[lsGet('wst.skin')] || lsGet('wst.skin');
+if (!SKINS.includes(SKIN)) SKIN = 'arcade';
 function setSkin(sk) {
   SKIN = sk; document.documentElement.dataset.skin = sk;
-  const FONTS = { retro: 'family=Rubik:wght@500;700;900&family=VT323', arcade: 'family=Secular+One&family=Press+Start+2P&family=Rubik:wght@400;500;700;900' };
-  if (FONTS[sk] && !fonts.has(sk)) {
-    fonts.add(sk); const l = document.createElement('link'); l.rel = 'stylesheet';
-    l.href = `https://fonts.googleapis.com/css2?${FONTS[sk]}&display=swap`; document.head.appendChild(l);
-  }
-  const NAMES = { he: { title: 'סגנון', arcade: 'ארקייד', night: 'לילה', retro: 'רטרו' }, en: { title: 'Look', arcade: 'Arcade', night: 'Night', retro: 'Retro' } };
+  const NAMES = { he: { title: 'סגנון', arcade: 'בהיר', dark: 'כהה' }, en: { title: 'Look', arcade: 'Light', dark: 'Dark' } };
   renderSkinSliders(SKINS, sk, k => NAMES[LANG][k] || k);
 }
 function pickSkin(sk) { setSkin(sk); lsSet('wst.skin', SKIN); }
@@ -42,3 +37,5 @@ function copyPrompt(btn) {
   } else fallback();
 }
 applyLang();
+// faces from the games made in this browser drift in the background, like on the game page
+try { const g = JSON.parse(lsGet('wst.games') || '[]')[0]; if (g && g.pics) FaceRain.setFaces([g.pics.group, ...Object.values(g.pics.people || {})]); } catch (e) {}

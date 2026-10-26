@@ -1,0 +1,8 @@
+/* the arcade background (grid floor, scanlines, faces) on pages that don't load the game's arcade.css */
+#rain,.arcadeLayer{position:fixed;pointer-events:none}
+#rain{inset:0;width:100%;height:100%;z-index:0}
+.arcadeLayer{z-index:0}
+.gridFloor{left:-25%;right:-25%;bottom:0;height:22vh;opacity:.35;transform-origin:bottom;transform:perspective(320px) rotateX(74deg);
+  background:repeating-linear-gradient(to right,rgba(11,99,246,.5) 0 2px,transparent 2px 76px),repeating-linear-gradient(to bottom,rgba(0,200,83,.45) 0 2px,transparent 2px 46px)}
+.vignette,.scanlines{display:none}
+body>*:not(#rain):not(.arcadeLayer){position:relative;z-index:1}

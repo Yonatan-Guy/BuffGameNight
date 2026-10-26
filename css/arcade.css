@@ -1,109 +1,133 @@
-/* =================== ARCADE SKIN (local build) ===================
-   A bright 80s arcade: pale-blue sky, profile pictures drifting down (where a page provides them), a perspective grid floor
-   and scanlines behind everything; white panels with ink outlines and chunky
-   3D buttons in front. The game.css rules still apply; this only re-themes them. */
+/* =================== ARCADE LOOK ===================
+   A bright 80s arcade: pale-blue sky, profile pictures drifting down (rain.js), a perspective
+   grid floor and scanlines behind everything; panels with ink outlines and chunky 3D buttons in front.
+   Two palettes share every rule below: light (html[data-skin=arcade]) and dark (html[data-skin=dark]).
+   game.css still lays things out; this only re-themes them. */
 #rain,.arcadeLayer{display:none}
-html[data-skin=arcade]{
+html.arcade{
   --bg:#e8f1ff; --ink:#e8f1ff; --ink-2:#ffffff; --ink-3:#dbe8ff; --line:#08224f;
   --paper:#08224f; --mute:#4a6da6; --hi:#0b63f6; --hi-ink:#ffffff;
   --blue:#0b63f6; --blue-dark:#052f86; --green:#00c853; --green-dark:#046634; --cyan:#00c2ff; --sun:#ffc400;
   --ok:#00a844; --bad:#e5304a;
+  --shadow:rgba(8,34,79,.85); --soft:#f2f8ff; --on-blue:#dbe8ff; --glow:#e8f1ff;
+  --vignette:rgba(232,241,255,.7); --scan:rgba(8,34,79,.06); --grid-a:rgba(11,99,246,.55); --grid-b:rgba(0,200,83,.5);
   --display:"Secular One","Rubik",system-ui,sans-serif;
   --body:"Rubik",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
   --mono:"Press Start 2P",ui-monospace,monospace;
   color-scheme:light;
 }
-html[data-skin=arcade] body{background:var(--bg);color:var(--paper)}
+/* dark arcade: the same arcade, at night; neon outlines on deep navy */
+html.arcade[data-skin=dark]{
+  --bg:#0a1330; --ink:#0a1330; --ink-2:#13214a; --ink-3:#1b2d60; --line:#5d8dff;
+  --paper:#e8f1ff; --mute:#9cb3e0; --hi:#3b82ff;
+  --blue:#2f74ff; --blue-dark:#0a2a7a;
+  --shadow:rgba(0,0,0,.7); --soft:#1a2b5a; --on-blue:#dbe8ff; --glow:#0a1330;
+  --vignette:rgba(5,10,30,.75); --scan:rgba(255,255,255,.035); --grid-a:rgba(59,130,255,.6); --grid-b:rgba(0,200,83,.45);
+  color-scheme:dark;
+}
+html.arcade body{background:var(--bg);background-image:none;color:var(--paper)}
 
 /* background layers */
-html[data-skin=arcade] #rain{display:block;position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-html[data-skin=arcade] .arcadeLayer{display:block;position:fixed;pointer-events:none;z-index:1}
-html[data-skin=arcade] .vignette{inset:0;background:radial-gradient(120% 82% at 50% 42%,rgba(232,241,255,0) 0%,rgba(232,241,255,.2) 58%,rgba(232,241,255,.7) 100%)}
-html[data-skin=arcade] .gridFloor{left:-25%;right:-25%;bottom:0;height:26vh;opacity:.4;transform-origin:bottom;
-  background:repeating-linear-gradient(to right,rgba(11,99,246,.55) 0 2px,transparent 2px 76px),
-             repeating-linear-gradient(to bottom,rgba(0,200,83,.5) 0 2px,transparent 2px 46px);
+html.arcade #rain{display:block;position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+html.arcade .arcadeLayer{display:block;position:fixed;pointer-events:none;z-index:1}
+html.arcade .vignette{inset:0;background:radial-gradient(120% 82% at 50% 42%,transparent 0%,transparent 45%,var(--vignette) 100%)}
+html.arcade .gridFloor{left:-25%;right:-25%;bottom:0;height:26vh;opacity:.4;transform-origin:bottom;
+  background:repeating-linear-gradient(to right,var(--grid-a) 0 2px,transparent 2px 76px),
+             repeating-linear-gradient(to bottom,var(--grid-b) 0 2px,transparent 2px 46px);
   transform:perspective(320px) rotateX(74deg)}
-html[data-skin=arcade] .scanlines{inset:0;opacity:.35;background:repeating-linear-gradient(to bottom,rgba(8,34,79,.06) 0 1px,transparent 1px 4px)}
+html.arcade .scanlines{inset:0;opacity:.35;background:repeating-linear-gradient(to bottom,var(--scan) 0 1px,transparent 1px 4px)}
 /* faces fade back while a question is on screen, so the chat stays readable */
-html[data-skin=arcade] body.inGame #rain{opacity:.45}
-html[data-skin=arcade] .screen{position:relative;z-index:2}
+html.arcade body.inGame #rain{opacity:.45}
+html.arcade .screen{position:relative;z-index:2}
 
 /* type */
-html[data-skin=arcade] .logo{font-size:clamp(64px,13vw,170px);line-height:1;letter-spacing:0;
+html.arcade .logo{font-size:clamp(64px,13vw,170px);line-height:1;letter-spacing:0;
   text-shadow:4px -3px 0 var(--cyan),-4px 3px 0 var(--green)}
-html[data-skin=arcade] .redact .bar{background:var(--blue-dark)}
-html[data-skin=arcade] .tagline{color:var(--paper);font-weight:500;text-shadow:0 0 6px #e8f1ff,0 0 12px #e8f1ff}
-html[data-skin=arcade] .topbar h2{font-size:clamp(30px,4vw,46px);line-height:1.05}
-html[data-skin=arcade] .side h2{font-size:clamp(30px,2.9vw,48px);line-height:1.05}
-html[data-skin=arcade] .final h2{font-size:clamp(40px,5.5vw,84px);line-height:1;text-shadow:3px -2px 0 var(--cyan),-3px 2px 0 var(--green)}
-html[data-skin=arcade] .ghead .brand{font-size:30px;color:var(--blue)}
-html[data-skin=arcade] .gtitle{font-size:clamp(24px,2.8vw,34px)}
-html[data-skin=arcade] .drop strong{font-size:clamp(24px,3vw,34px)}
-html[data-skin=arcade] .tile b{font-size:clamp(28px,3vw,40px)}
-html[data-skin=arcade] .fact .v{font-size:32px}
-html[data-skin=arcade] .state .big{font-size:clamp(44px,13vw,72px);line-height:1}
-html[data-skin=arcade] .joinForm h2{font-size:clamp(36px,10vw,48px)}
-html[data-skin=arcade] .code{font-size:clamp(56px,8vw,120px);color:var(--blue);text-shadow:5px 5px 0 var(--green)}
-html[data-skin=arcade] .timer{font-size:30px;color:var(--blue)}
-html[data-skin=arcade] .timer.hurry{color:var(--bad)}
-html[data-skin=arcade] .row .rk,html[data-skin=arcade] .row .sc,html[data-skin=arcade] .row .plus,
-html[data-skin=arcade] .sus .cnt,html[data-skin=arcade] .pod .sc,html[data-skin=arcade] .pbar .sc{font-size:.8em}
+html.arcade .redact .bar{background:var(--blue-dark)}
+html.arcade .tagline{color:var(--paper);font-weight:500;text-shadow:0 0 6px var(--glow),0 0 12px var(--glow)}
+html.arcade .topbar h2{font-size:clamp(30px,4vw,46px);line-height:1.05}
+html.arcade .side h2{font-size:clamp(30px,2.9vw,48px);line-height:1.05}
+html.arcade .final h2{font-size:clamp(40px,5.5vw,84px);line-height:1;text-shadow:3px -2px 0 var(--cyan),-3px 2px 0 var(--green)}
+html.arcade .ghead .brand{font-size:30px;color:var(--blue)}
+html.arcade .gtitle{font-size:clamp(24px,2.8vw,34px)}
+html.arcade .drop strong{font-size:clamp(24px,3vw,34px)}
+html.arcade .tile b{font-size:clamp(28px,3vw,40px)}
+html.arcade .fact .v{font-size:32px}
+html.arcade .state .big{font-size:clamp(44px,13vw,72px);line-height:1}
+html.arcade .joinForm h2{font-size:clamp(36px,10vw,48px)}
+html.arcade .code{font-size:clamp(56px,8vw,120px);color:var(--blue);text-shadow:5px 5px 0 var(--green)}
+html.arcade .timer{font-size:30px;color:var(--blue)}
+html.arcade .timer.hurry{color:var(--bad)}
+html.arcade .row .rk,html.arcade .row .sc,html.arcade .row .plus,
+html.arcade .sus .cnt,html.arcade .pod .sc,html.arcade .pbar .sc{font-size:.8em}
 
-/* panels: white, ink outline, hard offset shadow */
-html[data-skin=arcade] .tile,html[data-skin=arcade] .gcard,html[data-skin=arcade] .drop,html[data-skin=arcade] .sus,
-html[data-skin=arcade] .fact,html[data-skin=arcade] .joinForm,html[data-skin=arcade] .joinInfo,html[data-skin=arcade] .qrBox,
-html[data-skin=arcade] #playersPanel,html[data-skin=arcade] .chip,html[data-skin=arcade] .opt{
-  background:var(--ink-2);border:3px solid var(--line);box-shadow:6px 6px 0 rgba(8,34,79,.85)}
-html[data-skin=arcade] .joinInfo{padding:18px 22px;border-radius:22px}
-html[data-skin=arcade] .joinForm{padding:22px;border-radius:22px;margin-top:4vh}
-html[data-skin=arcade] .drop{border-style:dashed}
-html[data-skin=arcade] .drop:hover,html[data-skin=arcade] .drop.over{background:#f2f8ff;border-color:var(--blue)}
-html[data-skin=arcade] .gcard.sel{box-shadow:6px 6px 0 var(--blue)}
-html[data-skin=arcade] .tile:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 rgba(8,34,79,.85)}
-html[data-skin=arcade] .tile.primary{background:var(--blue);color:#fff;box-shadow:6px 6px 0 var(--blue-dark)}
-html[data-skin=arcade] .tile.primary .tt span{color:#dbe8ff}
-html[data-skin=arcade] .chip{box-shadow:3px 3px 0 rgba(8,34,79,.85)}
-html[data-skin=arcade] .sus.win{background:color-mix(in srgb,var(--c) 22%,#fff);border-color:var(--c);box-shadow:6px 6px 0 var(--c)}
-html[data-skin=arcade] .row{background:var(--ink-2);border:2px solid var(--line)}
-html[data-skin=arcade] .row.lead{background:var(--green);color:#fff;border-color:var(--green-dark)}
-html[data-skin=arcade] .row.lead .rk,html[data-skin=arcade] .row.lead .plus{color:#eafff1}
-html[data-skin=arcade] .pod .blk{background:var(--ink-2);border:3px solid var(--line);color:var(--blue);box-shadow:6px 6px 0 rgba(8,34,79,.85)}
-html[data-skin=arcade] .pod.p1 .blk{background:var(--sun);color:var(--paper)}
-html[data-skin=arcade] .cat,html[data-skin=arcade] .lchips span,html[data-skin=arcade] #previewBar .tag{background:var(--ink-2);border:2px solid var(--line);color:var(--paper)}
-html[data-skin=arcade] select,html[data-skin=arcade] .txt{background:#fff;box-shadow:none;border:2px solid var(--line)}
-html[data-skin=arcade] .qlist label:hover{background:var(--ink-3)}
-html[data-skin=arcade] .pbar{background:var(--blue);color:#fff}
-html[data-skin=arcade] .pbar .sc{color:var(--sun)}
-html[data-skin=arcade] .pbar .pprog{color:#dbe8ff}
-html[data-skin=arcade] .opts{background:linear-gradient(rgba(232,241,255,0),var(--bg) 16px)}
-html[data-skin=arcade] .timebar{background:var(--ink-3);height:10px}
-html[data-skin=arcade] .timebar i{background:linear-gradient(90deg,var(--green),var(--blue))}
-html[data-skin=arcade] .timebar.hurry i{background:var(--bad)}
-html[data-skin=arcade] .kick{background:var(--ink-3);color:var(--paper)}
+/* panels: ink outline, hard offset shadow */
+html.arcade .tile,html.arcade .gcard,html.arcade .drop,html.arcade .sus,
+html.arcade .fact,html.arcade .joinForm,html.arcade .joinInfo,html.arcade .qrBox,
+html.arcade #playersPanel,html.arcade .chip,html.arcade .opt,html.arcade .panel{
+  background:var(--ink-2);border:3px solid var(--line);box-shadow:6px 6px 0 var(--shadow)}
+html.arcade .qrBox{background:#fff;color:#08224f}
+html.arcade .joinInfo{padding:18px 22px;border-radius:22px}
+html.arcade .joinForm{padding:22px;border-radius:22px;margin-top:4vh}
+html.arcade .drop{border-style:dashed}
+html.arcade .drop:hover,html.arcade .drop.over{background:var(--soft);border-color:var(--blue)}
+html.arcade .gcard.sel{box-shadow:6px 6px 0 var(--blue)}
+html.arcade .tile:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--shadow)}
+html.arcade .tile.primary{background:var(--blue);color:#fff;box-shadow:6px 6px 0 var(--blue-dark)}
+html.arcade .tile.primary .tt span{color:var(--on-blue)}
+html.arcade .chip{box-shadow:3px 3px 0 var(--shadow)}
+html.arcade .sus.win{background:color-mix(in srgb,var(--c) 22%,var(--ink-2));border-color:var(--c);box-shadow:6px 6px 0 var(--c)}
+html.arcade .row{background:var(--ink-2);border:2px solid var(--line)}
+html.arcade .row.lead{background:var(--green);color:#fff;border-color:var(--green-dark)}
+html.arcade .row.lead .rk,html.arcade .row.lead .plus{color:#eafff1}
+html.arcade .pod .blk{background:var(--ink-2);border:3px solid var(--line);color:var(--blue);box-shadow:6px 6px 0 var(--shadow)}
+html.arcade .pod.p1 .blk{background:var(--sun);color:#08224f}
+html.arcade .cat,html.arcade .lchips span,html.arcade #previewBar .tag{background:var(--ink-2);border:2px solid var(--line);color:var(--paper)}
+html.arcade select,html.arcade .txt,html.arcade textarea{background:var(--ink-2);color:var(--paper);box-shadow:none;border:2px solid var(--line)}
+html.arcade .qlist label:hover{background:var(--ink-3)}
+html.arcade .pbar{background:var(--blue);color:#fff}
+html.arcade .pbar .sc{color:var(--sun)}
+html.arcade .pbar .pprog{color:var(--on-blue)}
+html.arcade .opts{background:linear-gradient(transparent,var(--bg) 16px)}
+html.arcade .timebar{background:var(--ink-3);height:10px}
+html.arcade .timebar i{background:linear-gradient(90deg,var(--green),var(--blue))}
+html.arcade .timebar.hurry i{background:var(--bad)}
+html.arcade .kick{background:var(--ink-3);color:var(--paper)}
 
 /* chunky 3D buttons */
-html[data-skin=arcade] .btn{border-radius:14px;background:var(--blue);color:#fff;box-shadow:0 6px 0 var(--blue-dark);
+html.arcade .btn{border-radius:14px;background:var(--blue);color:#fff;box-shadow:0 6px 0 var(--blue-dark);
   transition:transform .08s,box-shadow .08s,filter .12s}
-html[data-skin=arcade] .btn:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 8px 0 var(--blue-dark)}
-html[data-skin=arcade] .btn:active{transform:translateY(5px);box-shadow:0 1px 0 var(--blue-dark)}
-html[data-skin=arcade] .btn[data-primary]{background:var(--green);box-shadow:0 6px 0 var(--green-dark)}
-html[data-skin=arcade] .btn[data-primary]:hover{box-shadow:0 8px 0 var(--green-dark)}
-html[data-skin=arcade] .btn[data-primary]:active{box-shadow:0 1px 0 var(--green-dark)}
-html[data-skin=arcade] .btn.ghost{background:#fff;color:var(--paper);box-shadow:0 4px 0 var(--line);border:2px solid var(--line)}
-html[data-skin=arcade] .btn.ghost:active{box-shadow:0 1px 0 var(--line)}
-html[data-skin=arcade] .btn.danger{background:#fff;color:var(--bad);box-shadow:0 4px 0 var(--bad);border:2px solid var(--bad)}
-html[data-skin=arcade] .btn:disabled{transform:none;box-shadow:0 4px 0 rgba(8,34,79,.3)}
-html[data-skin=arcade] #prefs .btn{background:#fff}
-html[data-skin=arcade] .linkbtn,html[data-skin=arcade] a{color:var(--blue)}
+html.arcade .btn:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 8px 0 var(--blue-dark)}
+html.arcade .btn:active{transform:translateY(5px);box-shadow:0 1px 0 var(--blue-dark)}
+html.arcade .btn[data-primary]{background:var(--green);box-shadow:0 6px 0 var(--green-dark)}
+html.arcade .btn[data-primary]:hover{box-shadow:0 8px 0 var(--green-dark)}
+html.arcade .btn[data-primary]:active{box-shadow:0 1px 0 var(--green-dark)}
+html.arcade .btn.ghost{background:var(--ink-2);color:var(--paper);box-shadow:0 4px 0 var(--line);border:2px solid var(--line)}
+html.arcade .btn.ghost:active{box-shadow:0 1px 0 var(--line)}
+html.arcade .btn.danger{background:var(--ink-2);color:var(--bad);box-shadow:0 4px 0 var(--bad);border:2px solid var(--bad)}
+html.arcade .btn:disabled{transform:none;box-shadow:0 4px 0 var(--shadow);opacity:.45}
+html.arcade #prefs .btn{background:var(--ink-2)}
+html.arcade .linkbtn,html.arcade a{color:var(--blue)}
+html.arcade[data-skin=dark] .linkbtn,html.arcade[data-skin=dark] a{color:#8fb5ff}
 
-/* chat panel: kept exactly as the original dark WhatsApp look. The arcade colours are
-   variables, so they are put back to the night values inside the panel. */
-html[data-skin=arcade] .wa{--ink:#0c0e13;--ink-2:#141821;--ink-3:#1c2230;--line:#2b3344;--paper:#f4efe4;--mute:#9ba2b3;
+/* chat panel: kept as the dark WhatsApp look in both palettes. The arcade colours are
+   variables, so they are put back to WhatsApp-night values inside the panel. */
+html.arcade .wa{--ink:#0c0e13;--ink-2:#141821;--ink-3:#1c2230;--line:#2b3344;--paper:#f4efe4;--mute:#9ba2b3;
   --hi:#ffd84d;--hi-ink:#1d1700;--body:"Assistant",system-ui,-apple-system,"Segoe UI",sans-serif;
-  box-shadow:8px 8px 0 rgba(8,34,79,.85),0 30px 80px rgba(0,0,0,.25)}
+  box-shadow:8px 8px 0 var(--shadow),0 30px 80px rgba(0,0,0,.25)}
+html.arcade[data-skin=dark] .wa{border:2px solid #2a3a6a}
 
 /* reveal: a little jolt when the names come off */
-html[data-skin=arcade] .sus.win{animation:jolt .45s steps(3) 1}
+html.arcade .sus.win{animation:jolt .45s steps(3) 1}
 @keyframes jolt{0%{transform:translate(0,0) scale(1.03)}33%{transform:translate(-4px,2px) scale(1.06)}66%{transform:translate(4px,-2px) scale(1.04)}100%{transform:scale(1.03)}}
-@media (prefers-reduced-motion:reduce){html[data-skin=arcade] .sus.win{animation:none}}
-html[data-skin=arcade] .pfinal .row.me{background:var(--blue);color:#fff;border-color:var(--blue-dark)}
+@media (prefers-reduced-motion:reduce){html.arcade .sus.win{animation:none}}
+html.arcade .pfinal .row.me{background:var(--blue);color:#fff;border-color:var(--blue-dark)}
+
+/* home: three tiles, "make a game" first in green */
+html.arcade .tiles{grid-template-columns:repeat(3,minmax(0,1fr));max-width:1100px}
+html.arcade .tile{text-decoration:none;color:var(--paper)}
+html.arcade .tile.create{background:var(--green);color:#fff;box-shadow:6px 6px 0 var(--green-dark)}
+html.arcade .tile.create .tt span{color:#eafff1}
+html.arcade .tile .em{font-size:34px;line-height:1;margin-bottom:8px}
+html.arcade .createBtn{align-self:flex-start;margin-bottom:16px;text-decoration:none;color:#fff;background:var(--green);box-shadow:0 6px 0 var(--green-dark)}
+@media (max-width:860px){html.arcade .tiles{grid-template-columns:1fr}}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="he" dir="rtl" class="arcade" data-skin="arcade">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מי שלח? יצירת משחק</title>
+<meta name="description" content="Turn your WhatsApp group chat into a party game. Everything happens in your browser; the chat is never uploaded.">
+<meta name="theme-color" content="#0b63f6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;800&family=Secular+One&family=Press+Start+2P&family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/game.css">
+<link rel="stylesheet" href="css/prefs.css">
+<link rel="stylesheet" href="css/arcade.css">
+<link rel="stylesheet" href="css/create.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+<main class="wiz">
+  <header class="wizTop">
+    <a class="btn ghost small" href="./" data-t="toGame"></a>
+    <ol class="steps" id="steps"></ol>
+  </header>
+  <section id="stage" class="wizStage" aria-live="polite"></section>
+</main>
+<div id="prefs"><div class="skinSlider" data-skin-slider></div><button class="btn ghost small" id="langBtn" onclick="toggleLang()">English</button></div>
+<input type="file" id="fileIn" hidden>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<script src="js/prefs.js"></script>
+<script src="js/rain.js"></script>
+<script src="js/store.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/create.js"></script>
+</body>
+</html>

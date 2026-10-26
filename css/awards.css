@@ -1,0 +1,80 @@
+/* =================== THE BUFF AWARDS (end-of-game show) =================== */
+#awards{position:fixed;inset:0;z-index:80;overflow:hidden;cursor:pointer;color:#fff;
+  background:radial-gradient(120% 90% at 50% 30%,#0b63f6 0%,#052f86 45%,#03122e 100%);font-family:"Rubik",system-ui,sans-serif}
+#awards::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.12) 0 1px,transparent 1px 4px)}
+.aw-stage{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  text-align:center;padding:4vh 4vw}
+.aw-em{font-size:clamp(56px,9vh,110px);line-height:1;animation:awPop .5s cubic-bezier(.2,1.6,.4,1) both}
+.aw-kicker{margin:0;font-size:clamp(20px,3vh,32px);color:#9cc5ff}
+.aw-big{margin:0;font-family:"Secular One","Rubik",sans-serif;font-size:clamp(40px,8vh,96px);line-height:1.05;
+  text-shadow:5px -4px 0 #00c2ff,-5px 4px 0 #00c853;animation:awPop .5s .05s cubic-bezier(.2,1.6,.4,1) both}
+.aw-sub{margin:0;font-size:clamp(18px,2.6vh,28px);color:#dbe8ff;max-width:60ch}
+.aw-hint{position:absolute;bottom:4vh;left:0;right:0;margin:0;color:#9cc5ff;font-size:16px;letter-spacing:.04em;animation:awBlink 1.6s steps(2) infinite}
+.aw-count{position:absolute;z-index:3;bottom:16px;left:20px;font-family:"Press Start 2P",monospace;font-size:12px;color:#9cc5ff}
+.aw-x{position:absolute;z-index:3;top:16px;left:16px;width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:1.2rem}
+
+/* faces */
+.aw-row{display:flex;gap:clamp(10px,2vw,26px);justify-content:center;flex-wrap:wrap;margin-top:10px}
+.aw-face{display:flex;flex-direction:column;align-items:center;gap:8px}
+.aw-face img{width:clamp(150px,26vh,280px);height:clamp(150px,26vh,280px);border-radius:50%;object-fit:cover;background:#cfd8dc;
+  box-shadow:0 0 0 8px #fff,0 0 0 15px var(--c),0 18px 0 15px rgba(0,0,0,.35)}
+.aw-face span{font-family:"Secular One","Rubik",sans-serif;font-size:clamp(30px,5vh,58px);line-height:1;color:var(--c);text-shadow:3px 3px 0 #03122e;margin-top:14px}
+.aw-face.small img{width:clamp(64px,10vh,110px);height:clamp(64px,10vh,110px);box-shadow:0 0 0 4px #fff,0 0 0 8px var(--c)}
+.aw-face.small span{font-size:clamp(18px,2.6vh,28px);margin-top:6px}
+.aw-face.spin img{filter:saturate(.6) brightness(.9)}
+.aw-face.win{animation:awWin .7s cubic-bezier(.2,1.6,.4,1) both}
+.aw-wheel{min-height:clamp(210px,34vh,370px);display:grid;place-items:center}
+.aw-q{width:clamp(150px,26vh,280px);height:clamp(150px,26vh,280px);border-radius:50%;display:grid;place-items:center;
+  font-family:"Press Start 2P",monospace;font-size:clamp(50px,9vh,100px);background:rgba(255,255,255,.1);box-shadow:0 0 0 8px rgba(255,255,255,.5);
+  animation:awPulse 1s ease-in-out infinite}
+.aw-stat{margin:0;min-height:1.4em;font-size:clamp(22px,3.6vh,40px);font-weight:700;opacity:0}
+.aw-stat.on{opacity:1;animation:awUp .5s .25s both}
+.aw-second{margin:0;color:#9cc5ff;font-size:clamp(16px,2.2vh,22px);animation:awUp .5s .5s both}
+.aw-row.pair .aw-face img{width:clamp(120px,22vh,230px);height:clamp(120px,22vh,230px)}
+.aw-heart{font-size:clamp(40px,7vh,80px);align-self:center}
+.aw-place{font-family:"Press Start 2P",monospace;font-size:clamp(60px,12vh,130px);line-height:1;color:#ffd84d;text-shadow:6px 6px 0 #03122e}
+.aw-place.n1{animation:awPulse 1s ease-in-out infinite}
+
+/* the chat behind the longest "חחחח" */
+.aw-chats{display:flex;gap:clamp(14px,2vw,30px);justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.aw-chat{width:min(520px,44vw);background:#0b141a;border-radius:18px;padding:12px 14px 16px;display:flex;flex-direction:column;gap:4px;
+  box-shadow:8px 8px 0 rgba(0,0,0,.35);font-family:"Segoe UI",system-ui,sans-serif;text-align:start;animation:awUp .5s both;
+  max-height:79vh;overflow:hidden;justify-content:flex-end}   /* too long? the top goes, the laugh stays */
+.aw-chat-head{align-self:center;background:#182229;color:#8696a0;font-size:14px;border-radius:8px;padding:3px 12px;margin-bottom:4px}
+.aw-b{align-self:flex-start;max-width:90%;background:#202c33;color:#e9edef;border-radius:9px;padding:5px 10px 6px;font-size:clamp(15px,2.1vh,21px);line-height:1.3;white-space:pre-line;
+  display:flex;flex-direction:column;overflow-wrap:anywhere}
+.aw-b.first{margin-top:6px;border-start-start-radius:0}
+.aw-b b{font-size:.78em}
+.aw-b i{font-style:normal;font-size:.62em;color:#8696a0;align-self:flex-end}
+.aw-b img,.aw-b video{display:block;max-width:100%;max-height:15vh;border-radius:7px;margin:3px 0}
+.aw-b.me{box-shadow:0 0 0 3px #ffd84d,0 0 24px rgba(255,216,77,.45);animation:awPulse 1.2s ease-in-out infinite}
+@media (max-width:700px){.aw-chat{width:92vw}}
+
+/* the final podium */
+.aw-podium{display:flex;align-items:flex-end;justify-content:center;gap:clamp(8px,1.6vw,22px);margin-top:2vh;width:min(1400px,96vw)}
+.aw-pod{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;animation:awUp .6s both}
+.aw-pod .aw-face img{width:clamp(70px,12vh,150px);height:clamp(70px,12vh,150px);box-shadow:0 0 0 5px #fff,0 0 0 10px var(--c)}
+.aw-pod .aw-face span{font-size:clamp(20px,3.4vh,38px);margin-top:8px}
+.aw-pod.n1 .aw-face img{width:clamp(100px,17vh,200px);height:clamp(100px,17vh,200px)}
+.aw-blk{width:100%;border-radius:14px 14px 4px 4px;background:rgba(255,255,255,.14);border:3px solid rgba(255,255,255,.4);display:grid;place-items:center;
+  font-family:"Press Start 2P",monospace;font-size:clamp(20px,4vh,44px);color:#dbe8ff}
+.aw-pod.n1 .aw-blk{height:30vh;background:#ffd84d;border-color:#ffd84d;color:#03122e}
+.aw-pod.n2 .aw-blk{height:23vh} .aw-pod.n3 .aw-blk{height:18vh} .aw-pod.n4 .aw-blk{height:13vh} .aw-pod.n5 .aw-blk{height:10vh} .aw-pod.n6 .aw-blk{height:7vh}
+.aw-pod.n1{animation-delay:1.2s} .aw-pod.n2{animation-delay:.9s} .aw-pod.n3{animation-delay:.6s} .aw-pod.n4{animation-delay:.4s} .aw-pod.n5{animation-delay:.2s}
+
+/* confetti */
+.aw-confetti{position:absolute;inset:0;z-index:4;pointer-events:none}
+.aw-confetti i{position:absolute;top:-20px;width:10px;height:16px;border-radius:2px;animation:awFall linear forwards}
+
+@keyframes awPop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes awWin{0%{opacity:0;transform:scale(.4) rotate(-12deg)}100%{opacity:1;transform:none}}
+@keyframes awUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes awPulse{50%{transform:scale(1.06)}}
+@keyframes awBlink{50%{opacity:.35}}
+@keyframes awFall{to{transform:translateY(110vh) rotate(720deg)}}
+@media (prefers-reduced-motion:reduce){#awards *{animation:none!important}}
+/* a face with no picture: the initial on the person's colour */
+.aw-ini{display:grid;place-items:center;width:clamp(150px,26vh,280px);height:clamp(150px,26vh,280px);border-radius:50%;background:var(--c);color:#03122e;
+  font-style:normal;font-family:"Secular One","Rubik",sans-serif;font-size:clamp(60px,12vh,130px);box-shadow:0 0 0 8px #fff,0 0 0 15px var(--c)}
+.aw-face.small .aw-ini{width:clamp(64px,10vh,110px);height:clamp(64px,10vh,110px);font-size:clamp(28px,5vh,52px);box-shadow:0 0 0 4px #fff,0 0 0 8px var(--c)}
+.aw-pod .aw-ini{width:clamp(70px,12vh,150px);height:clamp(70px,12vh,150px);font-size:clamp(30px,6vh,70px)}

@@ -20,19 +20,21 @@ function toast(msg) { const el = $('toast'); el.textContent = msg; el.hidden = f
    ========================================================= */
 const STR = {
   he: {
-    docTitle: 'מי שלח?', langSwitch: 'English', skinLabel: 'סגנון: {s}', skinTitle: 'סגנון', skinArcade: 'ארקייד', skinNight: 'לילה', skinRetro: 'רטרו',
+    docTitle: 'מי שלח?', langSwitch: 'English', skinLabel: 'סגנון: {s}', skinTitle: 'סגנון', skinArcade: 'בהיר', skinDark: 'כהה',
     picsLabel: 'תמונות פרופיל (לא חובה): מופיעות בחשיפה', groupPic: 'הקבוצה', addPic: 'להוסיף תמונה ל{n}', removePic: 'להסיר', errPic: 'לא הצלחנו לקרוא את התמונה.', logoA: 'מי ', logoB: 'שלח', logoC: '?',
     tagline: 'משחק ניחושים על הקבוצה שלכם: ההודעות הכי מצחיקות מהצ\'אט, עם השמות מוסתרים. כולם מנחשים מהטלפון מי כתב מה.',
     hostTitle: 'לפתוח חדר', hostSub: 'על המסך הגדול, עם קובץ המשחק', joinTitle: 'להצטרף', joinSub: 'מהטלפון, עם קוד בן 4 ספרות',
     howTo: 'איך מכינים משחק מהצ\'אט שלכם ←', back: 'חזרה',
-    setupTitle: 'איזה צ\'אט משחקים?', dropTitle: 'גררו לכאן את קובץ המשחק', dropSub: 'או לחצו כדי לבחור את קובץ ה־JSON שקיבלתם מ־Claude',
-    noFile: 'אין לכם קובץ? ככה מכינים אחד', trySample: 'או נסו קבוצה לדוגמה', privacy: 'הקובץ נשמר רק בדפדפן הזה ולא עולה לשום שרת.',
+    createTitle: 'ליצור משחק', createSub: 'מהצ\'אט של הקבוצה, ישר בדפדפן', createNew: '✨ ליצור משחק חדש מהצ\'אט', saveFile: '💾 שמירה לקובץ',
+    created: 'המשחק "{t}" מוכן! 🎉', saving: 'שומרים…', awards: '🏆 טקס הפרסים',
+    setupTitle: 'איזה צ\'אט משחקים?', dropTitle: 'גררו לכאן את קובץ המשחק', dropSub: 'משחק ששמרתם לקובץ (.zip), או קובץ JSON שקיבלתם מבינה מלאכותית',
+    noFile: 'איך מכינים משחק עם בינה מלאכותית', trySample: 'או נסו קבוצה לדוגמה', privacy: 'הקובץ נשמר רק בדפדפן הזה ולא עולה לשום שרת.',
     metaQ: '{n} שאלות', metaP: '{n} בקבוצה', openRoom: 'לפתוח חדר', preview: 'תצוגה מקדימה', del: 'מחיקה',
     delConfirm: 'למחוק את "{t}" מהדפדפן הזה?', settingCount: 'כמה שאלות', all: 'כולן ({n})', settingOrder: 'סדר',
     orderShuffle: 'מעורבב', orderDate: 'לפי תאריך', settingPace: 'קצב', paceRelaxed: 'רגוע', paceNormal: 'רגיל', paceFast: 'מהיר', paceNone: 'בלי הגבלת זמן',
     questionsList: 'השאלות בקובץ ({a} מתוך {n} פעילות)', loaded: 'נטען: {t}', skipped: ' ({n} שאלות דולגו כי חסר בהן מידע)',
     errNotGame: 'זה לא נראה כמו קובץ משחק.', errNoQuestions: 'אין בקובץ שאלות.', errNoValid: 'לא מצאנו בקובץ אף שאלה תקינה.',
-    errRead: 'לא הצלחנו לקרוא את הקובץ. ודאו שזה קובץ ה־JSON שקיבלתם מ־Claude.', errBig: 'הקובץ גדול מדי (מעל 8MB).',
+    errRead: 'לא הצלחנו לקרוא את הקובץ. ודאו שזה קובץ משחק (.zip או .json).', errBig: 'הקובץ גדול מדי.',
     notSaved: 'הדפדפן לא מאפשר לשמור (אולי גלישה בסתר). המשחק יישאר רק עד שתסגרו את הדף.', untitled: 'הקבוצה',
     joinAt: 'נכנסים מהטלפון ל־', andCode: 'ומקלידים את הקוד', orScan: 'או סורקים',
     creating: 'פותחים חדר…', roomOpen: 'החדר פתוח', roomErr: 'בעיה בחיבור ({e}). נסו לרענן את הדף.',
@@ -58,19 +60,21 @@ const STR = {
     fullChat: '⤢ שיחה מלאה', backToBoard: '⤡ חזרה לטבלה', closeView: 'סגירה'
   },
   en: {
-    docTitle: 'Who sent it?', langSwitch: 'עברית', skinLabel: 'Look: {s}', skinTitle: 'Look', skinArcade: 'Arcade', skinNight: 'Night', skinRetro: 'Retro',
+    docTitle: 'Who sent it?', langSwitch: 'עברית', skinLabel: 'Look: {s}', skinTitle: 'Look', skinArcade: 'Light', skinDark: 'Dark',
     picsLabel: 'Profile pictures (optional): shown at the reveal', groupPic: 'Group', addPic: 'Add a picture for {n}', removePic: 'Remove', errPic: 'Couldn’t read that image.', logoA: 'Who ', logoB: 'sent', logoC: ' it?',
     tagline: 'A guessing game about your group chat: its funniest messages with the names hidden. Everyone guesses who wrote what from their phone.',
     hostTitle: 'Host a room', hostSub: 'On the big screen, with your game file', joinTitle: 'Join', joinSub: 'From your phone, with a 4-digit code',
     howTo: 'How to make a game from your chat →', back: 'Back',
-    setupTitle: 'Which chat are we playing?', dropTitle: 'Drop your game file here', dropSub: 'or click to pick the JSON file you got from Claude',
-    noFile: 'No file yet? Here’s how to make one', trySample: 'or try a sample group', privacy: 'The file stays in this browser. It is never uploaded to a server.',
+    createTitle: 'Make a game', createSub: 'From your group chat, right in the browser', createNew: '✨ Make a new game from a chat', saveFile: '💾 Save to file',
+    created: '"{t}" is ready! 🎉', saving: 'Saving…', awards: '🏆 The awards',
+    setupTitle: 'Which chat are we playing?', dropTitle: 'Drop your game file here', dropSub: 'a game you saved to a file (.zip), or a JSON file you got from an AI',
+    noFile: 'How to make a game with an AI', trySample: 'or try a sample group', privacy: 'The file stays in this browser. It is never uploaded to a server.',
     metaQ: '{n} questions', metaP: '{n} in the chat', openRoom: 'Open the room', preview: 'Preview', del: 'Delete',
     delConfirm: 'Delete "{t}" from this browser?', settingCount: 'Questions', all: 'All ({n})', settingOrder: 'Order',
     orderShuffle: 'Shuffled', orderDate: 'By date', settingPace: 'Pace', paceRelaxed: 'Relaxed', paceNormal: 'Normal', paceFast: 'Fast', paceNone: 'No time limit',
     questionsList: 'Questions in the file ({a} of {n} on)', loaded: 'Loaded: {t}', skipped: ' ({n} questions skipped because they were incomplete)',
     errNotGame: 'This doesn’t look like a game file.', errNoQuestions: 'The file has no questions.', errNoValid: 'No usable questions in this file.',
-    errRead: 'Couldn’t read the file. Make sure it’s the JSON file you got from Claude.', errBig: 'The file is too big (over 8 MB).',
+    errRead: 'Couldn’t read the file. Make sure it’s a game file (.zip or .json).', errBig: 'The file is too big.',
     notSaved: 'This browser won’t save files (private mode?). The game stays only until you close the page.', untitled: 'The group',
     joinAt: 'On your phone, go to', andCode: 'and enter the code', orScan: 'or scan',
     creating: 'Opening the room…', roomOpen: 'The room is open', roomErr: 'Connection problem ({e}). Try refreshing the page.',
@@ -114,25 +118,17 @@ function applyLang() {
 }
 function toggleLang() { LANG = LANG === 'he' ? 'en' : 'he'; lsSet('wst.lang', LANG); applyLang(); }
 
-/* looks: 'arcade', 'night' (default) or 'retro'. The TV's choice is sent to the phones. */
-const SKINS = ['arcade', 'night', 'retro'];
-let SKIN = new URLSearchParams(location.search).get('skin') || lsGet('wst.skin') || 'night';
-if (!SKINS.includes(SKIN)) SKIN = 'night';
-const SKIN_FONTS = {   // each look's extra fonts, loaded the first time it is picked
-  retro: 'family=Press+Start+2P&family=Rubik:wght@500;700;900&family=VT323',
-  arcade: 'family=Secular+One&family=Press+Start+2P&family=Rubik:wght@400;500;700;900'
-}, fontsLoaded = new Set();
+/* looks: the arcade style in a light (default) or dark palette. The TV's choice is sent to the phones. */
+const SKINS = ['arcade', 'dark'];
+const OLD_SKINS = { night: 'dark', retro: 'arcade' };   // looks that existed before
+function skinFrom(v) { v = OLD_SKINS[v] || v; return SKINS.includes(v) ? v : null; }
+let SKIN = skinFrom(new URLSearchParams(location.search).get('skin')) || skinFrom(lsGet('wst.skin')) || 'arcade';
 function setSkin(sk, save) {
-  if (!SKINS.includes(sk)) return;
+  sk = skinFrom(sk); if (!sk) return;
   SKIN = sk;
+  document.documentElement.classList.add('arcade');
   document.documentElement.dataset.skin = sk;
   if (save) lsSet('wst.skin', sk);
-  if (SKIN_FONTS[sk] && !fontsLoaded.has(sk)) {
-    fontsLoaded.add(sk);
-    const l = document.createElement('link'); l.rel = 'stylesheet';
-    l.href = `https://fonts.googleapis.com/css2?${SKIN_FONTS[sk]}&display=swap`;
-    document.head.appendChild(l);
-  }
   renderSkinSliders(SKINS, sk, k => t('skin' + k[0].toUpperCase() + k.slice(1)));
 }
 function pickSkin(sk) { setSkin(sk, true); broadcast({ type: 'skin', skin: SKIN }); }
@@ -205,7 +201,7 @@ function normalizeGame(raw) {
         from: addName(m && m.from), text: String((m && m.text) ?? '').slice(0, 3000), time: String((m && m.time) || '').slice(0, 8),
         answer: !!(m && m.answer), reaction: !!(m && m.reaction && !m.answer),
         replyTo: Number.isInteger(m && m.replyTo) ? m.replyTo : -1,
-        media: m && typeof m.media === 'string' && /^media\/[\w.-]+$/.test(m.media) ? m.media : '',
+        media: m && typeof m.media === 'string' && /^(media\/[\w.-]+|idb:[\w.\/-]+)$/.test(m.media) ? m.media : '',
         mediaKind: m && MEDIA_KINDS.includes(m.mediaKind) ? m.mediaKind : ''
       }));
       // "replyTo" is the index of the quoted message in the same question, shown like a WhatsApp reply
@@ -244,22 +240,25 @@ function addGame(raw, sample) {
   return rec;
 }
 function setMsg(text, kind) { const el = $('loadMsg'); el.textContent = text || ''; el.className = 'msg' + (kind ? ' ' + kind : ''); }
-function readFile(file) {
+async function readFile(file) {
   if (!file) return;
+  if (/\.zip$/i.test(file.name) || /zip/.test(file.type)) { importZip(file); return; }
   if (file.size > 8e6) { setMsg(t('errBig'), 'err'); return; }
-  const r = new FileReader();
-  r.onload = () => {
-    let raw;
-    try { raw = JSON.parse(String(r.result).replace(/^﻿/, '')); } catch (e) { setMsg(t('errRead'), 'err'); return; }
-    try {
-      const rec = addGame(raw);
-      setMsg(t('loaded', { t: rec.game.title }) + (rec.game.skipped ? t('skipped', { n: rec.game.skipped }) : ''), 'ok');
-      if (!canSave) setMsg(t('notSaved'), 'err');
-      renderGames();
-    } catch (e) { setMsg(e.message || t('errRead'), 'err'); }
-  };
-  r.onerror = () => setMsg(t('errRead'), 'err');
-  r.readAsText(file);
+  let raw;
+  try { raw = JSON.parse((await file.text()).replace(/^\ufeff/, '')); } catch (e) { setMsg(t('errRead'), 'err'); return; }
+  try { gameLoaded(addWrapped(raw)); } catch (e) { setMsg(e.message || t('errRead'), 'err'); }
+}
+/* a bare game file, or { game, pics, stats } as saved by "save to file" */
+function addWrapped(raw) {
+  const wrapped = raw && raw.game && Array.isArray(raw.game.questions);
+  const rec = addGame(wrapped ? raw.game : raw);
+  if (wrapped) { if (raw.pics) rec.pics = raw.pics; if (raw.stats) rec.stats = raw.stats; saveGames(); }
+  return rec;
+}
+function gameLoaded(rec) {
+  setMsg(t('loaded', { t: rec.game.title }) + (rec.game.skipped ? t('skipped', { n: rec.game.skipped }) : ''), 'ok');
+  if (!canSave) setMsg(t('notSaved'), 'err');
+  renderGames();
 }
 function loadSample() {
   addGame(LANG === 'he' ? SAMPLE_HE : SAMPLE_EN, true);
@@ -271,6 +270,7 @@ function deleteGame(id) {
   if (!rec || !confirm(t('delConfirm', { t: rec.game.title }))) return;
   games = games.filter(r => r.id !== id); if (selectedId === id) selectedId = null;
   saveGames(); renderGames();
+  if (typeof Store !== 'undefined') mediaKeys(rec).forEach(k => Store.del('media', k.slice(4)).catch(() => {}));
 }
 function setSetting(key, val) { const rec = currentRec(); if (!rec) return; rec.settings[key] = val; if (!rec.sample) saveGames(); }
 function toggleQ(qid, on) {
@@ -280,6 +280,7 @@ function toggleQ(qid, on) {
   const sum = $('qsum'); if (sum) sum.textContent = t('questionsList', { a: rec.game.questions.length - off.size, n: rec.game.questions.length });
 }
 function renderGames() {
+  rainFaces();
   const box = $('gamesList');
   if (!games.length) { box.innerHTML = ''; return; }
   if (!selectedId) selectedId = games[0].id;
@@ -319,8 +320,10 @@ function renderGames() {
         <div class="gact">
           <button class="btn big" data-primary onclick="openRoom()"${active ? '' : ' disabled'}>${esc(t('openRoom'))}</button>
           <button class="btn ghost" onclick="startPreview()"${active ? '' : ' disabled'}>${esc(t('preview'))}</button>
+          ${typeof Awards !== 'undefined' && Awards.available(rec) ? `<button class="btn ghost" onclick="openAwards()">${esc(t('awards'))}</button>` : ''}
           <span class="spacer"></span>
-          ${rec.sample ? '' : `<button class="btn danger small" onclick="deleteGame('${rec.id}')">${esc(t('del'))}</button>`}
+          ${rec.sample ? '' : `<button class="btn ghost small" onclick="exportGame('${rec.id}')">${esc(t('saveFile'))}</button>
+          <button class="btn danger small" onclick="deleteGame('${rec.id}')">${esc(t('del'))}</button>`}
         </div></div>`;
     }
     return `<article class="gcard wnd${sel ? ' sel' : ''}" data-title="game_${games.indexOf(rec) + 1}.json">
@@ -331,7 +334,89 @@ function renderGames() {
       </button>${body}</article>`;
   }).join('');
 }
+/* the background rain shows the faces of the chosen game (or the newest one) */
+function rainFaces() {
+  if (typeof FaceRain === 'undefined') return;
+  const rec = currentRec() || games[0], p = rec && rec.pics;
+  FaceRain.setFaces(p ? [p.group, ...Object.values(p.people || {})] : []);
+}
 function goSetup() { renderGames(); show('setup'); }
+
+/* ---------------- media kept in this browser, and games saved to a file ---------------- */
+let mediaUrls = {};   // 'idb:<key>' → blob URL, for the round being played
+function mediaKeys(rec) {
+  const ks = new Set();
+  rec.game.questions.forEach(q => q.messages.forEach(m => { if (m.media && m.media.startsWith('idb:')) ks.add(m.media); }));
+  return [...ks];
+}
+function mediaSrc(m) { return m && m.startsWith('idb:') ? (mediaUrls[m] || '') : m; }
+async function loadRoundMedia(rec) {
+  Object.values(mediaUrls).forEach(u => URL.revokeObjectURL(u)); mediaUrls = {};
+  if (typeof Store === 'undefined') return;
+  await Promise.all(mediaKeys(rec).map(async k => {
+    try { const b = await Store.get('media', k.slice(4)); if (b) mediaUrls[k] = URL.createObjectURL(b); } catch (e) {}
+  }));
+}
+function needZip() {
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  return new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => res(window.JSZip); s.onerror = rej; document.head.appendChild(s);
+  });
+}
+/* the game as a file again (quotes back to replyTo), for saving */
+function gameToFile(g) {
+  return { format: 'who-sent-that', version: 1, title: g.title, group: g.group, me: g.me,
+    participants: g.participants.map(p => ({ name: p.name, color: p.color })),
+    questions: g.questions.map(q => {
+      const o = { date: q.date };
+      if (q.category) o.category = q.category; if (q.note) o.note = q.note; if (q.time) o.time = q.time;
+      o.messages = q.messages.map((m, i, all) => {
+        const x = { from: m.from, time: m.time, text: m.text };
+        if (m.answer) x.answer = true; if (m.reaction) x.reaction = true;
+        if (m.quote) { const r = all.findIndex(y => y.from === m.quote.from && y.text.slice(0, 200) === m.quote.text); if (r >= 0) x.replyTo = r; }
+        if (m.media) { x.media = m.media; if (m.mediaKind) x.mediaKind = m.mediaKind; }
+        return x;
+      });
+      return o;
+    }) };
+}
+async function exportGame(id) {
+  const rec = games.find(r => r.id === id); if (!rec) return;
+  toast(t('saving'));
+  const Zip = await needZip(), zip = new Zip(), file = gameToFile(rec.game);
+  let n = 0;
+  for (const q of file.questions) for (const m of q.messages) {
+    if (!m.media) continue;
+    let blob = null;
+    try {
+      if (m.media.startsWith('idb:')) blob = await Store.get('media', m.media.slice(4));
+      else blob = await (await fetch(m.media)).blob();
+    } catch (e) {}
+    if (!blob) { delete m.media; continue; }
+    const name = `media/${++n}.${(m.media.match(/\.(\w+)$/) || [, 'jpg'])[1]}`;
+    zip.file(name, blob); m.media = 'file:' + name;
+  }
+  zip.file('game.json', JSON.stringify({ game: file, pics: rec.pics || null, stats: rec.stats || null }));
+  const out = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(out);
+  a.download = (rec.game.title || 'game').replace(/[\\/:*?"<>|]+/g, ' ').trim() + '.whosent.zip';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function importZip(file) {
+  try {
+    const Zip = await needZip(), zip = await Zip.loadAsync(file);
+    const gf = zip.file('game.json'); if (!gf) throw new Error(t('errNotGame'));
+    const raw = JSON.parse(await gf.async('string')), g = raw.game || raw, gid = newId();
+    for (const q of g.questions || []) for (const m of q.messages || []) {
+      if (!m.media || !String(m.media).startsWith('file:')) continue;
+      const f = zip.file(m.media.slice(5)); if (!f) { delete m.media; continue; }
+      const key = `${gid}/${m.media.slice(5).split('/').pop()}`;
+      await Store.put('media', key, await f.async('blob')); m.media = 'idb:' + key;
+    }
+    gameLoaded(addWrapped(raw.game ? raw : { game: g }));
+  } catch (e) { setMsg(e.message || t('errRead'), 'err'); }
+}
 
 /* profile pictures: stored with the game in this browser, shrunk to 160px */
 let picTarget = null;
@@ -408,9 +493,10 @@ function hiddenLines(q) {   // what phones get: no names, no reactions, only whe
     quote: m.quote ? { text: m.quote.text } : undefined, media: m.media, mediaKind: m.mediaKind }));
 }
 function mediaHtml(l) {
-  const src = esc(l.media), k = l.mediaKind || (/\.(mp4|mov|webm|m4v)$/i.test(l.media) ? 'video' : /\.(opus|ogg|mp3|m4a|aac|wav)$/i.test(l.media) ? 'audio' : 'image');
+  const src = esc(mediaSrc(l.media)), k = l.mediaKind || (/\.(mp4|mov|webm|m4v)$/i.test(l.media) ? 'video' : /\.(opus|ogg|mp3|m4a|aac|wav)$/i.test(l.media) ? 'audio' : 'image');
   // a file that can't be loaded turns back into its "📷 תמונה" line instead of leaving an empty bubble
   const label = (l.text.match(/(📷 תמונה|🎥 סרטון|🎤 הקלטה|GIF|סטיקר)$/) || ['📷 תמונה'])[0];
+  if (!src) return `<span>${esc(label)}</span>`;
   const fail = ` onerror="this.replaceWith('${label}')"`;
   if (k === 'gif') return `<video class="wmedia" src="${src}" autoplay loop muted playsinline${fail}></video>`;
   if (k === 'video') return `<video class="wmedia" src="${src}" controls playsinline preload="metadata"${fail}></video>`;
@@ -462,10 +548,11 @@ const banned = new Set(), bannedTokens = new Set();
 let peer = null, roomActive = false, previewMode = false, phase = 'idle';
 let qIndex = -1, qStart = 0, qDur = 20, timerId = null, senderStats = {}, pausedAt = 0;
 
-function openRoom() {
+async function openRoom() {
   const rec = currentRec(); if (!rec) return;
   prepareRound(rec);
   if (!ROUND.items.length) return;
+  await loadRoundMedia(rec);
   closeRoom();
   roomActive = true; phase = 'lobby';
   $('lobbyTitle').textContent = rec.game.title;
@@ -780,7 +867,7 @@ function showFinal() {
   const pod = (p, place) => p ? `<div class="pod p${place}"><span class="nm" dir="auto">${esc(p.name)}</span><span class="sc">${p.score}</span><div class="blk">${place}</div></div>` : '<div></div>';
   const facts = [];
   const ss = Object.entries(senderStats).filter(([, s]) => s.answers > 0).map(([n, s]) => ({ n, p: Math.round(100 * s.right / s.answers) }));
-  if (ss.length >= 2) {
+  if (ss.length >= 2 && ss.some(x => x.p !== ss[0].p)) {   // only when the senders actually differ
     ss.sort((a, b) => a.p - b.p);
     facts.push({ k: t('hardest'), v: ss[0].n, s: t('hardestSub', { p: ss[0].p }) });
     const top = ss[ss.length - 1];
@@ -795,7 +882,8 @@ function showFinal() {
       <div class="podium">${pod(r[1], 2)}${pod(r[0], 1)}${pod(r[2], 3)}</div>
       ${r.length > 3 ? `<div class="board wnd" data-title="scores.txt">${r.slice(3).map((p, i) => `<div class="row"><span class="rk">${i + 4}</span><span class="nm" dir="auto">${esc(p.name)}</span><span class="sc">${p.score}</span></div>`).join('')}</div>` : ''}
       ${facts.length ? `<div class="facts">${facts.map(f => `<div class="fact wnd" data-title="stats.txt"><span class="k">${esc(f.k)}</span><span class="v" dir="auto">${esc(f.v)}</span><span class="s">${esc(f.s)}</span></div>`).join('')}</div>` : ''}
-      <div class="gact"><button class="btn big" data-primary onclick="playAgain()">${esc(t('playAgain'))}</button>
+      <div class="gact">${typeof Awards !== 'undefined' && Awards.available(currentRec()) ? `<button class="btn big" onclick="openAwards()">${esc(t('awards'))}</button>` : ''}
+        <button class="btn big" data-primary onclick="playAgain()">${esc(t('playAgain'))}</button>
         <button class="btn ghost" onclick="otherGame()">${esc(t('otherGame'))}</button></div>
     </div>`;
 }
@@ -811,10 +899,11 @@ function playAgain() {
 function otherGame() { closeRoom(); renderGames(); show('setup', false); replaceScreen('setup'); }
 
 /* preview: the game on this screen with pretend players */
-function startPreview() {
+async function startPreview() {
   const rec = currentRec(); if (!rec) return;
   closeRoom();
   prepareRound(rec);
+  await loadRoundMedia(rec);
   roomActive = true; previewMode = true;
   t('fake').forEach(n => players.set(n, { name: n, score: 0, answer: null, elapsed: 0, lastPoints: 0, hits: [], connected: false, conn: null }));
   senderStats = {}; qIndex = -1;
@@ -1075,6 +1164,7 @@ function showRejoinBanner() {
 (function init() {
   try { history.replaceState({ screen: 'home' }, '', location.pathname + location.search); } catch (e) {}
   applyLang();
+  rainFaces();
   showRejoinBanner();
   setTimeout(() => $('logo').classList.add('open'), 700);
   const drop = $('drop'), input = $('fileInput');
@@ -1083,6 +1173,16 @@ function showRejoinBanner() {
   ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
   ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
   drop.addEventListener('drop', e => readFile(e.dataTransfer.files[0]));
+  const pending = new URLSearchParams(location.search).get('import') && lsGet('wst.pending');
+  if (pending) {
+    lsDel('wst.pending');
+    try {
+      const p = JSON.parse(pending), rec = addWrapped({ game: p.game, pics: p.pics, stats: p.stats });
+      rec.settings.pace = 'none'; saveGames();
+      try { history.replaceState({ screen: 'setup' }, '', location.pathname); } catch (e) {}
+      goSetup(); setMsg(t('created', { t: rec.game.title }), 'ok');
+    } catch (e) { console.warn(e); }
+  }
   const pre = new URLSearchParams(location.search).get('join');
   if (pre && /^\d{4}$/.test(pre)) { show('join'); $('codeInput').value = pre; $('nameInput').focus(); }
 })();

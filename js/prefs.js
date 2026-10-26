@@ -3,7 +3,7 @@
    Pages put <div class="skinSlider" data-skin-slider></div> where it belongs
    (add "mini" for the icons-only version), call renderSkinSliders() when the
    look changes, and define pickSkin(name) for what a click does. */
-const SKIN_ICONS = { arcade: '🕹️', night: '🌙', retro: '💾' };
+const SKIN_ICONS = { arcade: '☀️', dark: '🌙' };
 function renderSkinSliders(skins, current, label) {
   document.querySelectorAll('[data-skin-slider]').forEach(el => {
     el.style.setProperty('--n', skins.length);
